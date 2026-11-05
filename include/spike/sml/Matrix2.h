@@ -49,8 +49,8 @@ File Summary:
 
 #include <cassert>
 
-#include <spike/def_aliases.h>
-#include <spike/stl_aliases.h>
+#include "spike/def_aliases.h"
+#include "spike/stl_aliases.h"
 
 namespace sml {
 	struct vector2;

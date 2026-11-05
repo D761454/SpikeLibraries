@@ -33,15 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __ASSET_FILE_PARSER_COMMONS
-#define __ASSET_FILE_PARSER_COMMONS
+#ifndef __SPIKE_ASSET_FILE_PARSER_COMMONS
+#define __SPIKE_ASSET_FILE_PARSER_COMMONS
 
 #include <list>
 
-#include <spike/def_aliases.h>
-#include <spike/podio.hpp>
-#include <spike/stl_aliases.h>
-#include <spike/warning.h>
+#include "spike/def_aliases.h"
+#include "spike/podio.hpp"
+#include "spike/stl_aliases.h"
+#include "spike/warning.h"
 
 namespace errlib { struct Error; }
 

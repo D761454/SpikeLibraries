@@ -38,17 +38,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <fstream>
 
-#include <zlib/zlib.h>
+#include "spike/external/zlib/zlib.h"
 #define ZSTD_STATIC_LINKING_ONLY
-#include <zstd/zstd.h>
-#include <zlib/zconf.h>
+#include "spike/external/zstd/zstd.h"
+#include "spike/external/zlib/zconf.h"
 
-#include <spike/def_aliases.h>
-#include <spike/nivector.h>
-#include <spike/podio.hpp>
-#include <spike/stl_aliases.h>
-#include <spike/error.hpp>
-#include <debug.hpp>
+#include "spike/def_aliases.h"
+#include "spike/nivector.h"
+#include "spike/podio.hpp"
+#include "spike/stl_aliases.h"
+#include "spike/error.hpp"
+#include "spike/debugl/debug.hpp"
 
 #include "commons.hpp"
 

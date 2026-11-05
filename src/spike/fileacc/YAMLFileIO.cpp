@@ -42,23 +42,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <optional>
 #include <string>
 
-#include <spike/warning.h>
-#include <UUID/uuid.h>
-#include <YAML/emitter.h>
-#include <YAML/node/node.h>
-#include <YAML/node/parse.h>
-#include <YAML/node/type.h>
-#include <spike/def_aliases.h>
-#include <spike/stl_aliases.h>
+#include "spike/warning.h"
+#include "spike/external/stduuid/uuid.h"
+#include "spike/external/yamlcpp/emitter.h"
+#include "spike/external/yamlcpp/node/node.h"
+#include "spike/external/yamlcpp/node/parse.h"
+#include "spike/external/yamlcpp/node/type.h"
+#include "spike/def_aliases.h"
+#include "spike/stl_aliases.h"
 
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_YAML_H
-#include <YAML/yaml.h>
+#include "spike/external/yamlcpp/yaml.h"
 DISABLE_WARNING_POP
 #include <sstream>
 
-#include <spike/error.hpp>
-#include <debug.hpp>
+#include "spike/error.hpp"
+#include "spike/debugl/debug.hpp"
 
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_UNINITIALIZED_VARIABLE

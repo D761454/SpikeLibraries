@@ -35,8 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "Ray2D.h"
 
-#include <spike/def_aliases.h>
-#include <spike/stl_aliases.h>
+#include "spike/def_aliases.h"
+#include "spike/stl_aliases.h"
 
 #include "Vector2.h"
 

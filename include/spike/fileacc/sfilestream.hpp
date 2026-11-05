@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __ASSET_FILE_PARSER_STREAM
-#define __ASSET_FILE_PARSER_STREAM
+#ifndef __SPIKE_ASSET_FILE_PARSER_STREAM
+#define __SPIKE_ASSET_FILE_PARSER_STREAM
 
 #include <cstdint>
 #include <limits>

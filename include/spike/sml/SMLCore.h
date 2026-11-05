@@ -47,7 +47,7 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
-#include <spike/def_aliases.h>
+#include "spike/def_aliases.h"
 
 #define SQUARE(x) ((x) * (x))
 

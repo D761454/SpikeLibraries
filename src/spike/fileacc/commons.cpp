@@ -41,10 +41,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 
-#include <spike/def_aliases.h>
-#include <spike/podio.hpp>
-#include <spike/stl_aliases.h>
-#include <spike/error.hpp>
+#include "spike/def_aliases.h"
+#include "spike/podio.hpp"
+#include "spike/stl_aliases.h"
+#include "spike/error.hpp"
 
 bool fileacc::check_file(const string& path, const u32 expectedMagic, const u32 expectedVer) noexcept {
 	if (path.empty()) return false;

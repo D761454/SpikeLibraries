@@ -33,15 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __ASSET_FILE_IO
-#define __ASSET_FILE_IO
+#ifndef __SPIKE_ASSET_FILE_IO
+#define __SPIKE_ASSET_FILE_IO
 
 #include <fstream>
 
-#include <spike/def_aliases.h>
-#include <spike/error.hpp>
-#include <spike/stl_aliases.h>
-#include <spike/nivector.h>
+#include "spike/def_aliases.h"
+#include "spike/error.hpp"
+#include "spike/stl_aliases.h"
+#include "spike/nivector.h"
 
 #include "commons.hpp"
 

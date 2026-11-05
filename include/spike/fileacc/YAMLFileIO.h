@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __YAML_FILE_IO
-#define __YAML_FILE_IO
+#ifndef __SPIKE_YAML_FILE_IO
+#define __SPIKE_YAML_FILE_IO
 
 #include <optional>
 #include <variant>
@@ -43,9 +43,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 
-#include <spike/def_aliases.h>
-#include <spike/error.hpp>
-#include <spike/stl_aliases.h>
+#include "spike/def_aliases.h"
+#include "spike/error.hpp"
+#include "spike/stl_aliases.h"
 
 #include "commons.hpp"
 
