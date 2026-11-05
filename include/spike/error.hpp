@@ -76,7 +76,7 @@ namespace errlib {
 	/// <summary>
 	/// returns the associated string representation for an error code
 	/// </summary>
-	/// <param name="ec">- error code to convert</param>
+	/// <param name="ec">error code to convert</param>
 	/// <returns>string representation / error descriptor</returns>
 	constexpr std::string_view to_string_view(ErrorCode ec) noexcept {
 		switch (ec) {
@@ -132,8 +132,8 @@ namespace errlib {
 		/// <summary>
 		/// generates an error object from its constituent elements
 		/// </summary>
-		/// <param name="c">- error code to store</param>
-		/// <param name="extra">- message to associate with this error object</param>
+		/// <param name="c">error code to store</param>
+		/// <param name="extra">message to associate with this error object</param>
 		/// <returns>error code object housing the provided data</returns>
 		static Error FromCode(ErrorCode c, std::string_view extra = {}) {
 			std::string msg = std::string(to_string_view(c));
@@ -157,57 +157,5 @@ namespace errlib {
 namespace std {
 	template<> struct is_error_code_enum<errlib::ErrorCode> : true_type {};
 }
-
-// example usage #1
-/*
-static errlib::Error ParseAsset(const std::filesystem::path& path) {
-	std::ifstream in(path, std::ios::binary);
-	if (!in) {
-		return errlib::Error::FromCode(errlib::ErrorCode::errorCode_notFound, path.string());
-	}
-
-	in.seekg(0, std::ios::end);
-	auto size = in.tellg();
-	if (size <= 0) {
-		return errlib::Error::FromCode(errlib::ErrorCode::errorCode_invalidArgument, "empty file");
-	}
-
-	return errlib::Error{};
-}
-
-errlib::Error err = ParseAsset(p);
-if (!err.ok()) {
-	std::cerr << "ParseAsset failed: " << err.message << '\n';
-}
-else {
-	std::cout << "ParseAsset succeeded\n";
-}
-*/
-
-// example usage #2
-/*
-static std::error_code LoadAssetStd(const std::filesystem::path& path) {
-	std::ifstream in(path, std::ios::binary);
-	if (!in) {
-		return errlib::make_error_code(errlib::ErrorCode::errorCode_notFound);
-	}
-
-	return {};
-}
-
-std::error_code ec = LoadAssetStd(p);
-	if (ec) {
-		std::cerr << "LoadAssetStd failed: " << ec.message() << '\n';
-		try {
-			throw std::system_error(ec, "LoadAssetStd");
-		}
-		catch (const std::system_error& se) {
-			std::cerr << "Caught system_error: " << se.what() << '\n';
-		}
-	}
-	else {
-		std::cout << "LoadAssetStd succeeded\n";
-	}
-*/
 
 #endif

@@ -73,8 +73,8 @@ namespace podio {
 	/// Writes a POD class or struct to file in one command
 	/// </summary>
 	/// <typeparam name="T">Type of object to write from</typeparam>
-	/// <param name="os">- File Stream to Write to</param>
-	/// <param name="obj">- Object to write</param>
+	/// <param name="os">File Stream to Write to</param>
+	/// <param name="obj">Object to write</param>
 	/// <returns>if the write / os is good</returns>
 	template <typename T>
 	inline bool write_pod(std::ostream& os, T const& obj) {
@@ -87,8 +87,8 @@ namespace podio {
 	/// Reads in a POD class or struct from file in one command
 	/// </summary>
 	/// <typeparam name="T">Type of object to read into</typeparam>
-	/// <param name="is">- File Stream to Read from</param>
-	/// <param name="out">-  Object to read data into</param>
+	/// <param name="is">File Stream to Read from</param>
+	/// <param name="out">Object to read data into</param>
 	/// <returns>if the read was good or it is end of file</returns>
 	template <typename T>
 	inline bool read_pod(std::istream& is, T& out) {
@@ -101,7 +101,7 @@ namespace podio {
 	/// Zero Initializes a PODs memory to 0
 	/// </summary>
 	/// <typeparam name="T">Type of object to zero initialize</typeparam>
-	/// <param name="obj">- Object to Zero Initialize</param>
+	/// <param name="obj">Object to Zero Initialize</param>
 	template <typename T>
 	inline void zero_init(T& obj) noexcept {
 		static_assert(is_pod_writable_v<T>, "zero_init targets POD-like types");

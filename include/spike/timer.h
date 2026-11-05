@@ -71,7 +71,7 @@ namespace tmr {
 		/// <summary>
 		/// Stop the timer (logs current time), and calculates the time passed since the last Start call
 		/// </summary>
-		/// <typeparam name="TF">- time format to convert the result to</typeparam>
+		/// <typeparam name="TF">time format to convert the result to</typeparam>
 		/// <returns>time since last start call in TF notation</returns>
 		template<time_format TF = time_format::MILLISECONDS>
 		static uint64_t Stop() noexcept {
@@ -107,7 +107,7 @@ namespace tmr {
 		/// <summary>
 		/// Stop the timer (logs current time), and calculates the time passed since the last Start call
 		/// </summary>
-		/// <typeparam name="TF">- time format to convert the result to</typeparam>
+		/// <typeparam name="TF">time format to convert the result to</typeparam>
 		/// <returns>time since last start call in TF notation</returns>
 		template<time_format TF = time_format::MILLISECONDS>
 		static double Stopf() noexcept {

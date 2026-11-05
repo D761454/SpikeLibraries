@@ -62,8 +62,8 @@ concept ValidSplitCount = (N > 0 && N <= (std::numeric_limits<T>::digits));
 /// <summary>
 /// Type-safe flag wrapper for packing multiple data pieces into a single integral
 /// </summary>
-/// <typeparam name="T">- Data type stored by the flagset, this is also the size of the flag</typeparam>
-/// <typeparam name="SPLITS">- how many flags to split T into</typeparam>
+/// <typeparam name="T">Data type stored by the flagset, this is also the size of the flag</typeparam>
+/// <typeparam name="SPLITS">how many flags to split T into</typeparam>
 template<IntegralType T, uint8_t SPLITS>
 	requires ValidSplitCount<T, SPLITS>
 struct flag_set {
@@ -87,14 +87,14 @@ public:
 	/// <summary>
 	/// Sets the entire flag value held by the flag_set
 	/// </summary>
-	/// <param name="value">- value to set the entire flag_set to</param>
+	/// <param name="value">value to set the entire flag_set to</param>
 	inline void SetRaw(T value) noexcept { _data = value; }
 
 	/// <summary>
 	/// Set a flag chunk by index
 	/// </summary>
-	/// <param name="index">- chunk index (0 to SPLITS-1)</param>
-	/// <param name="value">- value to set in this chunk</param>
+	/// <param name="index">chunk index (0 to SPLITS-1)</param>
+	/// <param name="value">value to set in this chunk</param>
 	inline void Set(uint8_t index, T value) noexcept {
 		if constexpr (SPLITS > 1) {
 			// Only validate in debug builds for performance
@@ -109,7 +109,7 @@ public:
 	/// <summary>
 	/// Get a flag chunk by index, optionally cast to smaller type
 	/// </summary>
-	/// <param name="index">- chunk index (0 to SPLITS-1)</param>
+	/// <param name="index">chunk index (0 to SPLITS-1)</param>
 	/// <returns>value extracted from this chunk</returns>
 	inline T Get(uint8_t index) const noexcept {
 		if constexpr (SPLITS > 1) {
@@ -124,8 +124,8 @@ public:
 	/// <summary>
 	/// Get a flag chunk and cast to a specific type. Usage: uint8_t val = flags.Get<uint8_t>(0);
 	/// </summary>
-	/// <typeparam name="U">- type to cast the result to</typeparam>
-	/// <param name="index">- chunk index (0 to SPLITS-1)</param>
+	/// <typeparam name="U">type to cast the result to</typeparam>
+	/// <param name="index">chunk index (0 to SPLITS-1)</param>
 	/// <returns>value extracted from this chunk, cast to U</returns>
 	template<typename U>
 		requires std::is_integral_v<U>
@@ -136,7 +136,7 @@ public:
 	/// <summary>
 	/// Toggle a single bit flag
 	/// </summary>
-	/// <param name="bitIndex">- bit index (0 to BIT_COUNT-1)</param>
+	/// <param name="bitIndex">bit index (0 to BIT_COUNT-1)</param>
 	inline void ToggleBit(uint8_t bitIndex) noexcept {
 		if constexpr (BIT_COUNT > 1) {
 #ifdef _DEBUG
@@ -149,7 +149,7 @@ public:
 	/// <summary>
 	/// Set a single bit flag
 	/// </summary>
-	/// <param name="bitIndex">- bit index (0 to BIT_COUNT-1)</param>
+	/// <param name="bitIndex">bit index (0 to BIT_COUNT-1)</param>
 	inline void SetBit(uint8_t bitIndex) noexcept {
 		if constexpr (BIT_COUNT > 1) {
 #ifdef _DEBUG
@@ -162,7 +162,7 @@ public:
 	/// <summary>
 	/// Clear a single bit flag
 	/// </summary>
-	/// <param name="bitIndex">- bit index (0 to BIT_COUNT-1)</param>
+	/// <param name="bitIndex">bit index (0 to BIT_COUNT-1)</param>
 	inline void ClearBit(uint8_t bitIndex) noexcept {
 		if constexpr (BIT_COUNT > 1) {
 #ifdef _DEBUG
@@ -175,7 +175,7 @@ public:
 	/// <summary>
 	/// Test if a single bit is set
 	/// </summary>
-	/// <param name="bitIndex">- bit index (0 to BIT_COUNT-1)</param>
+	/// <param name="bitIndex">bit index (0 to BIT_COUNT-1)</param>
 	/// <returns>if the bit is set</returns>
 	inline bool TestBit(uint8_t bitIndex) const noexcept {
 		if constexpr (BIT_COUNT > 1) {

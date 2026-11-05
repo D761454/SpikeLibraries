@@ -59,9 +59,9 @@ File Summary:
 
 Region Summary:
 	This code region houses half_float which is provided under the
-	following notice. Neither Spike Tooth, spike libraries or its
-	contributors claim ownership of half_float, this is merely here for
-	convenience.
+	following notice. Neither Cayden Andrews, Spike Tooth, 
+	SpikeLibraries or its contributors claim ownership of 
+	half_float, this is merely here for convenience.
 
 half_float copyright notice:
 	Copyright (c) 2006-2008,
@@ -831,6 +831,6 @@ inline constexpr ll kMinLl = std::numeric_limits<ll>::min();
 inline constexpr f64 kPi = 3.141592653589793238462643383279;
 inline constexpr f64 kEpsilon = 1e-6;
 
-inline constexpr f32 kU8toF32 = 1.f / 255.f;
+inline constexpr f32 kU8toF32 = 1.f / 255.f; // can be used for converting u8 colour components to 0-1f representation and vice-versa
 
 #endif
