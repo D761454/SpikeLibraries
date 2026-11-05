@@ -10,8 +10,6 @@ the libraries do not focus on highly artificial edge cases unlikely to occur in 
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
-
 Considering the above policy, most things may be reported in GitHub Issues, ideally using the provided templates. 
 If you have a reason to disclose an issue privately, please reach out to the contact address listed in the README or on my profile.
 
