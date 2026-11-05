@@ -3,7 +3,7 @@ SpikeLibraries: Simple libraries for performing many common tasks within game de
 
 ## Summary
 
-SpikeLibraries are simple extensible libraries for C++ that may be used across a variety of applications. The libraries are all self contained (no external dependencies, apart from other spike libraries (usually not)), portable and easy to use.
+SpikeLibraries are simple extensible libraries for C++ that may be used across a variety of applications. The libraries are all self contained (no external dependencies, apart from other spike libraries (usually header only libraries)), portable and easy to use.
 
 SpikeLibraries are designed to enable fast iteration on game, engine or tools related projects. The libraries tend towards simplicity to ensure wide use-cases, lacking in some 
 higher end features. However, over time, we are open to implementing some more advanced ideas on-top of the present libraries, either as new libraries or improvements upon the old.
