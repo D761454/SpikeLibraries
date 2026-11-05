@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __UUID_ASSIGNER_HPP
-#define __UUID_ASSIGNER_HPP
+#ifndef __SPIKE_UUID_ASSIGNER_HPP
+#define __SPIKE_UUID_ASSIGNER_HPP
 
 #ifndef UUID_SYSTEM_GENERATOR
 #define UUID_SYSTEM_GENERATOR

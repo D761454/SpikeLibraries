@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __NIVECTOR_H
-#define __NIVECTOR_H
+#ifndef __SPIKE_NIVECTOR_H
+#define __SPIKE_NIVECTOR_H
 
 #include <vector>
 

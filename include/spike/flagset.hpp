@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __FLAGSET_HPP
-#define __FLAGSET_HPP
+#ifndef __SPIKE_FLAGSET_HPP
+#define __SPIKE_FLAGSET_HPP
 
 #include <cstdint>
 #include <limits>

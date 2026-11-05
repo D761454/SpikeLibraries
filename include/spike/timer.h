@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __TIMER_H
-#define __TIMER_H
+#ifndef __SPIKE_TIMER_H
+#define __SPIKE_TIMER_H
 
 #include <cstdint>
 #include <chrono>

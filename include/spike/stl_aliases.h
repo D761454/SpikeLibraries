@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __STL_ALIASES_H
-#define __STL_ALIASES_H
+#ifndef __SPIKE_STL_ALIASES_H
+#define __SPIKE_STL_ALIASES_H
 
 #include <unordered_map>
 #include <unordered_set>

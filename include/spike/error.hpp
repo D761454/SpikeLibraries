@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __ERROR_HPP
-#define __ERROR_HPP
+#ifndef __SPIKE_ERROR_HPP
+#define __SPIKE_ERROR_HPP
 
 #include <cstdint>
 #include <string>

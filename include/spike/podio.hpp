@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __PODIO_H
-#define __PODIO_H
+#ifndef __SPIKE_PODIO_HPP
+#define __SPIKE_PODIO_HPP
 
 #include <type_traits>
 #include <fstream>
