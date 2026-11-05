@@ -10,6 +10,9 @@ higher end features. However, over time, we are open to implementing some more a
 
 SpikeLibraries are primarily geared towards integration into game related projects, namely game engines and real-time 2D or 3D applications.
 
+These are libraries i have developed and have been using for a while during the development of the [Spike Engine](https://sites.google.com/view/cayden-andrews/projects/c/spikeengine).
+Feel free to let me know if you have used these libraries in you projects. I would love to see what you do with them.
+
 ## Usage
 
 The core of each library will be contained within a few platform agnostic files, easily included within your projects. No specific build processes are required but it may be ideal to build the required library separately and include the '.lib' and include headers separately as to not clutter your project. These are currently using MSVC but will be altered towards CMake as they develop.
