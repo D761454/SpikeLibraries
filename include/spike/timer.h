@@ -49,13 +49,14 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
-namespace tmr {
+namespace stime {
 	/// <summary>
 	/// Simple timer class for getting the time between start and stop calls
 	/// </summary>
 	class timer {
 	private:
-		using timePoint = std::chrono::time_point<std::chrono::steady_clock>;
+		using clock = std::chrono::steady_clock;
+		using timePoint = std::chrono::time_point<clock>;
 		static inline timePoint start_t;
 
 	public:
@@ -64,8 +65,8 @@ namespace tmr {
 		/// <summary>
 		/// Log the current time within the timer class as a start time
 		/// </summary>
-		static void Start() noexcept {
-			start_t = std::chrono::steady_clock::now();
+		static inline void Start() noexcept {
+			start_t = clock::now();
 		}
 
 		/// <summary>
@@ -73,35 +74,11 @@ namespace tmr {
 		/// </summary>
 		/// <typeparam name="TF">time format to convert the result to</typeparam>
 		/// <returns>time since last start call in TF notation</returns>
-		template<time_format TF = time_format::MILLISECONDS>
+		template<time_format TF>
 		static uint64_t Stop() noexcept {
-			const auto end_t = std::chrono::steady_clock::now();
-
+			const auto end_t = clock::now();
 			const auto elapsed = end_t - start_t;
-			const uint64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
-
-			switch (TF) {
-			case time_format::NANOSECONDS: {
-				return ns;
-			}
-			case time_format::MICROSECONDS: {
-				uint64_t u = ((ns % 1000) >= 500) ? 1 : 0;
-				const auto mcs = (ns / 1000) + u;
-				return mcs;
-			}
-			case time_format::MILLISECONDS: {
-				uint64_t u = ((ns % 1000000) >= 500000) ? 1 : 0;
-				const auto ms = (ns / 1000000) + u;
-				return ms;
-			}
-			case time_format::SECONDS: {
-				uint64_t u = ((ns % 1000000000) >= 500000000) ? 1 : 0;
-				const auto s = (ns / 1000000000) + u;
-				return s;
-			}
-			default:
-				return ns;
-			}
+			return std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
 		}
 
 		/// <summary>
@@ -109,39 +86,82 @@ namespace tmr {
 		/// </summary>
 		/// <typeparam name="TF">time format to convert the result to</typeparam>
 		/// <returns>time since last start call in TF notation</returns>
-		template<time_format TF = time_format::MILLISECONDS>
+		template<time_format TF>
 		static double Stopf() noexcept {
-			const auto end_t = std::chrono::steady_clock::now();
-
+			const auto end_t = clock::now();
 			const auto elapsed = end_t - start_t;
-			const uint64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
-
-			switch (TF) {
-			case time_format::NANOSECONDS: {
-				return static_cast<double>(ns);
-			}
-			case time_format::MICROSECONDS: {
-				int u = ((ns % 1000) >= 500) ? 1 : 0;
-				return (ns / 1000.0) + u;
-			}
-			case time_format::MILLISECONDS: {
-				int u = ((ns % 1000000) >= 500000) ? 1 : 0;
-				return (ns / 1000000.0) + u;
-			}
-			case time_format::SECONDS: {
-				int u = ((ns % 1000000000) >= 500000000) ? 1 : 0;
-				return (ns / 1000000000.0) + u;
-			}
-			default:
-				return static_cast<double>(ns);
-			}
+			return static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count());
 		}
 	};
 
-	constexpr timer::time_format nanoseconds		= timer::time_format::NANOSECONDS;
-	constexpr timer::time_format microseconds		= timer::time_format::MICROSECONDS;
-	constexpr timer::time_format milliseconds		= timer::time_format::MILLISECONDS;
-	constexpr timer::time_format seconds			= timer::time_format::SECONDS;
+	inline constexpr timer::time_format nanoseconds		= timer::time_format::NANOSECONDS;
+	inline constexpr timer::time_format microseconds		= timer::time_format::MICROSECONDS;
+	inline constexpr timer::time_format milliseconds		= timer::time_format::MILLISECONDS;
+	inline constexpr timer::time_format seconds			= timer::time_format::SECONDS;
 }
+
+#pragma region Implementation
+
+template<>
+uint64_t stime::timer::Stop<stime::nanoseconds>() {
+	const auto end_t = clock::now();
+	const auto elapsed = end_t - start_t;
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
+}
+
+template<>
+uint64_t stime::timer::Stop<stime::microseconds>() {
+	const auto end_t = clock::now();
+	const auto elapsed = end_t - start_t;
+	return std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+}
+
+template<>
+uint64_t stime::timer::Stop<stime::milliseconds>() {
+	const auto end_t = clock::now();
+	const auto elapsed = end_t - start_t;
+	return std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+}
+
+template<>
+uint64_t stime::timer::Stop<stime::seconds>() {
+	const auto end_t = clock::now();
+	const auto elapsed = end_t - start_t;
+	return std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
+}
+
+template<>
+double stime::timer::Stopf<stime::nanoseconds>() {
+	const auto end_t = clock::now();
+	const auto elapsed = end_t - start_t;
+	return static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count());
+}
+
+template<>
+double stime::timer::Stopf<stime::microseconds>() {
+	const auto end_t = clock::now();
+	const auto elapsed = end_t - start_t;
+	const uint64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
+	return ns * 0.001;
+}
+
+template<>
+double stime::timer::Stopf<stime::milliseconds>() {
+	const auto end_t = clock::now();
+	const auto elapsed = end_t - start_t;
+	const uint64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
+	return ns * (1.0E-6);
+}
+
+template<>
+double stime::timer::Stopf<stime::seconds>() {
+	const auto end_t = clock::now();
+	const auto elapsed = end_t - start_t;
+	const uint64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
+	return ns * (1.0E-9);
+}
+
+#pragma endregion
+
 
 #endif
