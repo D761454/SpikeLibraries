@@ -43,7 +43,7 @@ experienced users are likely to know what info is useful within their specific c
 
 ## Copyright / Contributor license
 
-Any code you submit will become part of the repository and be distributed under the [SpikeLibraries](https://github.com/D761454/SpikeLibraries/tree/main?tab=MIT-1-ov-file) license. 
+Any code you submit will become part of the repository and be distributed under the [SpikeLibraries](https://github.com/D761454/SpikeLibraries/tree/main?tab=BSD-3-Clause-1-ov-file) license. 
 By submitting code to the project you agree that the code is your work and that you can give it to the project.
 
 You also agree by submitting your code that you grant all transferable rights to the code to the project maintainer, including for example re-licensing the code, modifying the code, and distributing it in source or binary forms. Specifically, this includes a requirement that you assign copyright to the project maintainer. For this reason, do not modify any copyright statements in files in any PRs.
