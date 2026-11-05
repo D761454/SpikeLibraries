@@ -22,7 +22,7 @@ See the [Releases](https://github.com/D761454/SpikeLibraries/releases) page for 
 
 ## How to help
 
-See the [Issues]() page for current tasks underway within the libraries.
+See the [Issues](https://github.com/D761454/SpikeLibraries/issues) page for current tasks underway within the libraries.
 
 You may help with development with pull requests. However, please note that through doing this you also request that your code is reviewed and then taken into the libraries forever. The pull request should be created in the interest of users and to ensure its goal and changes are made clear so it may be accepted.
 
