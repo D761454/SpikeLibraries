@@ -27,4 +27,4 @@ See the [Issues](https://github.com/D761454/SpikeLibraries/issues) page for curr
 You may help with development with pull requests. However, please note that through doing this you also request that your code is reviewed and then taken into the libraries forever. The pull request should be created in the interest of users and to ensure its goal and changes are made clear so it may be accepted.
 
 ## License
-All SpikeLibraries are licensed under the MIT License, see [LICENSE](https://github.com/D761454/SpikeLibraries/tree/main?tab=MIT-1-ov-file) for more info.
+All SpikeLibraries are licensed under the MIT License, see [LICENSE](https://github.com/D761454/SpikeLibraries/tree/main?tab=BSD-3-Clause-1-ov-file) for more info.
