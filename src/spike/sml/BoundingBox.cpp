@@ -33,16 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "BoundingBox.h"
+#include "spike/sml/BoundingBox.h"
 
 #include <limits>
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-#include "Vector3.h"
-#include "Ray.h"
-#include "SMLCore.h"
+#include "spike/sml/Vector3.h"
+#include "spike/sml/Ray.h"
+#include "spike/sml/SMLCore.h"
 
 // ============================================================================
 // Constructors

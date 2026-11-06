@@ -11,8 +11,8 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
-#include "Matrix2.h"
-#include "Matrix3.h"
-#include "Matrix4.h"
+#include "spike/sml/Matrix2.h"
+#include "spike/sml/Matrix3.h"
+#include "spike/sml/Matrix4.h"
 
 #endif
