@@ -1,0 +1,90 @@
+cmake_minimum_required(VERSION 3.20)
+project(SpikeLibraries VERSION 1.0.0 LANGUAGES CXX)
+
+option(SPIKE_BUILD_LIBRARIES "Build the SpikeLibraries components" ON)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+include(GNUInstallDirs)
+
+# Third-party headers are vendored under include/spike_external. On Windows,
+# matching prebuilt archives are used where present; other platforms can use
+# their normal package-manager installations.
+if(WIN32)
+    set(SPIKE_YAMLCPP_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/src/spike_external/yaml-cpp.lib"
+        CACHE FILEPATH "Path to the yaml-cpp static library")
+    set(SPIKE_ZSTD_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/src/spike_external/zstd_static.lib"
+        CACHE FILEPATH "Path to the zstd static library")
+	set(SPIKE_ZLIB_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/src/spike_external/zs.lib"
+        CACHE FILEPATH "Path to the zlib static library")
+endif()
+
+if(WIN32 AND EXISTS "${SPIKE_YAMLCPP_LIBRARY}")
+    add_library(spike_yamlcpp UNKNOWN IMPORTED)
+    set_target_properties(spike_yamlcpp PROPERTIES IMPORTED_LOCATION "${SPIKE_YAMLCPP_LIBRARY}")
+    set(SPIKE_YAMLCPP_TARGET spike_yamlcpp)
+else()
+    find_package(yaml-cpp CONFIG REQUIRED)
+    if(TARGET yaml-cpp::yaml-cpp)
+        set(SPIKE_YAMLCPP_TARGET yaml-cpp::yaml-cpp)
+    elseif(TARGET yaml-cpp)
+        set(SPIKE_YAMLCPP_TARGET yaml-cpp)
+    else()
+        message(FATAL_ERROR "yaml-cpp was found but did not define a recognized target")
+    endif()
+endif()
+
+if(WIN32 AND EXISTS "${SPIKE_ZSTD_LIBRARY}")
+    add_library(spike_zstd UNKNOWN IMPORTED)
+    set_target_properties(spike_zstd PROPERTIES IMPORTED_LOCATION "${SPIKE_ZSTD_LIBRARY}")
+    set(SPIKE_ZSTD_TARGET spike_zstd)
+else()
+    find_package(zstd CONFIG REQUIRED)
+    if(TARGET zstd::libzstd_static)
+        set(SPIKE_ZSTD_TARGET zstd::libzstd_static)
+    elseif(TARGET libzstd_static)
+        set(SPIKE_ZSTD_TARGET libzstd_static)
+    elseif(TARGET zstd::zstd)
+        set(SPIKE_ZSTD_TARGET zstd::zstd)
+    else()
+        message(FATAL_ERROR "zstd was found but did not define a recognized target")
+    endif()
+endif()
+
+if(WIN32 AND EXISTS "${SPIKE_ZLIB_LIBRARY}")
+    add_library(spike_zlib UNKNOWN IMPORTED)
+    set_target_properties(spike_zlib PROPERTIES IMPORTED_LOCATION "${SPIKE_ZLIB_LIBRARY}")
+    set(SPIKE_ZLIB_TARGET spike_zlib)
+else()
+    find_package(zlib CONFIG REQUIRED)
+    if(TARGET zlib::zlib_static)
+        set(SPIKE_ZLIB_TARGET zlib::zlib_static)
+    elseif(TARGET zlib_static)
+        set(SPIKE_ZLIB_TARGET zlib_static)
+    elseif(TARGET zlib::zlib)
+        set(SPIKE_ZLIB_TARGET zlib::zlib)
+    else()
+        message(FATAL_ERROR "zlib was found but did not define a recognized target")
+    endif()
+endif()
+
+if(SPIKE_BUILD_LIBRARIES)
+    # Every immediate directory in include/spike is treated as a component.
+    file(GLOB _spike_component_dirs LIST_DIRECTORIES true
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/spike/*")
+    foreach(_component_dir IN LISTS _spike_component_dirs)
+        if(IS_DIRECTORY "${_component_dir}")
+            get_filename_component(_component "${_component_dir}" NAME)
+            set(_component_cmake "${CMAKE_CURRENT_SOURCE_DIR}/src/spike/${_component}/CMakeLists.txt")
+            if(EXISTS "${_component_cmake}")
+                add_subdirectory("src/spike/${_component}")
+            else()
+                message(STATUS "Skipping ${_component}: no src/spike/${_component}/CMakeLists.txt")
+            endif()
+        endif()
+    endforeach()
+endif()
+
+install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
