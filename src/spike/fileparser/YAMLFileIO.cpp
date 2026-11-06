@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/fileacc/YAMLFileIO.h"
+#include "spike/fileparser/YAMLFileIO.h"
 
 #include <exception>
 #include <filesystem>

@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/stl_aliases.h"
 #include "spike/nivector.h"
 
-#include "spike/fileacc/commons.hpp"
+#include "spike/fileparser/commons.hpp"
 
 namespace fileacc {
 	struct ContextZSTD;

@@ -26,7 +26,8 @@ target_include_directories(${_spike_target}
 set_target_properties(${_spike_target} PROPERTIES
     CXX_EXTENSIONS OFF
     POSITION_INDEPENDENT_CODE ON
-    EXPORT_NAME ${_spike_component})
+    EXPORT_NAME ${_spike_component}
+	FOLDER "SpikeLibraries")
 
 install(TARGETS ${_spike_target}
     EXPORT SpikeLibrariesTargets

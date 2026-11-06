@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(SpikeLibraries VERSION 1.0.0 LANGUAGES CXX)
 
-# set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 option(SPIKE_LIBRARIES_BUILD_ALL_LIBRARIES "Build the SpikeLibraries components" ON)
 
@@ -28,6 +28,7 @@ set(ZLIB_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(JSONCPP_WITH_TESTS OFF CACHE BOOL "" FORCE)
 set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_OBJECT_LIBS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 
 # YAML-CPP: Turn off tests and tools
@@ -67,6 +68,10 @@ FetchContent_Declare(
 )
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(yaml-cpp)
+
+set_target_properties(zlibstatic libzstd_static jsoncpp_static yaml-cpp PROPERTIES
+	FOLDER "ThirdParty"
+)
 
 if(SPIKE_LIBRARIES_BUILD_ALL_LIBRARIES)
     # Every immediate directory in include/spike is treated as a component.

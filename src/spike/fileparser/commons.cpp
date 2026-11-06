@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/fileacc/commons.hpp"
+#include "spike/fileparser/commons.hpp"
 
 #include <fstream>
 #include <string>
