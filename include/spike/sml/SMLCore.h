@@ -47,6 +47,9 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
+#include <algorithm>
+#include <initializer_list>
+
 #include "spike/def_aliases.h"
 
 #define SQUARE(x) ((x) * (x))
@@ -355,9 +358,7 @@ namespace sml {
 	template<typename... T>
 	std::common_type_t<T...> max(T... args) {
 		using CT = std::common_type_t<T...>;
-		CT result = {};
-		result = std::max({ static_cast<std::common_type_t<T...>>(args)... });
-		return result;
+		return (std::max)(std::initializer_list<CT>{ static_cast<CT>(args)... });
 	}
 
 	/// <summary>
@@ -368,9 +369,7 @@ namespace sml {
 	template<typename... T>
 	std::common_type_t<T...> min(T... args) {
 		using CT = std::common_type_t<T...>;
-		CT result = {};
-		result = std::min({ static_cast<std::common_type_t<T...>>(args)... });
-		return result;
+		return (std::min)(std::initializer_list<CT>{ static_cast<CT>(args)... });
 	}
 
 	/// <summary>
