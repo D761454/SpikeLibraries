@@ -57,13 +57,15 @@ File Summary:
 #include <cstring>
 #include <cassert>
 
-#include <spike/def_aliases.h>
+#include "spike/def_aliases.h"
 
 #include "Allocator.h"
 #include "PoolAllocator.h"
 
 #include "MemoryUser.h"
-#include "debug.hpp"
+#include "spike/debugl/debug.hpp"
+
+// need to edit allocatprs to allow self governing memory versions
 
 namespace memsys {
 

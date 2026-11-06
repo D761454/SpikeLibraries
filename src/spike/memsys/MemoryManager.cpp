@@ -41,8 +41,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cassert>
 #include <utility>
 
-#include <spike/def_aliases.h>
-#include <debug.hpp>
+#include "spike/def_aliases.h"
+#include "spike/debugl/debug.hpp"
 
 #include "StackAllocator.h"
 

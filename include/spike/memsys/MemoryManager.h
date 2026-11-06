@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 
-#include <spike/def_aliases.h>
+#include "spike/def_aliases.h"
 
 namespace memsys {
 	class StackAllocator;
@@ -54,7 +54,7 @@ namespace memsys {
 	/// </summary>
 	class MemoryManager {
 	private:
-		StackAllocator* _primaryAllocator;
+		StackAllocator* _allocator;
 		void* _globalMemoryBase;
 
 		std::vector<std::pair<const char*, void*>> _allocatedChunks;
@@ -78,7 +78,7 @@ namespace memsys {
 		usize GetTotalAllocatedMemory();
 	};
 
-	extern MemoryManager* CoreMemoryManager;
+	extern MemoryManager* coreMemoryManager;
 }
 
 #endif

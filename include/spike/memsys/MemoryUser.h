@@ -48,7 +48,7 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
-#include <spike/def_aliases.h>
+#include "spike/def_aliases.h"
 
 namespace memsys {
 	class MemoryManager;
@@ -59,7 +59,7 @@ namespace memsys {
 	/// </summary>
 	class MemoryUser {
 	private:
-		MemoryManager* p_memoryManager = nullptr;
+		MemoryManager* _memoryManager = nullptr;
 
 	public:
 		MemoryUser();

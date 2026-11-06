@@ -37,18 +37,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "MemoryUser.h"
 
-#include <spike/def_aliases.h>
+#include "spike/def_aliases.h"
 
 #include "MemoryManager.h"
 
 namespace memsys {
-	MemoryUser::MemoryUser() : p_memoryManager(CoreMemoryManager) {}
+	MemoryUser::MemoryUser() : _memoryManager(coreMemoryManager) {}
 
 	void* MemoryUser::RequestMemoryChunk(const usize size, const char* id) const {
-		return this->p_memoryManager->AllocateChunk(size, id);
+		return this->_memoryManager->AllocateChunk(size, id);
 	}
 
 	void MemoryUser::FreeMemoryChunk(void* ptr) const {
-		this->p_memoryManager->FreeChunk(ptr);
+		this->_memoryManager->FreeChunk(ptr);
 	}
 }

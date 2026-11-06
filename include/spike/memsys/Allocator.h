@@ -48,7 +48,8 @@ File Summary:
 */
 
 #include <cassert>
-#include <spike/def_aliases.h>
+
+#include "spike/def_aliases.h"
 
 namespace memsys {
 	static inline constexpr const usize AlignUp(usize value, usize alignment) {

@@ -51,7 +51,7 @@ File Summary:
 #include <cassert>
 #include <cstddef>
 
-#include <spike/def_aliases.h>
+#include "spike/def_aliases.h"
 
 namespace memsys {
 	/// <summary>
@@ -91,6 +91,8 @@ namespace memsys {
 
 		void* Allocate(usize size, usize alignment = alignof(std::max_align_t)) {
 			assert(size > 0 && "LinearAllocator: Memory allocation must have a size > 0!");
+			
+			// need to tweak to align forward 
 
 			if (_allocatedMemory + size > _memorySize) return nullptr;
 

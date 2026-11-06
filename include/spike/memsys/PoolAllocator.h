@@ -55,10 +55,10 @@ File Summary:
 #include <cassert>
 #include <array>
 
-#include <spike/def_aliases.h>
+#include "spike/def_aliases.h"
 
 #include "Allocator.h"
-#include "debug.hpp"
+#include "spike/debugl/debug.hpp"
 
 namespace memsys {
 

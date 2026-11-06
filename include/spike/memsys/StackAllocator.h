@@ -54,11 +54,11 @@ File Summary:
 #include <vector>
 #include <cstddef>
 
-#include <spike/def_aliases.h>
+#include "spike/def_aliases.h"
 
 #include "Allocator.h"
 
-#include "debug.hpp"
+#include "spike/debugl/debug.hpp"
 
 namespace memsys {
 	/// <summary>
