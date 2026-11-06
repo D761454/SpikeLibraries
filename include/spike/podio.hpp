@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __SPIKE_PODIO_HPP
 #define __SPIKE_PODIO_HPP
 
+#include <cstring>
 #include <type_traits>
 #include <fstream>
 

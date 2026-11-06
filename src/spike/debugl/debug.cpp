@@ -60,7 +60,12 @@ std::string Logger::GetTimeLog() {
 	time(&_pimpl->timestamp);
 	struct tm datetime;
 
+	
+#if defined(_WIN32)
 	localtime_s(&datetime, &_pimpl->timestamp);
+#elif defined(__linux__)
+	localtime_r(&_pimpl->timestamp, &datetime);
+#endif
 
 	int sec = datetime.tm_sec;
 
@@ -78,7 +83,11 @@ std::string Logger::GetTimeFile() {
 	time(&_pimpl->timestamp);
 	struct tm datetime;
 
+#if defined(_WIN32)
 	localtime_s(&datetime, &_pimpl->timestamp);
+#elif defined(__linux__)
+	localtime_r(&_pimpl->timestamp, &datetime);
+#endif
 
 	int sec = datetime.tm_sec;
 
