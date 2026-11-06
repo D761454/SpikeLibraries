@@ -44,7 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/sml/Vector3.h"
 #include "spike/sml/Quaternion.h"
 #include "spike/sml/FrustumPlane.h"
-#include "spike/sml/SMLcore.h"
+#include "spike/sml/SMLCore.h"
 
 namespace sml {
 	matrix4::MatrixRow matrix4::MatrixRow::zero = MatrixRow();

@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/sml/Vector3.h"
 #include "spike/sml/Matrix4.h"
-#include "spike/sml/SMLcore.h"
+#include "spike/sml/SMLCore.h"
 
 // uses ZYX Formula
 
