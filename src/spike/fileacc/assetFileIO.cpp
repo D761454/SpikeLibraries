@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "assetFileIO.h"
+#include "spike/fileacc/assetFileIO.h"
 
 #include <string.h>
 #include <fstream>
@@ -50,7 +50,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/error.hpp"
 #include "spike/debugl/debug.hpp"
 
-#include "commons.hpp"
+#include "spike/fileacc/commons.hpp"
 
 u32 fileacc::AssetFileIO::CalcCRC32(const u8* data, size_t len) {
 	return static_cast<u32>(crc32(0UL, reinterpret_cast<const Bytef*>(data), static_cast<uInt>(len)));

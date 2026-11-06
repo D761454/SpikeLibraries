@@ -52,18 +52,18 @@ namespace memsys {
 
 		assert(_globalMemoryBase != nullptr && "Failed to allocate global memory for MemoryManager!");
 
-		_primaryAllocator = new StackAllocator(_globalMemoryBase, kTotalSize);
-		assert(_primaryAllocator != nullptr && "Failed to create primary allocator for MemoryManager!");
+		_allocator = new StackAllocator(_globalMemoryBase, kTotalSize);
+		assert(_allocator != nullptr && "Failed to create primary allocator for MemoryManager!");
 
 		_allocatedChunks.clear();
 		_freeChunks.clear();
 	}
 
 	MemoryManager::~MemoryManager() {
-		_primaryAllocator->Reset();
+		_allocator->Reset();
 
-		delete _primaryAllocator;
-		_primaryAllocator = nullptr;
+		delete _allocator;
+		_allocator = nullptr;
 
 		free(_globalMemoryBase);
 		_globalMemoryBase = nullptr;
@@ -73,7 +73,7 @@ namespace memsys {
 	}
 
 	void* MemoryManager::AllocateChunk(const usize size, const char* id) {
-		void* chunk = _primaryAllocator->Allocate(size);
+		void* chunk = _allocator->Allocate(size);
 		_allocatedChunks.push_back(std::pair<const char*, void*>(id, chunk));
 
 		return chunk;
@@ -83,7 +83,7 @@ namespace memsys {
 		if (ptr == nullptr) return;
 
 		if (ptr == _allocatedChunks.back().second) {
-			_primaryAllocator->Free(ptr);
+			_allocator->Free(ptr);
 			_allocatedChunks.pop_back();
 
 			bool toFree = true;
@@ -92,7 +92,7 @@ namespace memsys {
 
 				for (void* freeChunk : _freeChunks) {
 					if (freeChunk == _allocatedChunks.back().second) {
-						_primaryAllocator->Free(freeChunk);
+						_allocator->Free(freeChunk);
 						_allocatedChunks.pop_back();
 						_freeChunks.remove(freeChunk);
 
@@ -108,8 +108,8 @@ namespace memsys {
 	}
 
 	void MemoryManager::LogMemoryUsage() const {
-		if (_primaryAllocator) {
-			Debug::Log("Current Memory Usage: {} / {}", _primaryAllocator->GetAllocatedMemory(), _primaryAllocator->GetMemorySize());
+		if (_allocator) {
+			Debug::Log("Current Memory Usage: {} / {}", _allocator->GetAllocatedMemory(), _allocator->GetMemorySize());
 		}
 		else Debug::LogError("WARNING! No primary allocator for memory manager!");
 	}
@@ -136,7 +136,7 @@ namespace memsys {
 	}
 
 	usize MemoryManager::GetTotalAllocatedMemory() {
-		return _primaryAllocator->GetAllocatedMemory();
+		return _allocator->GetAllocatedMemory();
 	}
 
 	MemoryManager* CoreMemoryManager = new MemoryManager();
