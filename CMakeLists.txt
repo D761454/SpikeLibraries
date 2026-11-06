@@ -13,11 +13,11 @@ include(GNUInstallDirs)
 # matching prebuilt archives are used where present; other platforms can use
 # their normal package-manager installations.
 if(WIN32)
-    set(SPIKE_YAMLCPP_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/src/spike_external/yaml-cpp.lib"
+    set(SPIKE_YAMLCPP_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/src/spike_external/windows32/yaml-cpp.lib"
         CACHE FILEPATH "Path to the yaml-cpp static library")
-    set(SPIKE_ZSTD_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/src/spike_external/zstd_static.lib"
+    set(SPIKE_ZSTD_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/src/spike_external/windows32/zstd_static.lib"
         CACHE FILEPATH "Path to the zstd static library")
-	set(SPIKE_ZLIB_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/src/spike_external/zs.lib"
+	set(SPIKE_ZLIB_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/src/spike_external/windows32/zs.lib"
         CACHE FILEPATH "Path to the zlib static library")
 endif()
 
