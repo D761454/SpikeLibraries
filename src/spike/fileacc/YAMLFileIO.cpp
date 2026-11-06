@@ -41,22 +41,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <limits>
 #include <optional>
 #include <string>
-
-#include "spike/warning.h"
-#include "spike/external/stduuid/uuid.h"
-#include "spike/external/yamlcpp/emitter.h"
-#include "spike/external/yamlcpp/node/node.h"
-#include "spike/external/yamlcpp/node/parse.h"
-#include "spike/external/yamlcpp/node/type.h"
-#include "spike/def_aliases.h"
-#include "spike/stl_aliases.h"
-
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_YAML_H
-#include "spike/external/yamlcpp/yaml.h"
-DISABLE_WARNING_POP
 #include <sstream>
 
+#include "spike_external/stduuid/uuid.h"
+#include "spike_external/yamlcpp/emitter.h"
+#include "spike_external/yamlcpp/node/node.h"
+#include "spike_external/yamlcpp/node/parse.h"
+#include "spike_external/yamlcpp/node/type.h"
+DISABLE_WARNING_PUSH
+DISABLE_WARNING_YAML_H
+#include "spike_external/yamlcpp/yaml.h"
+DISABLE_WARNING_POP
+
+#include "spike/warning.h"
+#include "spike/def_aliases.h"
+#include "spike/stl_aliases.h"
 #include "spike/error.hpp"
 #include "spike/debugl/debug.hpp"
 
