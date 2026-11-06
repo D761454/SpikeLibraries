@@ -36,8 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __SPIKE_ASSET_FILE_PARSER_COMMONS
 #define __SPIKE_ASSET_FILE_PARSER_COMMONS
 
-#include <list>
-
 #include "spike/def_aliases.h"
 #include "spike/podio.hpp"
 #include "spike/stl_aliases.h"
@@ -98,10 +96,8 @@ namespace fileacc {
 	}
 
 	bool check_file(const string& path, const u32 expectedMagic, const u32 expectedVer) noexcept;
-	bool check_file(const filepath& path, const u32 expectedMagic, const u32 expectedVer) noexcept;
 
 	bool check_file(const string& path, const FileCheck& expectedHeader) noexcept;
-	bool check_file(const filepath& path, const FileCheck& expectedHeader) noexcept;
 
 	struct CompressedDataHeader {
 		CompressionMethod compressionMethod;

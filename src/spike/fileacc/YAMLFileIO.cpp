@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "YAMLFileIO.h"
+#include "spike/fileacc/YAMLFileIO.h"
 
 #include <exception>
 #include <filesystem>
@@ -48,12 +48,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike_external/yamlcpp/node/node.h"
 #include "spike_external/yamlcpp/node/parse.h"
 #include "spike_external/yamlcpp/node/type.h"
+
+#include "spike/warning.h"
+
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_YAML_H
 #include "spike_external/yamlcpp/yaml.h"
 DISABLE_WARNING_POP
 
-#include "spike/warning.h"
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 #include "spike/error.hpp"
@@ -65,17 +67,17 @@ DISABLE_WARNING_UNUSED_VARIABLE
 
 namespace YAML {
 	template<>
-	struct convert<uuid> {
-		static Node encode(const uuid& rhs) {
+	struct convert<uuids::uuid> {
+		static Node encode(const uuids::uuid& rhs) {
 			return Node(uuids::to_string(rhs));
 		}
 
-		static bool decode(const Node& node, uuid& rhs) {
+		static bool decode(const Node& node, uuids::uuid& rhs) {
 			if (!node.IsScalar()) return false;
 
 			try {
 				const auto s = node.as<string>();
-				if (auto maybe = uuid::from_string(s)) {
+				if (auto maybe = uuids::uuid::from_string(s)) {
 					rhs = *maybe;
 					return true;
 				}
@@ -101,7 +103,7 @@ namespace {
 		}
 
 		if (d.Isuuid()) {
-			return YAML::Node(*d.Get<uuid>());
+			return YAML::Node(*d.Get<uuids::uuid>());
 		}
 
 		if (d.IsSequence()) {
@@ -136,7 +138,7 @@ namespace {
 	}
 
 	fileacc::YAMLData ParseScalarStringToYAMLData(const string& s) {
-		if (auto maybe = uuid::from_string(s)) {
+		if (auto maybe = uuids::uuid::from_string(s)) {
 			return fileacc::YAMLData(*maybe);
 		}
 
@@ -235,26 +237,26 @@ errlib::Error fileacc::YAMLFileIO::SaveToFile(const string& filePath, const YAML
 
 		if (!emitter.good()) {
 			Debug::LogError("YAMLFileIO::SaveToFile - emitter error: {}", emitter.GetLastError());
-			return errlib::Error::FromCode(errlib::ErrorCode::errorCode_IOerror, emitter.GetLastError());
+			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, emitter.GetLastError());
 		}
 
 		std::ofstream ofs(filePath, std::ios::binary);
 		if (!ofs) {
 			Debug::LogError("YAMLFileIO::SaveToFile - failed to open: {}", filePath);
-			return errlib::Error::FromCode(errlib::ErrorCode::errorCode_IOerror, filePath);
+			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, filePath);
 		}
 
 		ofs << emitter.c_str();
 		ofs.close();
-		return errlib::ErrorCode{};
+		return errlib::ErrorCode_{};
 	}
 	catch (const std::exception& ex) {
 		Debug::LogError("YAMLFileIO::SaveToFile - exception writing {}: {}", filePath, ex.what());
-		return errlib::Error::FromCode(errlib::ErrorCode::errorCode_IOerror, string(ex.what()));
+		return errlib::Error::FromCode(errlib::ErrorCode_IOerror, string(ex.what()));
 	}
 	catch (...) {
 		Debug::LogError("YAMLFileIO::SaveToFile - unknown exception writing {}", filePath);
-		return errlib::Error::FromCode(errlib::ErrorCode::errorCode_unknown, filePath);
+		return errlib::Error::FromCode(errlib::ErrorCode_unknown, filePath);
 	}
 }
 

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "debug.hpp"
+#include "spike/debugl/debug.hpp"
 
 #include <fstream>
 #include <filesystem>

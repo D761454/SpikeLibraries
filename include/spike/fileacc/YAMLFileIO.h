@@ -43,11 +43,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 
+#include "spike_external/stduuid/uuid.h"
+
 #include "spike/def_aliases.h"
 #include "spike/error.hpp"
 #include "spike/stl_aliases.h"
-
-#include "commons.hpp"
 
 namespace YAML { class Node; } // may not need?
 
@@ -55,7 +55,7 @@ namespace fileacc {
 	class YAMLData {
 		using Sequence = std::vector<YAMLData>;
 		using Map = std::unordered_map<string, YAMLData>;
-		using Variable = std::variant<string, i32, i64, u32, u64, f64, uuid, Sequence, Map>;
+		using Variable = std::variant<string, i32, i64, u32, u64, f64, uuids::uuid, Sequence, Map>;
 
 		Variable value;
 
@@ -71,7 +71,7 @@ namespace fileacc {
 		YAMLData(u64 v) : value(v) {}
 		YAMLData(f32 v) : value(v) {}
 		YAMLData(f64 v) : value(v) {}
-		YAMLData(uuid v) : value(v) {}
+		YAMLData(uuids::uuid v) : value(v) {}
 
 		bool IsString()     const noexcept { return std::holds_alternative<string>(value); }
 		bool IsI32()        const noexcept { return std::holds_alternative<i32>(value); }
@@ -79,7 +79,7 @@ namespace fileacc {
 		bool IsU32()        const noexcept { return std::holds_alternative<u32>(value); }
 		bool IsU64()        const noexcept { return std::holds_alternative<u64>(value); }
 		bool IsF64()        const noexcept { return std::holds_alternative<f64>(value); }
-		bool Isuuid()       const noexcept { return std::holds_alternative<uuid>(value); }
+		bool Isuuid()       const noexcept { return std::holds_alternative<uuids::uuid>(value); }
 		bool IsSequence()   const noexcept { return std::holds_alternative<Sequence>(value); }
 		bool IsMap()        const noexcept { return std::holds_alternative<Map>(value); }
 
