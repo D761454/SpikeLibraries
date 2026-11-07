@@ -53,11 +53,9 @@ namespace assimp {
 	/*return type for an imported asset file*/
 	struct Collection;
 
-	/*
-	interface for importing assets
-	Note: Imported assets are not parsed for the engine specifically at current,
-	merely returning an assimp scene / mesh / textures to then be parsed into the engines current mesh implementation
-	*/
+	/// <summary>
+	/// Importer object used for importing assets, claiming ownership of an imported scene
+	/// </summary>
 	class Importer {
 	private:
 
