@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef UUID_SYSTEM_GENERATOR
 #define UUID_SYSTEM_GENERATOR
 #endif
-#include "spike_external/stduuid/uuid.h"
+#include "external/stduuid/uuid.h"
 
 /*
 ----------------------------------------------------------------------

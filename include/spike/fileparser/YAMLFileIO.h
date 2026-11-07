@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 
-#include "spike_external/stduuid/uuid.h"
+#include "external/stduuid/uuid.h"
 
 #include "spike/def_aliases.h"
 #include "spike/error.hpp"

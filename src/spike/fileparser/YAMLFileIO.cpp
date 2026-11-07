@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <sstream>
 
-#include "spike_external/stduuid/uuid.h"
+#include "external/stduuid/uuid.h"
 #include <yaml-cpp/emitter.h>
 #include <yaml-cpp/node/node.h>
 #include <yaml-cpp/node/parse.h>
