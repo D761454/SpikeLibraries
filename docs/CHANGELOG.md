@@ -1,0 +1,25 @@
+## SpikeLibraries v1.0.0
+
+Reading this change-log is the recommended way to keep up to date with each libraries capabilities alongside the addition of any new libraries.
+
+Please refer to the [Wiki](https://github.com/D761454/SpikeLibraries/wiki) for details on using each library within your projects.
+
+## Initial Release State
+
+The initial release of the Spike Libraries contains:
+
+- Type define headers
+- flag_set type for space optimised flags
+- Timer functions for profiling or time-step calculations
+- POD write/read helpers for efficient file read/write
+- nivector type for fast resize without default memory initialization
+- error type for handling
+- maths library for vector, quaternion, matrix and extended maths for 3D applications
+- memory management for optimised memory allocation
+- debug logging for simple runtime logging
+- file parser helper for YAML read/write, including helpers for binary string read/write and compression/decompression (likely to be split up or renamed)
+- asset importer for simplified game asset imports, including shaders (under a specific format), textures, and meshes (obj, gltf/glb and fbx)
+
+Note that GitHub are now clamping release notes sometimes really badly, click on a header/title to read full notes.
+
+**Full Changelog**: https://github.com/D761454/SpikeLibraries/commits/v1.0.0
