@@ -4,8 +4,6 @@ on:
   push:
     branches: [ "main" ]
     tags: [ "v*" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
@@ -15,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # --- Linux x64 ---
+          # Linux x64
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
@@ -27,27 +25,27 @@ jobs:
             build_type: Release
             archive_name: SpikeLibraries-Linux-Clang.tar.gz
 
-          # --- Linux ARM64 ---
+          # Linux ARM64
           - os: ubuntu-24.04-arm
             c_compiler: gcc
             cpp_compiler: g++
             build_type: Release
             archive_name: SpikeLibraries-Linux-ARM64.tar.gz
 
-          # --- Windows x64 ---
+          # Windows x64
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
             build_type: Release
             archive_name: SpikeLibraries-Windows-x64.zip
 
-          # --- macOS Apple Silicon (ARM64) ---
+          # macOS Apple Silicon (ARM64)
           - os: macos-15
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
             archive_name: SpikeLibraries-macOS-15-arm64.tar.gz
-        
+          
           - os: macos-26
             c_compiler: clang
             cpp_compiler: clang++
@@ -58,7 +56,7 @@ jobs:
     - uses: actions/checkout@v4
 
     # Install ccache on Unix platforms
-    - name: Install ccache (Linux/macOS)
+    - name: Install ccache (Unix)
       if: runner.os != 'Windows'
       run: |
         if command -v apt-get &> /dev/null; then
@@ -66,7 +64,7 @@ jobs:
         elif command -v brew &> /dev/null; then
           brew install ccache
         fi
-        
+
     # Install ccache on Windows via Chocolatey
     - name: Install ccache (Windows)
       if: runner.os == 'Windows'
@@ -89,7 +87,6 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    # Configure CMake with ccache compiler launchers
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
@@ -106,7 +103,7 @@ jobs:
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       run: ctest --build-config ${{ matrix.build_type }}
-      
+
     # Package Binaries into Archives
     - name: Package Binaries (Unix tar.gz)
       if: runner.os != 'Windows'
@@ -121,54 +118,51 @@ jobs:
         if (-Not (Test-Path $sourceDir)) { $sourceDir = "${{ steps.strings.outputs.build-output-dir }}" }
         Compress-Archive -Path "$sourceDir\*" -DestinationPath "${{ matrix.archive_name }}"
 
-    # Upload Artifacts
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
         name: artifact-${{ matrix.archive_name }}
         path: ${{ matrix.archive_name }}
-        
-    # Source Code Packaging Job
-    source-package:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v4
 
-        - name: Generate Source Archives
-          run: |
-            TAG_NAME=${{ github.ref_name }}
-            git archive --format=tar.gz --prefix=SpikeLibraries-${TAG_NAME}/ HEAD > SpikeLibraries-source-${TAG_NAME}.tar.gz
-            git archive --format=zip --prefix=SpikeLibraries-${TAG_NAME}/ HEAD > SpikeLibraries-source-${TAG_NAME}.zip
+  # Source Code Packaging Job
+  source-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-        - name: Upload Source Artifacts
-          uses: actions/upload-artifact@v4
-          with:
-            name: source-archives
-            path: SpikeLibraries-source-*
+      - name: Generate Source Archives
+        run: |
+          TAG_NAME=${{ github.ref_name }}
+          git archive --format=tar.gz --prefix=SpikeLibraries-${TAG_NAME}/ HEAD > SpikeLibraries-source-${TAG_NAME}.tar.gz
+          git archive --format=zip --prefix=SpikeLibraries-${TAG_NAME}/ HEAD > SpikeLibraries-source-${TAG_NAME}.zip
 
-    # Automated GitHub Release Job
-    release:
-      needs: [build, source-package]
-      runs-on: ubuntu-latest
-      if: startsWith(github.ref, 'refs/tags/v')
-      steps:
-        - name: Checkout Repository
-          uses: actions/checkout@v4
-      
-        - name: Download All Artifacts
-          uses: actions/download-artifact@v4
-          with:
-            path: downloaded-artifacts
-            merge-multiple: true
+      - name: Upload Source Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-archives
+          path: SpikeLibraries-source-*
 
-        - name: Create Release and Upload Assets
-          uses: softprops/action-gh-release@v2
-          with:
-            files: downloaded-artifacts/*
-            body_path: docs/CHANGELOG.md
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            
+  # Automated GitHub Release Job
+  release:
+    needs: [build, source-package]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
+          merge-multiple: true
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: downloaded-artifacts/*
+          body_path: docs/CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 # to trigger a release - need to push new version tag
 # git tag v1.0.0
 # git push origin v1.0.0
