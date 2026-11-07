@@ -1,7 +1,12 @@
+max-files-changed: 100
+
 documentation:
-- any:
-  - changed-files:
-    - any-glob-to-any-file: docs/**
+- changed-files:
+  - any-glob-to-any-file: 'docs/**'
+    
+documentation:
+- changed-files:
+  - any-glob-to-any-file: '**/*.md'
   
 enhancement:
  - head-branch: ['^feature', 'feature']
@@ -15,34 +20,34 @@ confirmed:
 memorysystem:
 - any:
   - changed-files:
-    - any-glob-to-any-file: include/spike/memsys/*
-    - any-glob-to-any-file: src/spike/memsys/*
+    - any-glob-to-any-file: 'include/spike/memsys/*'
+    - any-glob-to-any-file: 'src/spike/memsys/*'
   
 fileparser:
 - any:
   - changed-files:
-    - any-glob-to-any-file: include/spike/fileparser/*
-    - any-glob-to-any-file: src/spike/fileparser/*
+    - any-glob-to-any-file: 'include/spike/fileparser/*'
+    - any-glob-to-any-file: 'src/spike/fileparser/*'
   
 debugger:
 - any:
   - changed-files:
-    - any-glob-to-any-file: include/spike/debugl/*
-    - any-glob-to-any-file: src/spike/debugl/*
+    - any-glob-to-any-file: 'include/spike/debugl/*'
+    - any-glob-to-any-file: 'src/spike/debugl/*'
   
 maths:
 - any:
   - changed-files:
-    - any-glob-to-any-file: include/spike/sml/*
-    - any-glob-to-any-file: src/spike/sml/*
+    - any-glob-to-any-file: 'include/spike/sml/*'
+    - any-glob-to-any-file: 'src/spike/sml/*'
   
 assetimporter:
 - any:
   - changed-files:
-    - any-glob-to-any-file: include/spike/assetimp/*
-    - any-glob-to-any-file: src/spike/assetimp/*
+    - any-glob-to-any-file: 'include/spike/assetimp/*'
+    - any-glob-to-any-file: 'src/spike/assetimp/*'
   
 newlibrary:
 - any:
   - changed-files:
-    - any-glob-to-any-file: include/spike/*
+    - any-glob-to-any-file: 'include/spike/*'
