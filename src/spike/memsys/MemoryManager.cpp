@@ -35,7 +35,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/memsys/MemoryManager.h"
 
+#if defined (_WIN32) || defined(__linux__)
 #include <malloc.h>
+#elif defined(__APPLE__)
+#include <stdlib.h>
+#endif
 #include <cassert>
 #include <utility>
 

@@ -46,6 +46,11 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
+#if defined (_WIN32) || defined(__linux__)
+#include <malloc.h>
+#elif defined(__APPLE__)
+#include <stdlib.h>
+#endif
 #include <cassert>
 #include <cstddef>
 
