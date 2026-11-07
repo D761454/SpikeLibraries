@@ -12,7 +12,7 @@ option(SPIKE_LIBRARIES_BUILD_ASSET_IMPORTER "Build the Asset Importer library" O
 option(SPIKE_LIBRARIES_BUILD_FILE_PARSER "Build the File System library" ON)
 
 if(NOT DEFINED ENV{FBXSDK_ROOT})
-    message(FATAL_ERROR "FBXSDK_ROOT environment variable not set!\n"
+    message(WARNING "FBXSDK_ROOT environment variable not set!\n"
 		"Please download the Autodesk FBX SDK and set FBXSDK_ROOT to point to its root directory.")
 	set(SPIKE_LIBRARIES_BUILD_ALL_LIBRARIES OFF CACHE BOOL "" FORCE)
 	set(SPIKE_LIBRARIES_BUILD_ASSET_IMPORTER OFF CACHE BOOL "" FORCE)
@@ -41,7 +41,7 @@ else()
 			INTERFACE_LINK_LIBRARIES "pthread;dl;xml2;z"
 		)
 	else()
-		message(FATAL_ERROR "Unsupported platform for FBX SDK. Asset importer will not be built.")
+		message(WARNING "Unsupported platform for FBX SDK. Asset importer will not be built.")
 		set(SPIKE_LIBRARIES_BUILD_ALL_LIBRARIES OFF CACHE BOOL "" FORCE)
 		set(SPIKE_LIBRARIES_BUILD_ASSET_IMPORTER OFF CACHE BOOL "" FORCE)
 	endif()
