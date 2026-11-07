@@ -2,7 +2,6 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ "main" ]
     tags: [ "v*" ]
 
 jobs:
@@ -108,15 +107,22 @@ jobs:
     - name: Package Binaries (Unix tar.gz)
       if: runner.os != 'Windows'
       run: |
-        tar -czvf ${{ matrix.archive_name }} -C ${{ steps.strings.outputs.build-output-dir }} .
+        tar --exclude='./_deps' -czvf ${{ matrix.archive_name }} -C ${{ steps.strings.outputs.build-output-dir }} .
 
     - name: Package Binaries (Windows .zip)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $sourceDir = "${{ steps.strings.outputs.build-output-dir }}/${{ matrix.build_type }}"
-        if (-Not (Test-Path $sourceDir)) { $sourceDir = "${{ steps.strings.outputs.build-output-dir }}" }
-        Compress-Archive -Path "$sourceDir\*" -DestinationPath "${{ matrix.archive_name }}"
+        $buildDir = "${{ steps.strings.outputs.build-output-dir }}"
+        $stageDir = "staging-binaries"
+        New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
+        
+        Get-ChildItem -Path $buildDir -Exclude "_deps" | Copy-Item -Destination $stageDir -Recurse -Force
+        
+        $targetDir = "$stageDir\${{ matrix.build_type }}"
+        if (-Not (Test-Path $targetDir)) { $targetDir = $stageDir }
+        
+        Compress-Archive -Path "$targetDir\*" -DestinationPath "${{ matrix.archive_name }}" -Force
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
@@ -124,28 +130,12 @@ jobs:
         name: artifact-${{ matrix.archive_name }}
         path: ${{ matrix.archive_name }}
 
-  # Source Code Packaging Job
-  source-package:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Generate Source Archives
-        run: |
-          TAG_NAME=${{ github.ref_name }}
-          git archive --format=tar.gz --prefix=SpikeLibraries-${TAG_NAME}/ HEAD > SpikeLibraries-source-${TAG_NAME}.tar.gz
-          git archive --format=zip --prefix=SpikeLibraries-${TAG_NAME}/ HEAD > SpikeLibraries-source-${TAG_NAME}.zip
-
-      - name: Upload Source Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: source-archives
-          path: SpikeLibraries-source-*
-
   # Automated GitHub Release Job
   release:
-    needs: [build, source-package]
+    needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -163,6 +153,10 @@ jobs:
           body_path: docs/CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
 # to trigger a release - need to push new version tag
 # git tag v1.0.0
 # git push origin v1.0.0
+
+# git push --delete origin v1.0.0
+# git tag --delete v1.0.0
