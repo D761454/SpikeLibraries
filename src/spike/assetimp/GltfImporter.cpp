@@ -75,7 +75,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/debugl/debug.hpp"
 
 DISABLE_WARNING_PUSH
-DISABLE_WARNING(4099)
+DISABLE_WARNING_PDB_NOT_FOUND
 #include <json/json.h>
 #include <json/reader.h>
 #include <json/value.h>

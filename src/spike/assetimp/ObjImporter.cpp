@@ -90,9 +90,9 @@ namespace {
 }
 
 namespace std {
-	template<> struct std::hash<ObjTuple> {
+	template<> struct hash<ObjTuple> {
 		size_t operator()(const ObjTuple& t) const {
-			return std::hash<u32>()(t.posIdx) ^ (std::hash<u32>()(t.tcIdx) << 1) ^ (std::hash<u32>()(t.normIdx) << 2);
+			return hash<u32>()(t.posIdx) ^ (hash<u32>()(t.tcIdx) << 1) ^ (hash<u32>()(t.normIdx) << 2);
 		}
 	};
 }
