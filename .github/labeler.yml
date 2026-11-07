@@ -1,0 +1,43 @@
+max-files-changed: 100
+
+documentation:
+- changed-files:
+  - any-glob-to-any-file: docs/**
+  
+enhancement:
+ - head-branch: ['^feature', 'feature']
+ 
+help-wanted:
+ - head-branch: ['^help', 'help']
+ 
+confirmed:
+ - base-branch: 'main'
+ 
+memorysystem:
+- changed-files:
+  - any-glob-to-any-file: include/spike/memsys/*
+  - any-glob-to-any-file: src/spike/memsys/*
+  
+fileparser:
+- changed-files:
+  - any-glob-to-any-file: include/spike/fileparser/*
+  - any-glob-to-any-file: src/spike/fileparser/*
+  
+debugger:
+- changed-files:
+  - any-glob-to-any-file: include/spike/debugl/*
+  - any-glob-to-any-file: src/spike/debugl/*
+  
+maths:
+- changed-files:
+  - any-glob-to-any-file: include/spike/sml/*
+  - any-glob-to-any-file: src/spike/sml/*
+  
+assetimporter:
+- changed-files:
+  - any-glob-to-any-file: include/spike/assetimp/*
+  - any-glob-to-any-file: src/spike/assetimp/*
+  
+newlibrary:
+- changed-files:
+  - any-glob-to-any-file: include/spike/*
