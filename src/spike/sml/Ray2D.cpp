@@ -33,12 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/sml/Ray2D.h"
+#include "spike/sml/ray2D.h"
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-#include "spike/sml/Vector2.h"
+#include "spike/sml/vector2.h"
 
 namespace sml {
 	vector2 Ray2D::GetPoint(f32 dist) const noexcept {

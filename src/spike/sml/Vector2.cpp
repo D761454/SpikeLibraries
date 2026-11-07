@@ -33,15 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/sml/Vector2.h"
+#include "spike/sml/vector2.h"
 
 #include <string>
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-#include "spike/sml/Vector3.h"
-#include "spike/sml/SMLCore.h"
+#include "spike/sml/vector3.h"
+#include "spike/sml/sml_core.h"
 
 namespace sml {
 	const vector2 vector2::up = vector2(0.0f, 1.0f);

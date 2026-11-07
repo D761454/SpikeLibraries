@@ -50,11 +50,10 @@ File Summary:
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-#include "Vector3.h"
+#include "spike/sml/vector3.h"
+#include "spike/sml/ray.h"
 
 namespace sml {
-	struct Ray;
-
 	/// <summary>
 	/// Axis-aligned bounding box defined by center and size.
 	/// </summary>

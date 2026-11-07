@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/sml/Matrix4.h"
+#include "spike/sml/matrix4.h"
 
 #include <cassert>
 #include <string>
@@ -41,10 +41,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-#include "spike/sml/Vector3.h"
-#include "spike/sml/Quaternion.h"
-#include "spike/sml/FrustumPlane.h"
-#include "spike/sml/SMLCore.h"
+#include "spike/sml/vector3.h"
+#include "spike/sml/quaternion.h"
+#include "spike/sml/frustumplane.h"
+#include "spike/sml/sml_core.h"
 
 namespace sml {
 	matrix4::MatrixRow matrix4::MatrixRow::zero = MatrixRow();

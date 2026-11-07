@@ -33,13 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/sml/BoundingSphere.h"
+#include "spike/sml/boundingsphere.h"
 
 #include <string>
 
 #include "spike/stl_aliases.h"
 
-#include "spike/sml/Vector3.h"
+#include "spike/sml/vector3.h"
 
 string sml::BoundingSphere::ToString() const noexcept {
 	return "{Position: " + position.ToString() + ", Radius: " + std::to_string(radius) + "}";

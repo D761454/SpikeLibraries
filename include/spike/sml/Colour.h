@@ -51,10 +51,10 @@ File Summary:
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-namespace sml {
-	struct vector3;
-	struct vector4;
+#include "spike/sml/vector3.h"
+#include "spike/sml/vector4.h"
 
+namespace sml {
 	struct colour96;
 	struct colour128;
 

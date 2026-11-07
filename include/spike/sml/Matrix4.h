@@ -52,11 +52,11 @@ File Summary:
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-namespace sml {
-	struct vector3;
-	struct quaternion;
-	struct FrustumPlane;
+#include "spike/sml/vector3.h"
+#include "spike/sml/quaternion.h"
+#include "spike/sml/frustumplane.h"
 
+namespace sml {
 	/// <summary>
 	/// A standard 4x4 transformation matrix.
 	/// Column-major notation is used as in OpenGL: the internal storage is an array of 4 columns.

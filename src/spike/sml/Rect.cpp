@@ -33,14 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/sml/Rect.h"
+#include "spike/sml/rect.h"
 
 #include <string>
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-#include "spike/sml/Vector2.h"
+#include "spike/sml/vector2.h"
 
 namespace sml {
 	Rect Rect::zero = {};

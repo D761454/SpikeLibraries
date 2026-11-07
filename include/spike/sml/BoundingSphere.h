@@ -49,14 +49,13 @@ File Summary:
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-#include "Vector3.h"
+#include "spike/sml/vector3.h"
 
 namespace sml {
 	/// <summary>
 	/// Bounding sphere defined by position and radius.
 	/// </summary>
-	struct BoundingSphere
-	{
+	struct BoundingSphere {
 		f32	radius;
 		sml::vector3 position;
 

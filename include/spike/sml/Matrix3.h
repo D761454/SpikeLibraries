@@ -52,9 +52,9 @@ File Summary:
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
-namespace sml {
-	struct vector3;
+#include "spike/sml/vector3.h"
 
+namespace sml {
 	/// <summary>
 	/// A standard 3x3 matrix.
 	/// </summary>

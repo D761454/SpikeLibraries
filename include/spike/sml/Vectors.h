@@ -11,8 +11,8 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
-#include "spike/sml/Vector2.h"
-#include "spike/sml/Vector3.h"
-#include "spike/sml/Vector4.h"
+#include "spike/sml/vector2.h"
+#include "spike/sml/vector3.h"
+#include "spike/sml/vector4.h"
 
 #endif
