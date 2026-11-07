@@ -3,7 +3,7 @@ SpikeLibraries: Simple libraries for performing many common tasks within game de
 
 ## Foreword
 
-The asset importer library requires the use of the fbx sdks to build and work. As such, you should download the [fbx sdk]() and then create an environment variable under the name FBXSDK_ROOT pointing to the installation directory. Once this is done, the assetimporter library can be built succesfully.
+The asset importer library requires the use of the fbx sdks to build and work. As such, you should download the [fbx sdk](https://aps.autodesk.com/developer/overview/fbx-sdk) and then create an environment variable under the name FBXSDK_ROOT pointing to the installation directory. Once this is done, the assetimporter library can be built succesfully.
 
 ## Summary
 
