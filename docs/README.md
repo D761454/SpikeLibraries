@@ -1,6 +1,10 @@
 # SpikeLibraries
 SpikeLibraries: Simple libraries for performing many common tasks within game development, from maths, debug logging, and memory management. Built for C++ with minimal dependencies (excluding the asset importer).
 
+## Foreword
+
+The asset importer library requires the use of the fbx sdks to build and work. As such, you should download the [fbx sdk]() and then create an environment variable under the name FBXSDK_ROOT pointing to the installation directory. Once this is done, the assetimporter library can be built succesfully.
+
 ## Summary
 
 SpikeLibraries are simple extensible libraries for C++ that may be used across a variety of applications. The libraries are all self contained (no external dependencies, apart from other spike libraries (usually header only libraries)), portable and easy to use.
