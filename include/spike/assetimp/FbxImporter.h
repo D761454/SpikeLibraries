@@ -36,6 +36,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __ASSET_IMP_FBX_IMPORTER_HPP
 #define __ASSET_IMP_FBX_IMPORTER_HPP
 
+#if defined(_USING_FBX)
+
 #include "spike/stl_aliases.h"
 
 #include "spike/assetimp/BaseImporter.h"
@@ -52,5 +54,7 @@ namespace assimp {
 		string sourcePath;
 	};
 }
+
+#endif
 
 #endif

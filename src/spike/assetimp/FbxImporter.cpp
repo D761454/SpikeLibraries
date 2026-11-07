@@ -1,3 +1,5 @@
+#if defined(_USING_FBX)
+
 #include "spike/assetimp/FbxImporter.h"
 
 #include <string.h>
@@ -293,3 +295,5 @@ errlib::Error assimp::FbxImporter::InternReadFile(const string& file, Collection
 
 	return errlib::Error{};
 }
+
+#endif

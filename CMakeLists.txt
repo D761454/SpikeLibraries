@@ -14,8 +14,8 @@ option(SPIKE_LIBRARIES_BUILD_FILE_PARSER "Build the File System library" ON)
 if(NOT DEFINED ENV{FBXSDK_ROOT})
     message(WARNING "FBXSDK_ROOT environment variable not set!\n"
 		"Please download the Autodesk FBX SDK and set FBXSDK_ROOT to point to its root directory.")
-	set(SPIKE_LIBRARIES_BUILD_ALL_LIBRARIES OFF CACHE BOOL "" FORCE)
-	set(SPIKE_LIBRARIES_BUILD_ASSET_IMPORTER OFF CACHE BOOL "" FORCE)
+	message(WARNING "The Asset importer will not be built with the fbx importer.")
+	set(_ASSETIMP_FBX OFF)
 else()
 	set(FBXSDK_ROOT $ENV{FBXSDK_ROOT})
 	file(TO_CMAKE_PATH "${FBXSDK_ROOT}" FBXSDK_ROOT)
@@ -31,6 +31,7 @@ else()
 		set_target_properties(fbx::sdk PROPERTIES
 			INTERFACE_LINK_LIBRARIES "wininet;ksuser;dsound"
 		)
+		set(_ASSETIMP_FBX ON)
 	elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		set_target_properties(fbx::sdk PROPERTIES
 			IMPORTED_LOCATION "${FBXSDK_ROOT}/lib/gcc/x64/release/libfbxsdk.a"
@@ -40,12 +41,14 @@ else()
 		set_target_properties(fbx::sdk PROPERTIES
 			INTERFACE_LINK_LIBRARIES "pthread;dl;xml2;z"
 		)
+		set(_ASSETIMP_FBX ON)
 	else()
-		message(WARNING "Unsupported platform for FBX SDK. Asset importer will not be built.")
-		set(SPIKE_LIBRARIES_BUILD_ALL_LIBRARIES OFF CACHE BOOL "" FORCE)
-		set(SPIKE_LIBRARIES_BUILD_ASSET_IMPORTER OFF CACHE BOOL "" FORCE)
+		message(WARNING "Unsupported platform for FBX SDK. Asset importer will not be built with the fbx importer.")
+		set(_ASSETIMP_FBX OFF)
 	endif()
 endif()
+
+set(_ASSETIMP_FBX OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
