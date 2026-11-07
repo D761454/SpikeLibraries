@@ -82,11 +82,6 @@ namespace assimp {
 
 		inline const usize GetImporterCount() const { return importers.size(); }
 
-		BaseImporter* GetImporter(usize idx) const { return importers.at(idx); }
-		BaseImporter* GetImporter(const string& extn) const;
-
-		const usize GetImporterIndex(const string& extn) const;
-
 	protected:
 		std::vector<BaseImporter*> importers;
 		Collection* scene;
