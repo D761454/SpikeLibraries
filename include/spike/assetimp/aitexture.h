@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/stl_aliases.h"
 
 namespace assimp {
-	enum CompressionFormats_ : const u8 {
+	enum CompressionFormats_ : u8 {
 		/*4 bits/pixel - no alpha or 1bit alpha*/
 		CompressionFormats_BC1 = 0,
 		/*4 bits/pixel - no alpha or 1bit alpha*/

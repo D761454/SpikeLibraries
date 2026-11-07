@@ -73,10 +73,12 @@ assimp::BTexImporter::~BTexImporter() {}
 //	stbi_image_free(ptr);
 //}
 
+template<>
 void assimp::STBImageDeleter<u8>::release(void* ptr) const {
 	stbi_image_free(ptr);
 }
 
+template<>
 void assimp::STBImageDeleter<f32>::release(void* ptr) const {
 	stbi_image_free(ptr);
 }
