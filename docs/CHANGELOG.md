@@ -20,6 +20,14 @@ The initial release of the Spike Libraries contains:
 - file parser helper for YAML read/write, including helpers for binary string read/write and compression/decompression (likely to be split up or renamed)
 - asset importer for simplified game asset imports, including shaders (under a specific format), textures, and meshes (obj, gltf/glb and fbx)
 
+## Binaries Info
+
+The pre-built binaries do not have the fbx importer built into the asset importer library. 
+This is because Autodesk's license agreement prevents direct automated unauthenticated hotlinking of their installers from scripts. 
+If you need the fbx importer, you can download the [fbx sdks](https://aps.autodesk.com/developer/overview/fbx-sdk) and create an 
+FBXSDK_ROOT environment variable pointing to the sdks directory. Doing so will allow cmake to locate the sdks and generate the 
+asset importer project with the working fbx importer.
+
 Note that GitHub are now clamping release notes sometimes really badly, click on a header/title to read full notes.
 
 **Full Changelog**: https://github.com/D761454/SpikeLibraries/commits/v1.0.0
