@@ -1,8 +1,28 @@
-name: CMake on multiple platforms generating release
+name: CMake on multiple platforms
 
 on:
   push:
-    tags: [ "v*" ]
+    branches: [ "main" ]
+    tags:
+      - 'v*'
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - '.github/workflows/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -134,6 +154,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     steps:
@@ -151,6 +172,8 @@ jobs:
         with:
           files: downloaded-artifacts/*
           body_path: docs/CHANGELOG.md
+          prerelease: ${{ contains(github.ref, '-') }}
+          draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
