@@ -1,5 +1,10 @@
 # Contributing Guidelines
 
+## Branching
+
+SpikeLibraries makes use of **Feature Branching**, whereby on the addition of new features, working on a smaller task from main, or bug fixes, a new branch is created to accommodate them. 
+This ensures that changes can be validated on performing a PR to main and prevents any unsuccessful features or changes from cluttering the commit history or main branch.
+
 ## Use Issues
 
 We would prefer for issues to be used for almost everything. 
