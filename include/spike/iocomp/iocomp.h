@@ -104,10 +104,6 @@ namespace iocomp {
 			return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
 		}
 
-
-		static usize DecompressToBuffer(std::ifstream& ifs, const u64& fileOffset, const usize& srcSize, void* dst, const usize& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod);
-		
-
 		static bool CompressToFile(std::ostream& ofs, const void* source, const usize& srcSize, CompressionMethod_& compressionMethod) {
 			if (compressionMethod == CompressionMethod_zstd) if (!ZSTD()) compressionMethod = CompressionMethod_zlib;
 
