@@ -80,13 +80,10 @@ namespace iocomp {
 	
 	class IOComp {
 		struct ContextZSTD;
-		static inline ContextZSTD* _zstdCtx = nullptr;
+		static ContextZSTD _zstdCtx;
 
 	public:
-		static void Initialize();
-		static void Shutdown();
-
-		static bool ZSTD() { return _zstdCtx; }
+		static bool ZSTD();
 
 		static usize Compress(const void* src, const usize& srcSize, niVector<u8>& dst, const CompressionMethod_& compressionMethod);
 

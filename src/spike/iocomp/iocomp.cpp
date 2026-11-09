@@ -91,27 +91,10 @@ private:
 	ZSTD_DCtx* const p_dctx;
 };
 
-void iocomp::IOComp::Initialize() {
-	if (_zstdCtx) return;
+iocomp::IOComp::ContextZSTD iocomp::IOComp::_zstdCtx = iocomp::IOComp::ContextZSTD();
 
-	_zstdCtx = new ContextZSTD();
-	if (!_zstdCtx->ok()) {
-		delete _zstdCtx;
-		_zstdCtx = new ContextZSTD();
-		if (!_zstdCtx->ok()) {
-			delete _zstdCtx;
-			_zstdCtx = nullptr;
-			Debug::LogWarning("Failed to setup zstd context! Compression algorithm falling back to zlib!");
-			// use zlib instead of zstd cant be initialized
-		}
-	}
-}
-
-void iocomp::IOComp::Shutdown() {
-	if (!_zstdCtx) return;
-
-	delete _zstdCtx;
-	_zstdCtx = nullptr;
+bool iocomp::IOComp::ZSTD() {
+	return _zstdCtx.ok();
 }
 
 usize iocomp::IOComp::Compress(const void* src, const usize& srcSize, niVector<u8>& dst, const CompressionMethod_& compressionMethod) {
@@ -132,7 +115,7 @@ usize iocomp::IOComp::Compress(const void* src, const usize& srcSize, niVector<u
 	case CompressionMethod_zstd: {
 		usize bound = ZSTD_compressBound(srcSize);
 		dst.resize(bound);
-		usize compressedSize = _zstdCtx->Compress(src, srcSize, dst.data(), bound, 3);
+		usize compressedSize = _zstdCtx.Compress(src, srcSize, dst.data(), bound, 3);
 		if (ZSTD_isError(compressedSize)) {
 			dst.clear();
 			string err(ZSTD_getErrorName(compressedSize));
@@ -166,7 +149,7 @@ usize iocomp::IOComp::Compress(const void* src, const usize& srcSize, void* dst,
 	}
 	case CompressionMethod_zstd: {
 		usize bound = ZSTD_compressBound(srcSize);
-		usize compressedSize = _zstdCtx->Compress(src, srcSize, dst, bound, 3);
+		usize compressedSize = _zstdCtx.Compress(src, srcSize, dst, bound, 3);
 		if (ZSTD_isError(compressedSize)) {
 			string err(ZSTD_getErrorName(compressedSize));
 			Debug::LogError("Zstd Compression Failed: {}", err);
@@ -205,7 +188,7 @@ usize iocomp::IOComp::Decompress(const void* src, const usize& srcSize, void* ds
 			Debug::LogError("ZSTD_getFrameContentSize Failed: {}", err);
 			return 0;
 		}
-		const usize accRawSize = _zstdCtx->Decompress(src, srcSize, dst, rawSize);
+		const usize accRawSize = _zstdCtx.Decompress(src, srcSize, dst, rawSize);
 		if (ZSTD_isError(accRawSize) || accRawSize != expectedSize) {
 			string err(ZSTD_getErrorName(accRawSize));
 			Debug::LogError("Zstd Decompression Failed: {}", err);
@@ -261,7 +244,7 @@ usize iocomp::IOComp::DecompressToBuffer(std::ifstream& ifs, const u64& fileOffs
 		ifs.seekg(fileOffset, std::ios::beg);
 		ifs.read(reinterpret_cast<char*>(compressedData.data()), srcSize);
 
-		const usize res = _zstdCtx->Decompress(compressedData.data(), srcSize, dst, expectedSize);
+		const usize res = _zstdCtx.Decompress(compressedData.data(), srcSize, dst, expectedSize);
 		if (ZSTD_isError(res) || res != expectedSize) {
 			string err(ZSTD_getErrorName(res));
 			Debug::LogError("Zstd Decompression Failed: {}", err);
