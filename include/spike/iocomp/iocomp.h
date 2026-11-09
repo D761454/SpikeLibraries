@@ -82,33 +82,31 @@ namespace iocomp {
 		struct ContextZSTD;
 		static ContextZSTD _zstdCtx;
 
-	public:
 		static bool ZSTD();
 
-		static usize Compress(const void* src, const usize& srcSize, niVector<u8>& dst, const CompressionMethod_& compressionMethod);
+	public:
+		static u32 CalcCRC32(const u8* data, usize len);
+		static const string CompMethodToString(const CompressionMethod_& cm);
 
-		static usize Compress(const void* src, const usize& srcSize, void* dst, const CompressionMethod_& compressionMethod);
-		static usize Decompress(const void* src, const usize& srcSize, void* dst, const usize& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod);
 
-		static usize DecompressToBuffer(std::ifstream& ifs, const u64& fileOffset, const usize& srcSize, void* dst, const usize& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod);
+
+		static u64 Compress(const void* src, const u64& srcSize, void* dst, const CompressionMethod_& compressionMethod);
+
+		static u64 Compress(const void* src, const u64& srcSize, niVector<u8>& dst, const CompressionMethod_& compressionMethod);
+
+
+		static u64 Decompress(const void* src, const u64& srcSize, void* dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod);
 
 		template<typename T>
-		static usize Decompress(const void* src, const usize& srcSize, niVector<T>& dst, const usize& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
+		static u64 Decompress(const void* src, const u64& srcSize, niVector<T>& dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
 			usize realSize = expectedSize / sizeof(T);
 			dst.resize(realSize);
 			return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
 		}
 
-		template<typename T, typename U>
-		static usize Decompress(niVector<T>& src, niVector<U>& dst, const usize& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
-			usize realSourceSize = expectedSize / sizeof(T);
-			usize realDestSize = expectedSize / sizeof(U);
-			dst.resize(realDestSize);
-			return Decompress(reinterpret_cast<void*>(src.data()), realSourceSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
-		}
 
-		static u32 CalcCRC32(const u8* data, usize len);
-		static const string CompMethodToString(const CompressionMethod_& cm);
+		static usize DecompressToBuffer(std::ifstream& ifs, const u64& fileOffset, const usize& srcSize, void* dst, const usize& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod);
+		
 
 		static bool CompressToFile(std::ostream& ofs, const void* source, const usize& srcSize, CompressionMethod_& compressionMethod) {
 			if (compressionMethod == CompressionMethod_zstd) if (!ZSTD()) compressionMethod = CompressionMethod_zlib;
@@ -141,7 +139,7 @@ namespace iocomp {
 		}
 
 		template<typename T>
-		static T* DecompressFromFile(std::ifstream& ifs) {
+		static T* DecompressFromFile(std::ifstream& ifs, bool seekBackToheader = false) {
 			static_assert(podio::is_pod_writable_v<T>, "DecompressFromFile->read_pod requires trivially copyable, standard-layout type");
 			u64 remsize = 0;
 			auto curr = ifs.tellg();
@@ -157,6 +155,8 @@ namespace iocomp {
 
 			CompressedDataHeader cdh;
 			if (!podio::read_pod(ifs, cdh) || ifs.eof()) return nullptr;
+			auto afterheader = ifs.tellg();
+			if (afterheader == -1) return nullptr;
 			if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return nullptr;
 			ifs.seekg(cdh.dataOffset);
 			if (!ifs.good() || ifs.eof() || cdh.uncompressedSize != sizeof(T)) return nullptr;
@@ -170,12 +170,17 @@ namespace iocomp {
 			T* newObject = new T();
 			if (Decompress(compressed.data(), cdh.compressedSize, newObject, cdh.uncompressedSize, cdh.crc32, cdh.compressionMethod) != cdh.uncompressedSize) {
 				delete newObject;
-				return nullptr;
+				newObject = nullptr;
 			}
+
+			if (seekBackToheader) {
+				ifs.seekg(afterheader, std::ios::beg);
+			}
+
 			return newObject;
 		}
 
-		static bool DecompressFromFile(std::ifstream& ifs, void* dst, const u64 capacity) {
+		static bool DecompressFromFile(std::ifstream& ifs, void* dst, const u64 capacity, bool seekBackToheader = false) {
 			u64 remsize = 0;
 			auto curr = ifs.tellg();
 			if (curr == -1) return false;
@@ -190,6 +195,8 @@ namespace iocomp {
 
 			CompressedDataHeader cdh;
 			if (!podio::read_pod(ifs, cdh) || ifs.eof()) return false;
+			auto afterheader = ifs.tellg();
+			if (afterheader == -1) return false;
 			if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return false;
 			ifs.seekg(cdh.dataOffset);
 			if (!ifs.good() || ifs.eof() || cdh.uncompressedSize > capacity) return false;
@@ -200,7 +207,13 @@ namespace iocomp {
 			ifs.read(reinterpret_cast<char*>(compressed.data()), cdh.compressedSize);
 			if (ifs.gcount() != cdh.compressedSize) return false;
 			if (Decompress(compressed.data(), cdh.compressedSize, dst, cdh.uncompressedSize, cdh.crc32, cdh.compressionMethod) != cdh.uncompressedSize) {
+				if (seekBackToheader) {
+					ifs.seekg(afterheader, std::ios::beg);
+				}
 				return false;
+			}
+			if (seekBackToheader) {
+				ifs.seekg(afterheader, std::ios::beg);
 			}
 			return true;
 		}
