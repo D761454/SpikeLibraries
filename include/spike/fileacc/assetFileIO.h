@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ostream>
 #include <fstream>
+#include <limits>
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
@@ -146,17 +147,26 @@ namespace iocomp {
 		static T* DecompressFromFile(std::ifstream& ifs) {
 			static_assert(podio::is_pod_writable_v<T>, "DecompressFromFile->read_pod requires trivially copyable, standard-layout type");
 			u64 remsize = 0;
+			auto curr = ifs.tellg();
+			if (curr == -1) return nullptr;
+			ifs.seekg(0, std::ios::beg);
 			auto start = ifs.tellg();
+			if (start == -1) return nullptr;
 			ifs.seekg(0, std::ios::end);
-			remsize = ifs.tellg() - start;
-			ifs.seekg(start, std::ios::beg);
+			auto end = ifs.tellg();
+			if (end == -1) return nullptr;
+			remsize = end - start;
+			ifs.seekg(curr, std::ios::beg);
 
 			CompressedDataHeader cdh;
 			if (!podio::read_pod(ifs, cdh) || ifs.eof()) return nullptr;
+			if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return nullptr;
 			ifs.seekg(cdh.dataOffset);
 			if (!ifs.good() || ifs.eof() || cdh.uncompressedSize != sizeof(T)) return nullptr;
-			if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return nullptr;
+			
+
 			niVector<u8> compressed;
+			if (cdh.compressedSize > std::numeric_limits<std::streamsize>::max() || cdh.compressedSize > compressed.max_size()) return nullptr;
 			compressed.resize(cdh.compressedSize);
 			ifs.read(reinterpret_cast<char*>(compressed.data()), cdh.compressedSize);
 			if (ifs.gcount() != cdh.compressedSize) return nullptr;
@@ -170,17 +180,25 @@ namespace iocomp {
 
 		static bool DecompressFromFile(std::ifstream& ifs, void* dst, const u64 capacity) {
 			u64 remsize = 0;
+			auto curr = ifs.tellg();
+			if (curr == -1) return false;
+			ifs.seekg(0, std::ios::beg);
 			auto start = ifs.tellg();
+			if (start == -1) return false;
 			ifs.seekg(0, std::ios::end);
-			remsize = ifs.tellg() - start;
-			ifs.seekg(start, std::ios::beg);
+			auto end = ifs.tellg();
+			if (end == -1) return false;
+			remsize = end - start;
+			ifs.seekg(curr, std::ios::beg);
 
 			CompressedDataHeader cdh;
 			if (!podio::read_pod(ifs, cdh) || ifs.eof()) return false;
+			if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return false;
 			ifs.seekg(cdh.dataOffset);
 			if (!ifs.good() || ifs.eof() || cdh.uncompressedSize > capacity) return false;
-			if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return false;
+			
 			niVector<u8> compressed;
+			if (cdh.compressedSize > std::numeric_limits<std::streamsize>::max() || cdh.compressedSize > compressed.max_size()) return false;
 			compressed.resize(cdh.compressedSize);
 			ifs.read(reinterpret_cast<char*>(compressed.data()), cdh.compressedSize);
 			if (ifs.gcount() != cdh.compressedSize) return false;
