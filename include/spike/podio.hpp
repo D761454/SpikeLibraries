@@ -81,7 +81,7 @@ namespace podio {
 	inline bool write_pod(std::ostream& os, T const& obj) {
 		static_assert(is_pod_writable_v<T>, "write_pod requires trivially copyable, standard-layout type");
 		os.write(reinterpret_cast<char const*>(&obj), sizeof(T));
-		return static_cast<bool>(os.good());
+		return os.good();
 	}
 
 	/// <summary>
@@ -95,7 +95,7 @@ namespace podio {
 	inline bool read_pod(std::istream& is, T& out) {
 		static_assert(is_pod_writable_v<T>, "read_pod requires trivially copyable, standard-layout type");
 		is.read(reinterpret_cast<char*>(&out), sizeof(T));
-		return static_cast<bool>(is.good()) || is.eof();
+		return is.good();
 	}
 
 	/// <summary>
