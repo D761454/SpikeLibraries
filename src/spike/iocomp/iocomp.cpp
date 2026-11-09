@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/fileacc/assetFileIO.h"
+#include "spike/iocomp/iocomp.h"
 
 #include <string.h>
 #include <fstream>
