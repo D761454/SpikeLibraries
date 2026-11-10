@@ -27,6 +27,8 @@ concurrency:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
 
     strategy:
       fail-fast: false
@@ -58,18 +60,24 @@ jobs:
             build_type: Release
             archive_name: SpikeLibraries-Windows-x64.zip
 
-          # macOS Apple Silicon (ARM64)
-          - os: macos-15
+          # Windows ARM64
+          - os: windows-11-arm
+            c_compiler: cl
+            cpp_compiler: cl
+            build_type: Release
+            archive_name: SpikeLibraries-Windows-ARM64.zip
+
+          # macOS ARM64
+          - os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
-            archive_name: SpikeLibraries-macOS-15-arm64.tar.gz
-          
-          - os: macos-26
+            archive_name: SpikeLibraries-macOS-arm64.tar.gz
+          - os: macos-26-intel
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
-            archive_name: SpikeLibraries-macOS-26-arm64.tar.gz
+            archive_name: SpikeLibraries-macOS-intel-arm64.tar.gz
 
     steps:
     - uses: actions/checkout@v4
