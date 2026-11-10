@@ -48,11 +48,13 @@ File Summary:
 */
 
 #include <cassert>
+#include <array>
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
 #include "spike/sml/vector3.h"
+#include "spike/sml/vector4.h"
 #include "spike/sml/quaternion.h"
 #include "spike/sml/frustumplane.h"
 
@@ -60,84 +62,19 @@ namespace sml {
 	/// <summary>
 	/// A standard 4x4 transformation matrix.
 	/// Column-major notation is used as in OpenGL: the internal storage is an array of 4 columns.
-	/// Each MatrixRow instance therefore represents a column and elements are accessed as data[column][row].
 	/// The translation (position) component is stored in the right-most column (column index 3), rows 0..2.
 	/// These matrices are rarely used by users, only in special cases such as creating non-standard camera projection.
 	/// </summary>
 	struct matrix4 {
-	public:
-		/// <summary>
-		/// Representation of 4 floats within a matrix column.
-		/// This struct provides simple access overloads for the 4 elements of a column.
-		/// Note: although named MatrixRow for historical reasons, instances represent columns in memory.
-		/// Use matrix[column][row] to access element at (row, column).
-		/// </summary>
-		struct MatrixRow {
-		private:
-			f32 data[4];
-
-		public:
-			static MatrixRow zero;
-
-			MatrixRow() noexcept : data{} {}
-			MatrixRow(f32 a, f32 b, f32 c, f32 d) noexcept : data{ a, b, c, d } {}
-
-			/// <summary>Returns the number of zero elements in this column.</summary>
-			/// <returns>number of zero elements</returns>
-			u8 ZeroCount() const {
-				u8 count = 0;
-				for (int i = 0; i < 4; i++) {
-					if (data[i] == 0) {
-						count++;
-					}
-				}
-				return count;
-			}
-
-			/// <summary>
-			/// Access the element at the given index within this column.
-			/// Index is the row (0..3).
-			/// </summary>
-			/// <param name="index">row index in the range 0..3</param>
-			/// <returns>reference to the selected element</returns>
-			inline f32& operator[](const u32 index) {
-				assert(index < 4 && "Index Out of Range! MatrixRow data in range 0-3.");
-
-				return data[index];
-			}
-
-			/// <summary>
-			/// Const access to the element at the given row index in this column.
-			/// </summary>
-			/// <param name="index">row index in the range 0..3</param>
-			/// <returns>selected element</returns>
-			inline const f32 operator[](const u32 index) const {
-				assert(index < 4 && "Index Out of Range! MatrixRow data in range 0-3.");
-
-				return data[index];
-			}
-
-			MatrixRow operator+(const MatrixRow& other) const;
-			MatrixRow operator-(const MatrixRow& other) const;
-			MatrixRow operator*(const f32& scalar) const;
-			f32 operator*(const MatrixRow& other) const;
-
-			bool operator==(const MatrixRow& other) const;
-			bool operator!=(const MatrixRow& other) const;
-
-			string ToString() const noexcept;
-		};
-
 	private:
-		// Each element in data[] is a column (column-major). Access element (row r, column c) as data[c][r]
-		MatrixRow data[4];
+		std::array<f32, 16> _data;
 
 	public:
 		static matrix4 identity;
 		static matrix4 zero;
 
-		matrix4() noexcept : data{} {}
-		matrix4(MatrixRow a, MatrixRow b, MatrixRow c, MatrixRow d) noexcept : data{ a, b, c, d } {}
+		matrix4() noexcept : _data({}) {}
+		explicit matrix4(const std::array<f32, 16> arr) noexcept : _data(arr) {}
 
 		/// <summary>
 		/// Access a column by index (0..3).
@@ -145,10 +82,10 @@ namespace sml {
 		/// </summary>
 		/// <param name="index">column index in the range 0..3</param>
 		/// <returns>reference to the selected column</returns>
-		inline MatrixRow& operator[](const u32 index) {
-			assert(index < 4 && "Index Out of Range! matrix4 data in range 0-3.");
+		inline f32& operator[](const u32 index) {
+			assert(index < 16 && "Index Out of Range! matrix4 data in range 0-15.");
 
-			return data[index];
+			return _data[index];
 		}
 
 		/// <summary>
@@ -156,10 +93,10 @@ namespace sml {
 		/// </summary>
 		/// <param name="index">column index in the range 0..3</param>
 		/// <returns>selected matrix column</returns>
-		inline const MatrixRow operator[](const u32 index) const {
-			assert(index < 4 && "Index Out of Range! matrix4 data in range 0-3.");
+		inline const f32 operator[](const u32 index) const {
+			assert(index < 16 && "Index Out of Range! matrix4 data in range 0-15.");
 
-			return data[index];
+			return _data[index];
 		}
 
 		/// <summary>
@@ -364,16 +301,16 @@ namespace sml {
 		/// </summary>
 		/// <param name="index">column index in the range 0..3</param>
 		/// <returns>selected matrix column</returns>
-		MatrixRow GetColumn(const u16 index) const;
+		sml::vector4 GetColumn(const u32 index) const;
 		/// <summary>
 		/// Returns the row assembled from the columns (row r = { data[0][r], data[1][r], data[2][r], data[3][r] }).
 		/// </summary>
 		/// <param name="index">row index in the range 0..3</param>
 		/// <returns>selected matrix row</returns>
-		MatrixRow GetRow(const u16 index) const;
+		sml::vector4 GetRow(const u32 index) const;
 
-		void SetColumn(const u16 index, const MatrixRow& column);
-		void SetRow(const u16 index, const MatrixRow& row);
+		void SetColumn(const u32 index, const sml::vector4& column);
+		void SetRow(const u32 index, const sml::vector4& row);
 
 		matrix4 operator+(const matrix4& other) const;
 		matrix4 operator-(const matrix4& other) const;
@@ -386,17 +323,8 @@ namespace sml {
 		bool operator==(const matrix4& other) const;
 		bool operator!=(const matrix4& other) const;
 
-		/// <summary>
-		/// Returns pointer to contiguous column-major data suitable for glUniformMatrix4fv(..., GL_FALSE, ptr)
-		/// </summary>
-		/// <returns>pointer to the contiguous column-major matrix data</returns>
-		const f32* DataPtr() noexcept;
-
-		/// <summary>
-		/// Returns a formatted string for this matrix4
-		/// </summary>
-		/// <returns>string representation of this matrix4</returns>
-		string ToString() const noexcept;
+		const f32* Data() const noexcept { return &_data[0]; }
+		f32* Data() noexcept { return &_data[0]; }
 	};
 }
 
