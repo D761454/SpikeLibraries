@@ -52,6 +52,7 @@ File Summary:
 #include "spike/stl_aliases.h"
 
 #include "spike/sml/vector3.h"
+#include "spike/sml/vector4.h"
 
 namespace sml {
 	/// <summary>

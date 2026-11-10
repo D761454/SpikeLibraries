@@ -53,15 +53,15 @@ namespace sml {
 	const vector3 vector3::one = vector3(1.0f, 1.0f, 1.0f);
 	const vector3 vector3::zero = vector3(0.0f, 0.0f, 0.0f);
 
+	f32 vector3::Magnitude() const noexcept {
+		return sml::sqrt(SQUARE(x) + SQUARE(y) + SQUARE(z));
+	}
+
 	vector3 vector3::Normalized() const noexcept {
 		f32 mag = this->Magnitude();
 		if (mag == 0.f) return vector3();
-		f32 invMag = 1.0f / mag;
+		f32 invMag = 1.f / mag;
 		return *this * invMag;
-	}
-
-	f32 vector3::Magnitude() const noexcept {
-		return sml::sqrt(SQUARE(x) + SQUARE(y) + SQUARE(z));
 	}
 
 	vector3 vector3::Min(const vector3& lhs, const vector3& rhs) noexcept {
@@ -78,6 +78,10 @@ namespace sml {
 			lhs.y > rhs.y ? lhs.y : rhs.y,
 			lhs.z > rhs.z ? lhs.z : rhs.z
 		};
+	}
+
+	f32 vector3::Dot(const vector3& lhs, const vector3& rhs) noexcept {
+		return (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
 	}
 
 	f32 vector3::Angle(const vector3& lhs, const vector3& rhs) noexcept {
@@ -97,10 +101,6 @@ namespace sml {
 		};
 	}
 
-	f32 vector3::Dot(const vector3& lhs, const vector3& rhs) noexcept {
-		return (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
-	}
-
 	f32 vector3::Distance(const vector3& lhs, const vector3& rhs) noexcept {
 		return sml::sqrt(
 			SQUARE(lhs.x - rhs.x) +
@@ -112,13 +112,13 @@ namespace sml {
 	vector3 vector3::Normalize(const vector3& v) noexcept {
 		f32 mag = v.Magnitude();
 		if (mag == 0.f) return vector3();
-		f32 invMag = 1.0f / mag;
+		f32 invMag = 1.f / mag;
 
 		return v * invMag;
 	}
 
 	vector3 vector3::Lerp(const vector3& lhs, const vector3& rhs, f32 t) noexcept {
-		return (lhs * t) + (rhs * (1.0f - t));
+		return (lhs * t) + (rhs * (1.f - t));
 	}
 
 	vector3 vector3::Scale(const vector3& lhs, const vector3& rhs) noexcept {

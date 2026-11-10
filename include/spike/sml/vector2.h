@@ -67,31 +67,6 @@ namespace sml {
 	struct vector2 {
 		f32 x, y;
 
-		/// <summary>
-		/// Shorthand for writing vector2(0, 1).
-		/// </summary>
-		static const vector2 up;
-		/// <summary>
-		/// Shorthand for writing vector2(0, -1).
-		/// </summary>
-		static const vector2 down;
-		/// <summary>
-		/// Shorthand for writing vector2(-1, 0).
-		/// </summary>
-		static const vector2 left;
-		/// <summary>
-		/// Shorthand for writing vector2(1, 0).
-		/// </summary>
-		static const vector2 right;
-		/// <summary>
-		/// Shorthand for writing vector2(1, 1).
-		/// </summary>
-		static const vector2 one;
-		/// <summary>
-		/// Shorthand for writing vector2(0, 0).
-		/// </summary>
-		static const vector2 zero;
-
 		vector2() noexcept : x(0.f), y(0.f) {}
 		vector2(f32 ix, f32 iy) noexcept : x(ix), y(iy) {}
 		explicit vector2(f32 xy) : x(xy), y(xy) {}
@@ -118,17 +93,42 @@ namespace sml {
 		}
 
 		/// <summary>
-		/// Returns a normalized vector based on the current vector.
-		/// The normalized vector has a magnitude of 1 and is in the same direction as the current vector.
+		/// Shorthand for writing vector2(0, 1).
 		/// </summary>
-		/// <returns>vector with a magnitude of 1 and preserved direction</returns>
-		vector2	Normalized() const noexcept;
+		static const vector2 up;
+		/// <summary>
+		/// Shorthand for writing vector2(0, -1).
+		/// </summary>
+		static const vector2 down;
+		/// <summary>
+		/// Shorthand for writing vector2(-1, 0).
+		/// </summary>
+		static const vector2 left;
+		/// <summary>
+		/// Shorthand for writing vector2(1, 0).
+		/// </summary>
+		static const vector2 right;
+		/// <summary>
+		/// Shorthand for writing vector2(1, 1).
+		/// </summary>
+		static const vector2 one;
+		/// <summary>
+		/// Shorthand for writing vector2(0, 0).
+		/// </summary>
+		static const vector2 zero;
 
 		/// <summary>
 		/// Returns the length of this vector.
 		/// </summary>
 		/// <returns>vector length</returns>
-		f32	Magnitude() const noexcept;
+		f32 Magnitude() const noexcept;
+
+		/// <summary>
+		/// Returns a normalized vector based on the current vector.
+		/// The normalized vector has a magnitude of 1 and is in the same direction as the current vector.
+		/// </summary>
+		/// <returns>vector with a magnitude of 1 and preserved direction</returns>
+		vector2	Normalized() const noexcept;
 
 		/// <summary>
 		/// Set the X and Y components of this vector
@@ -236,8 +236,9 @@ namespace sml {
 		vector3 ToVector3XY() const noexcept;
 
 		/// <summary>
-		/// Returns a formatted string for this Vector
+		/// Returns a formatted string for this vector.
 		/// </summary>
+		/// <returns>string representation of this vector</returns>
 		string ToString() const noexcept;
 	};
 }

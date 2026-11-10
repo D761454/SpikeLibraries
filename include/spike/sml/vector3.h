@@ -95,47 +95,6 @@ namespace sml {
 		}
 
 		/// <summary>
-		/// Returns a normalized vector based on the current vector.
-		/// The normalized vector has a magnitude of 1 and is in the same direction as the current vector.
-		/// </summary>
-		/// <returns>vector with a magnitude of 1 and preserved direction</returns>
-		vector3 Normalized() const noexcept;
-
-		/// <summary>
-		/// Returns the length of this vector.
-		/// </summary>
-		/// <returns>vector length</returns>
-		f32 Magnitude() const noexcept;
-
-		/// <summary>
-		/// Set the X, Y and Z components of this vector
-		/// </summary>
-		/// <param name="N">new vector data</param>
-		inline void Set(const vector3& N) noexcept { x = N.x; y = N.y; z = N.z; }
-		/// <summary>
-		/// Set the X, Y and Z components of this vector
-		/// </summary>
-		/// <param name="ix">new X value</param>
-		/// <param name="iy">new Y value</param>
-		/// <param name="iz">new Z value</param>
-		inline void Set(f32 ix, f32 iy, f32 iz) noexcept { x = ix; y = iy; z = iz; }
-
-		/// <summary>
-		/// Returns a vector that is made from the smallest components of two vectors.
-		/// </summary>
-		/// <param name="lhs">vector to compare</param>
-		/// <param name="rhs">vector to compare</param>
-		/// <returns>vector made from the smallest components of two vectors</returns>
-		static vector3 Min(const vector3& lhs, const vector3& rhs) noexcept;
-		/// <summary>
-		/// Returns a vector that is made from the largest components of two vectors.
-		/// </summary>
-		/// <param name="lhs">vector to compare</param>
-		/// <param name="rhs">vector to compare</param>
-		/// <returns>vector made from the largest components of two vectors</returns>
-		static vector3 Max(const vector3& lhs, const vector3& rhs) noexcept;
-
-		/// <summary>
 		/// Shorthand for writing vector3(0, 1, 0).
 		/// </summary>
 		static const vector3 up;
@@ -167,6 +126,47 @@ namespace sml {
 		/// Shorthand for writing vector3(0, 0, 0).
 		/// </summary>
 		static const vector3 zero;
+
+		/// <summary>
+		/// Returns the length of this vector.
+		/// </summary>
+		/// <returns>vector length</returns>
+		f32 Magnitude() const noexcept;
+
+		/// <summary>
+		/// Returns a normalized vector based on the current vector.
+		/// The normalized vector has a magnitude of 1 and is in the same direction as the current vector.
+		/// </summary>
+		/// <returns>vector with a magnitude of 1 and preserved direction</returns>
+		vector3 Normalized() const noexcept;
+
+		/// <summary>
+		/// Set the X, Y and Z components of this vector
+		/// </summary>
+		/// <param name="N">new vector data</param>
+		inline void Set(const vector3& N) noexcept { x = N.x; y = N.y; z = N.z; }
+		/// <summary>
+		/// Set the X, Y and Z components of this vector
+		/// </summary>
+		/// <param name="ix">new X value</param>
+		/// <param name="iy">new Y value</param>
+		/// <param name="iz">new Z value</param>
+		inline void Set(f32 ix, f32 iy, f32 iz) noexcept { x = ix; y = iy; z = iz; }
+
+		/// <summary>
+		/// Returns a vector that is made from the smallest components of two vectors.
+		/// </summary>
+		/// <param name="lhs">vector to compare</param>
+		/// <param name="rhs">vector to compare</param>
+		/// <returns>vector made from the smallest components of two vectors</returns>
+		static vector3 Min(const vector3& lhs, const vector3& rhs) noexcept;
+		/// <summary>
+		/// Returns a vector that is made from the largest components of two vectors.
+		/// </summary>
+		/// <param name="lhs">vector to compare</param>
+		/// <param name="rhs">vector to compare</param>
+		/// <returns>vector made from the largest components of two vectors</returns>
+		static vector3 Max(const vector3& lhs, const vector3& rhs) noexcept;
 
 		/// <summary>
 		/// Gets the unsigned angle in degrees between lhs and rhs.
