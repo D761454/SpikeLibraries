@@ -117,6 +117,11 @@ set_target_properties(zlibstatic libzstd_static jsoncpp_static yaml-cpp PROPERTI
 	FOLDER "ThirdParty"
 )
 
+# Define unified output directories at the root workspace level
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$<CONFIG>")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$<CONFIG>")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$<CONFIG>")
+
 if(SPIKE_LIBRARIES_BUILD_ALL_LIBRARIES)
     # Every immediate directory in include/spike is treated as a component.
     file(GLOB _spike_component_dirs LIST_DIRECTORIES true
