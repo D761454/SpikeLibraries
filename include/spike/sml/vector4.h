@@ -53,7 +53,8 @@ File Summary:
 namespace sml {
 	/// <summary>
 	/// Representation of 4D vectors and points.
-	/// It contains functions for doing common vector operations.
+	/// It is used throughout Spike to pass 4D positions and directions around.
+	/// It also contains functions for doing common vector operations.
 	/// </summary>
 	struct vector4 {
 		f32 x, y, z, w;

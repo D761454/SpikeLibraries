@@ -56,13 +56,17 @@ File Summary:
 
 namespace sml {
 	/// <summary>
-	/// A standard 2x2 matrix.
+	/// A standard 2x2 transformation matrix.
+	/// Column-major notation is used as in OpenGL: the internal storage is an array of 2 columns.
+	/// Each MatrixRow instance therefore represents a column and elements are accessed as data[column][row].
 	/// </summary>
 	struct matrix2 {
 	protected:
 		/// <summary>
-		/// Representation of 2 floats within a matrix row or column.
-		/// Contains only simple access overloads.
+		/// Representation of 2 floats within a matrix column.
+		/// This struct provides simple access overloads for the 2 elements of a column.
+		/// Note: although named MatrixRow for historical reasons, instances represent columns in memory.
+		/// Use matrix[column][row] to access element at (row, column).
 		/// </summary>
 		struct MatrixRow {
 		private:
@@ -74,7 +78,7 @@ namespace sml {
 			MatrixRow() noexcept : data{} {}
 			MatrixRow(f32 a, f32 b) noexcept : data{ a, b } {}
 
-			/// <summary>Returns the number of zero elements in this row.</summary>
+			/// <summary>Returns the number of zero elements in this column.</summary>
 			/// <returns>number of zero elements</returns>
 			u8 ZeroCount() const noexcept {
 				u8 count = 0;
@@ -86,8 +90,11 @@ namespace sml {
 				return count;
 			}
 
-			/// <summary>Returns a mutable element at the specified index.</summary>
-			/// <param name="index">element index in the range 0..1</param>
+			/// <summary>
+			/// Access the element at the given index within this column.
+			/// Index is the row (0..1).
+			/// </summary>
+			/// <param name="index">row index in the range 0..1</param>
 			/// <returns>reference to the selected element</returns>
 			inline f32& operator[](const u32 index) {
 				assert(index < 2 && "Index Out of Range! MatrixRow data in range 0-1.");
@@ -95,8 +102,10 @@ namespace sml {
 				return data[index];
 			}
 
-			/// <summary>Returns an element at the specified index.</summary>
-			/// <param name="index">element index in the range 0..1</param>
+			/// <summary>
+			/// Const access to the element at the given row index in this column.
+			/// </summary>
+			/// <param name="index">row index in the range 0..1</param>
 			/// <returns>selected element</returns>
 			inline const f32 operator[](const u32 index) const {
 				assert(index < 2 && "Index Out of Range! MatrixRow data in range 0-1.");
@@ -113,12 +122,11 @@ namespace sml {
 			bool operator==(const MatrixRow& other) const;
 			bool operator!=(const MatrixRow& other) const;
 
-			/// <summary>Returns a formatted string for this row.</summary>
-			/// <returns>string representation of this row</returns>
 			string ToString() const noexcept;
 		};
 
 	private:
+		// Each element in data[] is a column (column-major). Access element (row r, column c) as data[c][r]
 		MatrixRow data[2];
 
 	public:
