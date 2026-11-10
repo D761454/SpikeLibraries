@@ -132,25 +132,43 @@ jobs:
       run: ctest --build-config ${{ matrix.build_type }}
 
     # Package Binaries into Archives
-    - name: Package Binaries (Unix tar.gz)
+    # Stage and Package (Unix)
+    - name: Stage and Package Binaries (Unix)
       if: runner.os != 'Windows'
       run: |
-        tar --exclude='./_deps' -czvf ${{ matrix.archive_name }} -C ${{ steps.strings.outputs.build-output-dir }} .
+        mkdir -p dist/bin
+        mkdir -p dist/include
+        
+        # Copy compiled binaries from build/bin/<CONFIG> and headers
+        cp -r ${{ steps.strings.outputs.build-output-dir }}/bin/${{ matrix.build_type }}/* dist/bin/
+        cp -r include/* dist/include/
+        
+        # Copy root metadata files if they exist
+        if [ -f "LICENSE" ]; then cp LICENSE dist/; fi
+        if [ -f "README.md" ]; then cp README.md dist/; fi
+        
+        # Create tar.gz archive from the staging folder
+        tar -czvf ${{ matrix.archive_name }} -C dist .
 
-    - name: Package Binaries (Windows .zip)
+    # Stage and Package (Windows)
+    - name: Stage and Package Binaries (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $buildDir = "${{ steps.strings.outputs.build-output-dir }}"
-        $stageDir = "staging-binaries"
-        New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
+        $binDir = "${{ steps.strings.outputs.build-output-dir }}/bin/${{ matrix.build_type }}"
+        if (-Not (Test-Path $binDir)) { $binDir = "${{ steps.strings.outputs.build-output-dir }}/bin" }
         
-        Get-ChildItem -Path $buildDir -Exclude "_deps" | Copy-Item -Destination $stageDir -Recurse -Force
+        New-Item -ItemType Directory -Force -Path "dist/bin" | Out-Null
+        New-Item -ItemType Directory -Force -Path "dist/include" | Out-Null
         
-        $targetDir = "$stageDir\${{ matrix.build_type }}"
-        if (-Not (Test-Path $targetDir)) { $targetDir = $stageDir }
+        Copy-Item -Path "$binDir\*" -Destination "dist/bin" -Recurse -Force
+        Copy-Item -Path "include\*" -Destination "dist/include" -Recurse -Force
         
-        Compress-Archive -Path "$targetDir\*" -DestinationPath "${{ matrix.archive_name }}" -Force
+        # Copy root metadata files if they exist
+        if (Test-Path "LICENSE") { Copy-Item "LICENSE" -Destination "dist\" }
+        if (Test-Path "README.md") { Copy-Item "README.md" -Destination "dist\" }
+        
+        Compress-Archive -Path "dist\*" -DestinationPath "${{ matrix.archive_name }}" -Force
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4

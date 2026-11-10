@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/fileparser/assetFileIO.h"
+#include "spike/iocomp/iocomp.h"
 
 #include <string.h>
 #include <fstream>
@@ -48,23 +48,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/stl_aliases.h"
 #include "spike/debugl/debug.hpp"
 
-#include "spike/fileparser/commons.hpp"
-
-u32 fileacc::AssetFileIO::CalcCRC32(const u8* data, size_t len) {
+u32 iocomp::IOComp::CalcCRC32(const u8* data, usize len) {
 	return static_cast<u32>(crc32(0UL, reinterpret_cast<const Bytef*>(data), static_cast<uInt>(len)));
 }
 
-const string fileacc::AssetFileIO::CompMethodToString(const fileacc::CompressionMethod& cm) {
+const string iocomp::IOComp::CompMethodToString(const CompressionMethod_& cm) {
 	switch (cm) {
-	case fileacc::afpCompressionMode_none:  return "0: NONE";
-	case fileacc::afpCompressionMode_zlib:  return "1: ZLIB";
-	case fileacc::afpCompressionMode_lz4:   return "2: LZ4";
-	case fileacc::afpCompressionMode_zstd:  return "3: ZSTD";
+	case CompressionMethod_none:  return "0: NONE";
+	case CompressionMethod_zlib:  return "1: ZLIB";
+	case CompressionMethod_lz4:   return "2: LZ4";
+	case CompressionMethod_zstd:  return "3: ZSTD";
 	default: return "UNKNOWN";
 	}
 }
 
-struct fileacc::ContextZSTD {
+struct iocomp::IOComp::ContextZSTD {
 	ContextZSTD() : p_cctx(ZSTD_createCCtx()), p_dctx(ZSTD_createDCtx()) {
 		if (!p_cctx) return;
 		ZSTD_CCtx_setParameter(p_cctx, ZSTD_c_compressionLevel, 3);
@@ -93,32 +91,16 @@ private:
 	ZSTD_DCtx* const p_dctx;
 };
 
-void fileacc::AssetFileIO::Initialize() {
-	if (_zstdCtx) return;
+iocomp::IOComp::ContextZSTD iocomp::IOComp::_zstdCtx = iocomp::IOComp::ContextZSTD();
 
-	_zstdCtx = new ContextZSTD();
-	if (!_zstdCtx->ok()) {
-		delete _zstdCtx;
-		_zstdCtx = new ContextZSTD();
-		if (!_zstdCtx->ok()) {
-			delete _zstdCtx;
-			_zstdCtx = nullptr;
-			Debug::LogWarning("Failed to setup zstd context! Compression algorithm falling back to zlib!");
-			// use zlib instead of zstd cant be initialized
-		}
-	}
+bool iocomp::IOComp::ZSTD() {
+	return _zstdCtx.ok();
 }
 
-void fileacc::AssetFileIO::Shutdown() {
-	if (!_zstdCtx) return;
 
-	delete _zstdCtx;
-	_zstdCtx = nullptr;
-}
-
-usize fileacc::AssetFileIO::Compress(const void* src, const usize& srcSize, niVector<u8>& dst, const CompressionMethod& compressionMethod) {
+u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, niVector<u8>& dst, const CompressionMethod_& compressionMethod) {
 	switch (compressionMethod) {
-	case afpCompressionMode_zlib: {
+	case CompressionMethod_zlib: {
 		uLong srcLen = static_cast<uLong>(srcSize);
 		uLongf bound = compressBound(srcLen);
 		dst.resize(static_cast<usize>(bound));
@@ -131,10 +113,10 @@ usize fileacc::AssetFileIO::Compress(const void* src, const usize& srcSize, niVe
 		dst.resize(static_cast<usize>(bound));
 		return dst.size();
 	}
-	case afpCompressionMode_zstd: {
-		usize bound = ZSTD_compressBound(srcSize);
+	case CompressionMethod_zstd: {
+		usize bound = ZSTD_compressBound(static_cast<usize>(srcSize));
 		dst.resize(bound);
-		usize compressedSize = _zstdCtx->Compress(src, srcSize, dst.data(), bound, 3);
+		usize compressedSize = _zstdCtx.Compress(src, static_cast<usize>(srcSize), dst.data(), bound, 3);
 		if (ZSTD_isError(compressedSize)) {
 			dst.clear();
 			string err(ZSTD_getErrorName(compressedSize));
@@ -144,19 +126,19 @@ usize fileacc::AssetFileIO::Compress(const void* src, const usize& srcSize, niVe
 		dst.resize(compressedSize);
 		return dst.size();
 	}
-	case afpCompressionMode_lz4:
-	case afpCompressionMode_none:
+	case CompressionMethod_lz4:
+	case CompressionMethod_none:
 	default: {
-		dst.resize(srcSize);
-		std::memcpy(dst.data(), src, srcSize);
+		dst.resize(static_cast<usize>(srcSize));
+		std::memcpy(dst.data(), src, static_cast<usize>(srcSize));
 		return srcSize;
 	}
 	}
 }
 
-usize fileacc::AssetFileIO::Compress(const void* src, const usize& srcSize, void* dst, const CompressionMethod& compressionMethod) {
+u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, void* dst, const CompressionMethod_& compressionMethod) {
 	switch (compressionMethod) {
-	case afpCompressionMode_zlib: {
+	case CompressionMethod_zlib: {
 		uLong srcLen = static_cast<uLong>(srcSize);
 		uLongf bound = compressBound(srcLen);
 		int res = compress(reinterpret_cast<Bytef*>(dst), &bound, reinterpret_cast<const Bytef*>(src), srcLen);
@@ -166,9 +148,9 @@ usize fileacc::AssetFileIO::Compress(const void* src, const usize& srcSize, void
         }
 		return static_cast<usize>(bound);
 	}
-	case afpCompressionMode_zstd: {
-		usize bound = ZSTD_compressBound(srcSize);
-		usize compressedSize = _zstdCtx->Compress(src, srcSize, dst, bound, 3);
+	case CompressionMethod_zstd: {
+		usize bound = ZSTD_compressBound(static_cast<usize>(srcSize));
+		usize compressedSize = _zstdCtx.Compress(src, static_cast<usize>(srcSize), dst, bound, 3);
 		if (ZSTD_isError(compressedSize)) {
 			string err(ZSTD_getErrorName(compressedSize));
 			Debug::LogError("Zstd Compression Failed: {}", err);
@@ -176,18 +158,19 @@ usize fileacc::AssetFileIO::Compress(const void* src, const usize& srcSize, void
 		}
 		return compressedSize;
 	}
-	case afpCompressionMode_lz4:
-	case afpCompressionMode_none:
+	case CompressionMethod_lz4:
+	case CompressionMethod_none:
 	default: {
-		std::memcpy(dst, src, srcSize);
+		std::memcpy(dst, src, static_cast<usize>(srcSize));
 		return srcSize;
 	}
 	}
 }
 
-usize fileacc::AssetFileIO::Decompress(const void* src, const usize& srcSize, void* dst, const usize& expectedSize, const u32& expectedCrc32, const CompressionMethod& compressionMethod) {
+
+u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
 	switch (compressionMethod) {
-	case afpCompressionMode_zlib: {
+	case CompressionMethod_zlib: {
 		uLongf destLen = static_cast<uLongf>(expectedSize);
 		int res = uncompress(reinterpret_cast<Bytef*>(dst), &destLen, reinterpret_cast<const Bytef*>(src), static_cast<uLong>(srcSize));
 		if (res != Z_OK || static_cast<usize>(destLen) != expectedSize) {
@@ -200,15 +183,15 @@ usize fileacc::AssetFileIO::Decompress(const void* src, const usize& srcSize, vo
 		}
 		return static_cast<usize>(destLen);
 	}
-	case afpCompressionMode_zstd: {
-		const usize rawSize = ZSTD_getFrameContentSize(src, srcSize);
+	case CompressionMethod_zstd: {
+		const usize rawSize = ZSTD_getFrameContentSize(src, static_cast<usize>(srcSize));
 		if (ZSTD_isError(rawSize)) {
 			string err(ZSTD_getErrorName(rawSize));
 			Debug::LogError("ZSTD_getFrameContentSize Failed: {}", err);
 			return 0;
 		}
-		const usize accRawSize = _zstdCtx->Decompress(src, srcSize, dst, rawSize);
-		if (ZSTD_isError(accRawSize) || accRawSize != expectedSize) {
+		const usize accRawSize = _zstdCtx.Decompress(src, static_cast<usize>(srcSize), dst, rawSize);
+		if (ZSTD_isError(accRawSize) || accRawSize != static_cast<usize>(expectedSize)) {
 			string err(ZSTD_getErrorName(accRawSize));
 			Debug::LogError("Zstd Decompression Failed: {}", err);
 			return false;
@@ -220,61 +203,16 @@ usize fileacc::AssetFileIO::Decompress(const void* src, const usize& srcSize, vo
 		}
 		return accRawSize;
 	}
-	case afpCompressionMode_lz4:
-	case afpCompressionMode_none:
+	case CompressionMethod_lz4:
+	case CompressionMethod_none:
 	default: {
-		std::memcpy(dst, src, srcSize);
-		return srcSize;
-	}
-	}
-}
-
-usize fileacc::AssetFileIO::DecompressToBuffer(std::ifstream& ifs, const u64& fileOffset, const usize& srcSize, void* dst, const usize& expectedSize, const u32& expectedCrc32, const CompressionMethod& compressionMethod) {
-	switch (compressionMethod) {
-	case afpCompressionMode_zlib: {
-		niVector<u8> compressedData;
-		compressedData.resize(srcSize);
-
-		ifs.seekg(fileOffset, std::ios::beg);
-		ifs.read(reinterpret_cast<char*>(compressedData.data()), srcSize);
-
-		uLongf destLen = static_cast<uLongf>(expectedSize);
-		int res = uncompress(reinterpret_cast<Bytef*>(dst), &destLen, reinterpret_cast<const Bytef*>(compressedData.data()), static_cast<uLong>(srcSize));
-		if (res != Z_OK || static_cast<usize>(destLen) != expectedSize) {
-			return 0;
-		}
-		u32 crc32 = CalcCRC32(reinterpret_cast<const u8*>(dst), expectedSize);
+		if (srcSize != expectedSize) return 0;
+		u32 crc32 = CalcCRC32(reinterpret_cast<const u8*>(src), static_cast<usize>(srcSize));
 		if (crc32 != expectedCrc32) {
-			Debug::LogError("Decompression error using zlib! CRC32 mismatch!");
+			Debug::LogError("Decompression error using lz4 or none! CRC32 mismatch!");
 			return 0;
 		}
-		return static_cast<usize>(destLen);
-	}
-	case afpCompressionMode_zstd: {
-		niVector<u8> compressedData;
-		compressedData.resize(srcSize);
-
-		ifs.seekg(fileOffset, std::ios::beg);
-		ifs.read(reinterpret_cast<char*>(compressedData.data()), srcSize);
-
-		const usize res = _zstdCtx->Decompress(compressedData.data(), srcSize, dst, expectedSize);
-		if (ZSTD_isError(res) || res != expectedSize) {
-			string err(ZSTD_getErrorName(res));
-			Debug::LogError("Zstd Decompression Failed: {}", err);
-			return false;
-		}
-		u32 crc32 = CalcCRC32(reinterpret_cast<const u8*>(dst), expectedSize);
-		if (crc32 != expectedCrc32) {
-			Debug::LogError("Decompression error using zstd! CRC32 mismatch!");
-			return 0;
-		}
-		return res;
-	}
-	case afpCompressionMode_lz4:
-	case afpCompressionMode_none:
-	default: {
-		ifs.seekg(fileOffset, std::ios::beg);
-		ifs.read(reinterpret_cast<char*>(dst), srcSize);
+		std::memcpy(dst, src, static_cast<usize>(srcSize));
 		return srcSize;
 	}
 	}

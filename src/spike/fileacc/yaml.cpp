@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#include "spike/fileparser/yaml.h"
+#include "spike/fileacc/yaml.h"
 
 #include <exception>
 #include <filesystem>

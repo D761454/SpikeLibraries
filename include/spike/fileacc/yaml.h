@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __SPIKE_YAML_FILE_IO
-#define __SPIKE_YAML_FILE_IO
+#ifndef __SPIKE_FILE_ACCESSOR_YAML_FILE_IO
+#define __SPIKE_FILE_ACCESSOR_YAML_FILE_IO
 
 #include <optional>
 #include <variant>

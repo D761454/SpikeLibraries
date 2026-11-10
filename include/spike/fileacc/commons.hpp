@@ -33,24 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-#ifndef __SPIKE_ASSET_FILE_PARSER_COMMONS
-#define __SPIKE_ASSET_FILE_PARSER_COMMONS
+#ifndef __SPIKE_FILE_ACCESSOR_COMMONS
+#define __SPIKE_FILE_ACCESSOR_COMMONS
 
 #include "spike/def_aliases.h"
 #include "spike/podio.hpp"
 #include "spike/stl_aliases.h"
 #include "spike/warning.h"
 
-namespace errlib { struct Error; }
-
 namespace fileacc {
-	enum CompressionMethod : u32 {
-		afpCompressionMode_none = 0,	// raw text - YAML or uncompressed binary
-		afpCompressionMode_zlib = 1,	// portable
-		afpCompressionMode_lz4 = 2,		// v. fast + fast runtime
-		afpCompressionMode_zstd = 3,	// best compromise speed / ratio - recommended for final builds
-	};
-
 	DISABLE_WARNING_PUSH
 	DISABLE_WARNING_UNINITIALIZED_VARIABLE
 
@@ -98,25 +89,6 @@ namespace fileacc {
 	bool check_file(const string& path, const u32 expectedMagic, const u32 expectedVer) noexcept;
 
 	bool check_file(const string& path, const FileCheck& expectedHeader) noexcept;
-
-	struct CompressedDataHeader {
-		CompressionMethod compressionMethod;
-		u32 crc32;
-		u64 uncompressedSize;
-		u64 compressedSize;
-		u64 dataOffset;
-	};
-
-	inline CompressedDataHeader make_compressed_header(const CompressionMethod compMethod, const u32 crc32, const u64 rawSize, const u64 compressedSize, const u64 offset = 0) {
-		CompressedDataHeader cdh;
-		podio::zero_init(cdh);
-		cdh.compressionMethod = compMethod;
-		cdh.crc32 = crc32;
-		cdh.uncompressedSize = rawSize;
-		cdh.compressedSize = compressedSize;
-		cdh.dataOffset = offset;
-		return cdh;
-	}
 
 	DISABLE_WARNING_POP
 
