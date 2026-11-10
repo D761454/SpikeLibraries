@@ -62,20 +62,18 @@ namespace sml {
 		vector4(f32 ix, f32 iy, f32 iz, f32 iw) noexcept : x(ix), y(iy), z(iz), w(iw) {}
 		explicit vector4(f32 xyzw) : x(xyzw), y(xyzw), z(xyzw), w(xyzw) {}
 
-		// ensure POD
 		vector4(const vector4& other) = default;
 		vector4(vector4&& other) = default;
 		vector4& operator=(const vector4& other) = default;
 		vector4& operator=(vector4&& other) = default;
-		// ensure POD
 
 		/// <summary>
 		/// Set the X, Y, Z and W components of this vector.
 		/// </summary>
-		/// <param name="ix">- new X value</param>
-		/// <param name="iy">- new Y value</param>
-		/// <param name="iz">- new Z value</param>
-		/// <param name="iw">- new W value</param>
+		/// <param name="ix">new X value</param>
+		/// <param name="iy">new Y value</param>
+		/// <param name="iz">new Z value</param>
+		/// <param name="iw">new W value</param>
 		inline void Set(f32 ix, f32 iy, f32 iz, f32 iw) noexcept { x = ix; y = iy; z = iz; w = iw; }
 
 		inline f32 operator[](u32 i) const {

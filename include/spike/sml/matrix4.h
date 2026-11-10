@@ -62,7 +62,7 @@ namespace sml {
 	/// Column-major notation is used as in OpenGL: the internal storage is an array of 4 columns.
 	/// Each MatrixRow instance therefore represents a column and elements are accessed as data[column][row].
 	/// The translation (position) component is stored in the right-most column (column index 3), rows 0..2.
-	/// These matrices are rarely used, only in special cases such as creating non-standard camera projection.
+	/// These matrices are rarely used by users, only in special cases such as creating non-standard camera projection.
 	/// </summary>
 	struct matrix4 {
 	public:

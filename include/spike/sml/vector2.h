@@ -96,12 +96,10 @@ namespace sml {
 		vector2(f32 ix, f32 iy) noexcept : x(ix), y(iy) {}
 		explicit vector2(f32 xy) : x(xy), y(xy) {}
 
-		// enusure POD
 		vector2(const vector2& other) = default;
 		vector2(vector2&& other) = default;
 		vector2& operator=(const vector2& other) = default;
 		vector2& operator=(vector2&& other) = default;
-		// ensure POD
 
 		inline f32 operator[](u32 i) const noexcept {
 			switch (i) {
@@ -140,22 +138,22 @@ namespace sml {
 		/// <summary>
 		/// Set the X and Y components of this vector
 		/// </summary>
-		/// <param name="ix">- new X value</param>
-		/// <param name="iy">- new Y value</param>
+		/// <param name="ix">new X value</param>
+		/// <param name="iy">new Y value</param>
 		inline void Set(f32 ix, f32 iy) noexcept { x = ix; y = iy; }
 
 		/// <summary>
 		/// Returns a vector that is made from the smallest components of two vectors.
 		/// </summary>
-		/// <param name="lhs">- vector to compare</param>
-		/// <param name="rhs">- vector to compare</param>
+		/// <param name="lhs">vector to compare</param>
+		/// <param name="rhs">vector to compare</param>
 		/// <returns>vector made from the smallest components of two vectors</returns>
 		static vector2 Min(const vector2& lhs, const vector2& rhs) noexcept;
 		/// <summary>
 		/// Returns a vector that is made from the largest components of two vectors.
 		/// </summary>
-		/// <param name="lhs">- vector to compare</param>
-		/// <param name="rhs">- vector to compare</param>
+		/// <param name="lhs">vector to compare</param>
+		/// <param name="rhs">vector to compare</param>
 		/// <returns>vector made from the largest components of two vectors</returns>
 		static vector2 Max(const vector2& lhs, const vector2& rhs) noexcept;
 
