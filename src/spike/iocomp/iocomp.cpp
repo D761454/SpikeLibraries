@@ -98,7 +98,7 @@ bool iocomp::IOComp::ZSTD() {
 }
 
 
-usize iocomp::IOComp::Compress(const void* src, const usize& srcSize, niVector<u8>& dst, const CompressionMethod_& compressionMethod) {
+u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, niVector<u8>& dst, const CompressionMethod_& compressionMethod) {
 	switch (compressionMethod) {
 	case CompressionMethod_zlib: {
 		uLong srcLen = static_cast<uLong>(srcSize);
@@ -114,9 +114,9 @@ usize iocomp::IOComp::Compress(const void* src, const usize& srcSize, niVector<u
 		return dst.size();
 	}
 	case CompressionMethod_zstd: {
-		usize bound = ZSTD_compressBound(srcSize);
+		usize bound = ZSTD_compressBound(static_cast<usize>(srcSize));
 		dst.resize(bound);
-		usize compressedSize = _zstdCtx.Compress(src, srcSize, dst.data(), bound, 3);
+		usize compressedSize = _zstdCtx.Compress(src, static_cast<usize>(srcSize), dst.data(), bound, 3);
 		if (ZSTD_isError(compressedSize)) {
 			dst.clear();
 			string err(ZSTD_getErrorName(compressedSize));
@@ -129,14 +129,14 @@ usize iocomp::IOComp::Compress(const void* src, const usize& srcSize, niVector<u
 	case CompressionMethod_lz4:
 	case CompressionMethod_none:
 	default: {
-		dst.resize(srcSize);
-		std::memcpy(dst.data(), src, srcSize);
+		dst.resize(static_cast<usize>(srcSize));
+		std::memcpy(dst.data(), src, static_cast<usize>(srcSize));
 		return srcSize;
 	}
 	}
 }
 
-usize iocomp::IOComp::Compress(const void* src, const usize& srcSize, void* dst, const CompressionMethod_& compressionMethod) {
+u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, void* dst, const CompressionMethod_& compressionMethod) {
 	switch (compressionMethod) {
 	case CompressionMethod_zlib: {
 		uLong srcLen = static_cast<uLong>(srcSize);
@@ -149,8 +149,8 @@ usize iocomp::IOComp::Compress(const void* src, const usize& srcSize, void* dst,
 		return static_cast<usize>(bound);
 	}
 	case CompressionMethod_zstd: {
-		usize bound = ZSTD_compressBound(srcSize);
-		usize compressedSize = _zstdCtx.Compress(src, srcSize, dst, bound, 3);
+		usize bound = ZSTD_compressBound(static_cast<usize>(srcSize));
+		usize compressedSize = _zstdCtx.Compress(src, static_cast<usize>(srcSize), dst, bound, 3);
 		if (ZSTD_isError(compressedSize)) {
 			string err(ZSTD_getErrorName(compressedSize));
 			Debug::LogError("Zstd Compression Failed: {}", err);
@@ -161,14 +161,14 @@ usize iocomp::IOComp::Compress(const void* src, const usize& srcSize, void* dst,
 	case CompressionMethod_lz4:
 	case CompressionMethod_none:
 	default: {
-		std::memcpy(dst, src, srcSize);
+		std::memcpy(dst, src, static_cast<usize>(srcSize));
 		return srcSize;
 	}
 	}
 }
 
 
-usize iocomp::IOComp::Decompress(const void* src, const usize& srcSize, void* dst, const usize& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
+u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
 	switch (compressionMethod) {
 	case CompressionMethod_zlib: {
 		uLongf destLen = static_cast<uLongf>(expectedSize);
@@ -184,14 +184,14 @@ usize iocomp::IOComp::Decompress(const void* src, const usize& srcSize, void* ds
 		return static_cast<usize>(destLen);
 	}
 	case CompressionMethod_zstd: {
-		const usize rawSize = ZSTD_getFrameContentSize(src, srcSize);
+		const usize rawSize = ZSTD_getFrameContentSize(src, static_cast<usize>(srcSize));
 		if (ZSTD_isError(rawSize)) {
 			string err(ZSTD_getErrorName(rawSize));
 			Debug::LogError("ZSTD_getFrameContentSize Failed: {}", err);
 			return 0;
 		}
-		const usize accRawSize = _zstdCtx.Decompress(src, srcSize, dst, rawSize);
-		if (ZSTD_isError(accRawSize) || accRawSize != expectedSize) {
+		const usize accRawSize = _zstdCtx.Decompress(src, static_cast<usize>(srcSize), dst, rawSize);
+		if (ZSTD_isError(accRawSize) || accRawSize != static_cast<usize>(expectedSize)) {
 			string err(ZSTD_getErrorName(accRawSize));
 			Debug::LogError("Zstd Decompression Failed: {}", err);
 			return false;
@@ -207,12 +207,12 @@ usize iocomp::IOComp::Decompress(const void* src, const usize& srcSize, void* ds
 	case CompressionMethod_none:
 	default: {
 		if (srcSize != expectedSize) return 0;
-		u32 crc32 = CalcCRC32(reinterpret_cast<const u8*>(src), srcSize);
+		u32 crc32 = CalcCRC32(reinterpret_cast<const u8*>(src), static_cast<usize>(srcSize));
 		if (crc32 != expectedCrc32) {
 			Debug::LogError("Decompression error using lz4 or none! CRC32 mismatch!");
 			return 0;
 		}
-		std::memcpy(dst, src, srcSize);
+		std::memcpy(dst, src, static_cast<usize>(srcSize));
 		return srcSize;
 	}
 	}
