@@ -64,13 +64,34 @@ namespace sml {
 		Rect() noexcept : x(0.0f), y(0.0f), width(0.0f), height(0.0f) {}
 		Rect(f32 ix, f32 iy, f32 iwidth, f32 iheight) noexcept : x(ix), y(iy), width(iwidth), height(iheight) {}
 
+		/// <summary>
+		/// Used to access the center position of the rect
+		/// </summary>
+		/// <returns>Thye center of the rect</returns>
 		inline vector2 Center() const noexcept { return { x + (width / 2), y + (height / 2) }; }
 
+		/// <summary>
+		/// Used to access the maximum vertex of the rect
+		/// </summary>
+		/// <returns>The position of the top right vertex of the rect</returns>
 		inline vector2 Max() const noexcept { return { x + width, y + height }; }
+
+		/// <summary>
+		/// Used to access the minimum vertex of the rect
+		/// </summary>
+		/// <returns>The position of the bottom left vertex of the rect</returns>
 		inline vector2 Min() const noexcept { return { x, y }; }
 
+		/// <summary>
+		/// Access the position of the rect as a vector2
+		/// </summary>
+		/// <returns>Position of the rect as a vector2</returns>
 		inline vector2 Position() const noexcept { return { x, y }; }
 
+		/// <summary>
+		/// Access the size of the rect as a vector2
+		/// </summary>
+		/// <returns>Size of the rect as a vector2</returns>
 		inline vector2 Size() const noexcept { return { width, height }; }
 
 		inline f32 XMax() const noexcept { return x + width; }
@@ -78,13 +99,51 @@ namespace sml {
 		inline f32 YMax() const noexcept { return y + height; }
 		inline f32 YMin() const noexcept { return y; }
 
+		/// <summary>
+		/// Set the rects values to equal that of the parameters
+		/// </summary>
+		/// <param name="N">rect containing the values to set this one to</param>
 		inline void Set(const Rect& N) noexcept { x = N.x; y = N.y; width = N.width; height = N.height; }
-		inline void Set(f32 ix, f32 iy, f32 iwidth, f32 iheight) noexcept { x = ix; y = iy; width = iwidth; height = iheight; }
 
+		/// <summary>
+		/// Set the rects values to equal that of the parameters
+		/// </summary>
+		/// <param name="ix">new x position</param>
+		/// <param name="iy">new y position</param>
+		/// <param name="iwidth">new width</param>
+		/// <param name="iheight">new height</param>
+		inline void Set(const f32 ix, const f32 iy, const f32 iwidth, const f32 iheight) noexcept { x = ix; y = iy; width = iwidth; height = iheight; }
+
+		/// <summary>
+		/// Used to determine if a 2D position is contained within the bounds of the rect
+		/// </summary>
+		/// <param name="point">position to check for overlap</param>
+		/// <returns>Whether the point lies within the rects bounds</returns>
 		bool Contains(const vector2& point) const noexcept;
+
+		/// <summary>
+		/// Used to determine if another rect overlaps with this rect
+		/// </summary>
+		/// <param name="other">rect to check</param>
+		/// <returns>Whether the rect overlaps on either axis</returns>
 		bool Overlaps(const Rect& other) const noexcept;
 
+		/// <summary>
+		/// Generates a rect based on the supplied parameters
+		/// </summary>
+		/// <param name="xmin">new position for the lower left vertex on the x axis</param>
+		/// <param name="ymin">new position for the lower left vertex on the y axis</param>
+		/// <param name="xmax">new position for the upper right vertex on the x axis</param>
+		/// <param name="ymax">new position for the upper right vertex on the y axis</param>
+		/// <returns>Newly generated rect object</returns>
 		static Rect	MinMaxRect(f32 xmin, f32 ymin, f32 xmax, f32 ymax) noexcept;
+
+		/// <summary>
+		/// Generates a rect based on the supplied parameters
+		/// </summary>
+		/// <param name="min">new position for the lower left vertex</param>
+		/// <param name="max">new position for the upper right vertex</param>
+		/// <returns>Newly generated rect object</returns>
 		static Rect	MinMaxRect(const vector2& min, const vector2& max) noexcept;
 
 		Rect operator*(const f32 scalar) const;

@@ -52,13 +52,21 @@ File Summary:
 #include "spike/stl_aliases.h"
 
 #include "spike/sml/vector3.h"
+#include "spike/sml/vector4.h"
 
 namespace sml {
+	/// <summary>
+	/// A standard 4x4 transformation matrix.
+	/// Column-major notation is used as in OpenGL: the internal storage is an array of 4 columns.
+	/// Each MatrixRow instance therefore represents a column and elements are accessed as data[column][row].
+	/// The translation (position) component is stored in the right-most column (column index 3), rows 0..2.
+	/// These matrices are rarely used by users, only in special cases such as creating non-standard camera projection.
+	/// </summary>
 	struct matrix4;
 
 	/// <summary>
 	/// Quaternions are used to represent rotations.
-	/// Quaternions are an array of numbers {x, y, z, w}.
+	/// Quaternions are an array of float values {x, y, z, w}.
 	/// </summary>
 	struct quaternion {
 	private:
@@ -82,17 +90,15 @@ namespace sml {
 		/// <summary>
 		/// Constructs a quaternion from an angle in degrees and an axis of rotation.
 		/// </summary>
-		/// <param name="angle">- rotation angle in degrees</param>
-		/// <param name="axis">- axis of rotation (should be normalized)</param>
+		/// <param name="angle">rotation angle in degrees</param>
+		/// <param name="axis">axis of rotation (should be normalized)</param>
 		quaternion(f32 angle, const vector3& axis) noexcept;
 		quaternion(f32 ix, f32 iy, f32 iz, f32 iw) noexcept : x(ix), y(iy), z(iz), w(iw) {}
 
-		// ensure POD
 		quaternion(const quaternion& other) = default;
 		quaternion(quaternion&& other) = default;
 		quaternion& operator=(const quaternion& other) = default;
 		quaternion& operator=(quaternion&& other) = default;
-		// ensure POD
 
 		inline f32 operator[](u32 i) const {
 			switch (i) {
@@ -124,7 +130,7 @@ namespace sml {
 		/// <summary>
 		/// Returns the Euler angle representation of the rotation.
 		/// </summary>
-		/// <param name="degrees">- if true returns result in degrees, otherwise radians</param>
+		/// <param name="degrees">if true returns result in degrees, otherwise radians</param>
 		/// <returns>vector3 representing Euler angles</returns>
 		vector3 EulerAngles(const bool degrees = true) const noexcept;
 		vector3 EulerAnglesAlt(const bool degrees = true, const vector3* primaryEuler = nullptr) const noexcept;
@@ -132,117 +138,117 @@ namespace sml {
 		/// <summary>
 		/// Set x, y, z and w components to those of the input quaternion.
 		/// </summary>
-		/// <param name="N">- source quaternion</param>
+		/// <param name="N">source quaternion</param>
 		inline void Set(const quaternion& N) noexcept { x = N.x; y = N.y; z = N.z; w = N.w; }
 
 		/// <summary>
 		/// Set x, y, z and w components to the input values.
 		/// </summary>
-		/// <param name="ix">- X component</param>
-		/// <param name="iy">- Y component</param>
-		/// <param name="iz">- Z component</param>
-		/// <param name="iw">- W component</param>
+		/// <param name="ix">X component</param>
+		/// <param name="iy">Y component</param>
+		/// <param name="iz">Z component</param>
+		/// <param name="iw">W component</param>
 		inline void Set(f32 ix, f32 iy, f32 iz, f32 iw) noexcept { x = ix; y = iy; z = iz; w = iw; }
 
 		/// <summary>
 		/// Creates a rotation with the specified forward and upwards directions.
 		/// </summary>
-		/// <param name="view">- forward direction</param>
-		/// <param name="up">- upward direction (defaults to +Y)</param>
+		/// <param name="view">forward direction</param>
+		/// <param name="up">upward direction (defaults to +Y)</param>
 		void SetLookRotation(const vector3& view, const vector3& up = vector3::up) noexcept;
 
 		/// <summary>
 		/// Converts a rotation to angle-axis representation (degrees).
 		/// </summary>
-		/// <param name="angle">- output rotation angle in degrees</param>
-		/// <param name="axis">- output rotation axis</param>
+		/// <param name="angle">output rotation angle in degrees</param>
+		/// <param name="axis">output rotation axis</param>
 		void ToAngleAxis(float& angle, vector3& axis) const noexcept;
 
 		/// <summary>
 		/// Returns the angle in degrees between two rotations.
 		/// </summary>
-		/// <param name="lhs">- first quaternion</param>
-		/// <param name="rhs">- second quaternion</param>
+		/// <param name="lhs">first quaternion</param>
+		/// <param name="rhs">second quaternion</param>
 		/// <returns>angle between rotations in degrees</returns>
 		static f32 Angle(const quaternion& lhs, const quaternion& rhs) noexcept;
 
 		/// <summary>
 		/// Calculates the dot product between two quaternions.
 		/// </summary>
-		/// <param name="a">- first quaternion</param>
-		/// <param name="b">- second quaternion</param>
+		/// <param name="a">first quaternion</param>
+		/// <param name="b">second quaternion</param>
 		/// <returns>dot product scalar value</returns>
 		static f32 Dot(const quaternion& a, const quaternion& b) noexcept;
 
 		/// <summary>
 		/// Returns the Conjugate of the quaternion (all vector components negated).
 		/// </summary>
-		/// <param name="quat">- input quaternion</param>
+		/// <param name="quat">input quaternion</param>
 		/// <returns>conjugate quaternion</returns>
 		static quaternion Conjugate(const quaternion& quat) noexcept;
 
 		/// <summary>
 		/// Returns the Negated quaternion (all components multiplied by -1).
 		/// </summary>
-		/// <param name="quat">- input quaternion</param>
+		/// <param name="quat">input quaternion</param>
 		/// <returns>negated quaternion</returns>
 		static quaternion Negate(const quaternion& quat) noexcept;
 
 		/// <summary>
 		/// Returns the Inverse of the rotation.
 		/// </summary>
-		/// <param name="rotation">- input rotation quaternion</param>
+		/// <param name="rotation">input rotation quaternion</param>
 		/// <returns>inverse rotation quaternion</returns>
 		static quaternion Inverse(const quaternion& rotation) noexcept;
 
 		/// <summary>
 		/// Converts input Euler angles specified as three floats to a quaternion.
 		/// </summary>
-		/// <param name="ix">- rotation around X axis</param>
-		/// <param name="iy">- rotation around Y axis</param>
-		/// <param name="iz">- rotation around Z axis</param>
-		/// <param name="degrees">- if true input is in degrees, otherwise radians</param>
+		/// <param name="ix">rotation around X axis</param>
+		/// <param name="iy">rotation around Y axis</param>
+		/// <param name="iz">rotation around Z axis</param>
+		/// <param name="degrees">if true input is in degrees, otherwise radians</param>
 		/// <returns>quaternion representing the rotation</returns>
 		static quaternion Euler(f32 ix, f32 iy, f32 iz, const bool degrees = true) noexcept;
 
 		/// <summary>
 		/// Converts input Euler angles specified as a vector3 to a quaternion.
 		/// </summary>
-		/// <param name="euler">- Euler angles (X, Y, Z)</param>
-		/// <param name="degrees">- if true input is in degrees, otherwise radians</param>
+		/// <param name="euler">Euler angles (X, Y, Z)</param>
+		/// <param name="degrees">if true input is in degrees, otherwise radians</param>
 		/// <returns>quaternion representing the rotation</returns>
 		static quaternion Euler(const vector3& euler, const bool degrees = true) noexcept;
 
 		/// <summary>
 		/// Interpolates between a and b by t and returns the normalized result (NLerp).
 		/// </summary>
-		/// <param name="a">- start rotation</param>
-		/// <param name="b">- end rotation</param>
-		/// <param name="t">- interpolation factor (typically in range [0, 1])</param>
+		/// <param name="a">start rotation</param>
+		/// <param name="b">end rotation</param>
+		/// <param name="t">interpolation factor (typically in range [0, 1])</param>
 		/// <returns>normalized interpolated quaternion</returns>
 		static quaternion Lerp(const quaternion& a, const quaternion& b, f32 t) noexcept;
 
 		/// <summary>
 		/// Spherical linear interpolation between a and b (Shortest path).
 		/// </summary>
-		/// <param name="a">- start rotation</param>
-		/// <param name="b">- end rotation</param>
-		/// <param name="t">- interpolation factor (typically in range [0, 1])</param>
+		/// <param name="a">start rotation</param>
+		/// <param name="b">end rotation</param>
+		/// <param name="t">interpolation factor (typically in range [0, 1])</param>
 		/// <returns>interpolated quaternion via spherical linear interpolation</returns>
 		static quaternion Slerp(const quaternion& a, const quaternion& b, f32 t) noexcept;
 
 		/// <summary>
 		/// Creates a rotation with the specified forward and upwards directions.
 		/// </summary>
-		/// <param name="forward">- forward direction</param>
-		/// <param name="up">- upward direction (defaults to +Y)</param>
+		/// <param name="forward">forward direction</param>
+		/// <param name="up">upward direction (defaults to +Y)</param>
 		/// <returns>quaternion representing the look rotation</returns>
 		static quaternion LookRotation(const vector3& forward, const vector3& up = vector3::up) noexcept;
 
 		/// <summary>
 		/// Modifies this quaternion to ensure a magnitude of 1 while preserving orientation.
 		/// </summary>
-		/// <param name="v">- quaternion to normalize</param>
+		/// <param name="v">quaternion to normalize</param>
 		/// <returns>normalized quaternion</returns>
 		static quaternion Normalize(const quaternion& v) noexcept;
 
@@ -250,18 +256,18 @@ namespace sml {
 		/// Creates a rotation that rotates vector 'from' to vector 'to'.
 		/// Handles nearly opposite vectors.
 		/// </summary>
-		/// <param name="from">- source direction</param>
-		/// <param name="to">- target direction</param>
+		/// <param name="from">source direction</param>
+		/// <param name="to">target direction</param>
 		/// <returns>quaternion rotating from to to</returns>
 		static quaternion FromToRotation(const vector3& from, const vector3& to) noexcept;
 
 		/// <summary>
 		/// Interpolates between quaternions a and b with interpolation distance d.
 		/// </summary>
-		/// <param name="out">- output quaternion</param>
-		/// <param name="a">- start rotation</param>
-		/// <param name="b">- end rotation</param>
-		/// <param name="d">- interpolation distance</param>
+		/// <param name="out">output quaternion</param>
+		/// <param name="a">start rotation</param>
+		/// <param name="b">end rotation</param>
+		/// <param name="d">interpolation distance</param>
 		static void Interpolate(quaternion& out, const quaternion& a, const quaternion& b, f32 d) noexcept;
 
 		/// <summary>

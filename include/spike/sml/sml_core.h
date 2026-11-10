@@ -77,7 +77,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the absolute value of value.
 	/// </summary>
-	/// <param name="value">- the input value</param>
+	/// <param name="value">the input value</param>
 	/// <returns>absolute value of input</returns>
 	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
 	inline T abs(T value) noexcept {
@@ -88,8 +88,8 @@ namespace sml {
 	/// Compares two values and returns true if they are approximately equal.
 	/// Uses a tolerance of 0.0001 for comparison.
 	/// </summary>
-	/// <param name="a">- first value to compare</param>
-	/// <param name="b">- second value to compare</param>
+	/// <param name="a">first value to compare</param>
+	/// <param name="b">second value to compare</param>
 	/// <returns>true if values are approximately equal, false otherwise</returns>
 	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
 	inline bool approx(T a, T b) noexcept {
@@ -99,7 +99,7 @@ namespace sml {
 	/// <summary>
 	/// Returns Euler's number (e) raised to the specified power.
 	/// </summary>
-	/// <param name="value">- the exponent</param>
+	/// <param name="value">the exponent</param>
 	/// <returns>e raised to the power of value</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T exp(T value) noexcept {
@@ -109,7 +109,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the smallest integer value greater than or equal to value.
 	/// </summary>
-	/// <param name="value">- the input value</param>
+	/// <param name="value">the input value</param>
 	/// <returns>ceiling of value in original type</returns>
 	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
 	inline T ceil(T value) noexcept {
@@ -119,7 +119,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the smallest integer value greater than or equal to value, cast as int32.
 	/// </summary>
-	/// <param name="value">- the input floating point value</param>
+	/// <param name="value">the input floating point value</param>
 	/// <returns>ceiling of value as int32</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline i32 ceil_to_int32(T value) noexcept {
@@ -129,7 +129,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the smallest integer value greater than or equal to value, cast as int64.
 	/// </summary>
-	/// <param name="value">- the input floating point value</param>
+	/// <param name="value">the input floating point value</param>
 	/// <returns>ceiling of value as int64</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline i64 ceil_to_int64(T value) noexcept {
@@ -139,7 +139,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the smallest integer value greater than or equal to value, cast as native integer (int64 on 64-bit systems, int32 on 32-bit systems).
 	/// </summary>
-	/// <param name="value">- the input floating point value</param>
+	/// <param name="value">the input floating point value</param>
 	/// <returns>ceiling of value as native integer</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline i64 ceil_to_int(T value) noexcept {
@@ -149,7 +149,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the greatest integer value smaller than or equal to value.
 	/// </summary>
-	/// <param name="value">- the input value</param>
+	/// <param name="value">the input value</param>
 	/// <returns>floor of value in original type</returns>
 	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
 	inline T floor(T value) noexcept {
@@ -159,7 +159,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the greatest integer value smaller than or equal to value, cast as int32.
 	/// </summary>
-	/// <param name="value">- the input floating point value</param>
+	/// <param name="value">the input floating point value</param>
 	/// <returns>floor of value as int32</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline i32 floor_to_int32(T value) noexcept {
@@ -169,7 +169,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the greatest integer value smaller than or equal to value, cast as int64.
 	/// </summary>
-	/// <param name="value">- the input floating point value</param>
+	/// <param name="value">the input floating point value</param>
 	/// <returns>floor of value as int64</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline i64 floor_to_int64(T value) noexcept {
@@ -179,7 +179,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the greatest integer value smaller than or equal to value, cast as native integer (int64 on 64-bit systems, int32 on 32-bit systems).
 	/// </summary>
-	/// <param name="value">- the input floating point value</param>
+	/// <param name="value">the input floating point value</param>
 	/// <returns>floor of value as native integer</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline i64 floor_to_int(T value) noexcept {
@@ -189,7 +189,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the sine of the input angle value in radians.
 	/// </summary>
-	/// <param name="value">- angle in radians</param>
+	/// <param name="value">angle in radians</param>
 	/// <returns>sine of the angle</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T sin(T value) noexcept {
@@ -199,7 +199,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the cosine of the input angle value in radians.
 	/// </summary>
-	/// <param name="value">- angle in radians</param>
+	/// <param name="value">angle in radians</param>
 	/// <returns>cosine of the angle</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T cos(T value) noexcept {
@@ -209,7 +209,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the tangent of the input angle value in radians.
 	/// </summary>
-	/// <param name="value">- angle in radians</param>
+	/// <param name="value">angle in radians</param>
 	/// <returns>tangent of the angle</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T tan(T value) noexcept {
@@ -220,7 +220,7 @@ namespace sml {
 	/// Returns the arc-sine (inverse sine) of value.
 	/// Result is in radians in the range [-π/2, π/2].
 	/// </summary>
-	/// <param name="value">- input value in range [-1, 1]</param>
+	/// <param name="value">input value in range [-1, 1]</param>
 	/// <returns>arc-sine of value in radians</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T asin(T value) noexcept {
@@ -231,7 +231,7 @@ namespace sml {
 	/// Returns the arc-cosine (inverse cosine) of value.
 	/// Result is in radians in the range [0, π].
 	/// </summary>
-	/// <param name="value">- input value in range [-1, 1]</param>
+	/// <param name="value">input value in range [-1, 1]</param>
 	/// <returns>arc-cosine of value in radians</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T acos(T value) noexcept {
@@ -242,7 +242,7 @@ namespace sml {
 	/// Returns the arc-tangent (inverse tangent) of value.
 	/// Result is in radians in the range [-π/2, π/2].
 	/// </summary>
-	/// <param name="value">- input value</param>
+	/// <param name="value">input value</param>
 	/// <returns>arc-tangent of value in radians</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T atan(T value) noexcept {
@@ -253,8 +253,8 @@ namespace sml {
 	/// Returns the angle in radians whose tangent is (a/b).
 	/// Uses both arguments to determine the correct quadrant of the result.
 	/// </summary>
-	/// <param name="a">- numerator (y-coordinate)</param>
-	/// <param name="b">- denominator (x-coordinate)</param>
+	/// <param name="a">numerator (y-coordinate)</param>
+	/// <param name="b">denominator (x-coordinate)</param>
 	/// <returns>angle in radians in the range [-π, π]</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T atan2(T a, T b) noexcept {
@@ -264,7 +264,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the mathematical sign of value.
 	/// </summary>
-	/// <param name="value">- the input value</param>
+	/// <param name="value">the input value</param>
 	/// <returns>-1 if value is negative, 1 if positive, 0 if zero</returns>
 	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
 	inline T sign(T value) noexcept {
@@ -275,9 +275,9 @@ namespace sml {
 	/// Clamps value between min and max bounds.
 	/// Returns value if it is within the range, otherwise returns the nearest bound.
 	/// </summary>
-	/// <param name="value">- the value to clamp</param>
-	/// <param name="min">- minimum bound</param>
-	/// <param name="max">- maximum bound</param>
+	/// <param name="value">the value to clamp</param>
+	/// <param name="min">minimum bound</param>
+	/// <param name="max">maximum bound</param>
 	/// <returns>clamped value within [min, max] range</returns>
 	template<typename T, typename T2, typename T3, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T2>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T3>>* = nullptr>
 	inline T clamp(T value, T2 min, T3 max) noexcept {
@@ -288,7 +288,7 @@ namespace sml {
 	/// <summary>
 	/// Clamps value between 0 and 1 (normalized range).
 	/// </summary>
-	/// <param name="value">- the value to clamp</param>
+	/// <param name="value">the value to clamp</param>
 	/// <returns>value clamped within [0, 1] range</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T clamp01(T value) noexcept {
@@ -299,9 +299,9 @@ namespace sml {
 	/// Linearly interpolates between a and b by factor t.
 	/// When t=0, returns a. When t=1, returns b. When t=0.5, returns midpoint.
 	/// </summary>
-	/// <param name="a">- start value</param>
-	/// <param name="b">- end value</param>
-	/// <param name="t">- interpolation factor (typically in range [0, 1])</param>
+	/// <param name="a">start value</param>
+	/// <param name="b">end value</param>
+	/// <param name="t">interpolation factor (typically in range [0, 1])</param>
 	/// <returns>interpolated value between a and b</returns>
 	template<typename T, typename T2, typename T3, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr, std::enable_if_t<std::is_floating_point_v<T2>>* = nullptr, std::enable_if_t<std::is_floating_point_v<T3>>* = nullptr>
 	inline T lerp(T a, T2 b, T3 t) noexcept {
@@ -311,8 +311,8 @@ namespace sml {
 	/// <summary>
 	/// Returns the logarithm of value in the specified base.
 	/// </summary>
-	/// <param name="value">- the input value (must be positive)</param>
-	/// <param name="base">- the logarithm base (must be positive and not equal to 1)</param>
+	/// <param name="value">the input value (must be positive)</param>
+	/// <param name="base">the logarithm base (must be positive and not equal to 1)</param>
 	/// <returns>logarithm of value in the specified base</returns>
 	template<typename T, typename T2, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T2>>* = nullptr>
 	inline T log(T value, T2 base) noexcept {
@@ -322,7 +322,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the base-10 logarithm of value.
 	/// </summary>
-	/// <param name="value">- the input value (must be positive)</param>
+	/// <param name="value">the input value (must be positive)</param>
 	/// <returns>base-10 logarithm of value</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T log10(T value) noexcept {
@@ -332,8 +332,8 @@ namespace sml {
 	/// <summary>
 	/// Returns value raised to the power p.
 	/// </summary>
-	/// <param name="value">- the base value</param>
-	/// <param name="p">- the exponent</param>
+	/// <param name="value">the base value</param>
+	/// <param name="p">the exponent</param>
 	/// <returns>value raised to power p</returns>
 	template<typename T, typename T2, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T2>>* = nullptr>
 	inline T pow(T value, T2 p) noexcept {
@@ -343,7 +343,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the square root of value.
 	/// </summary>
-	/// <param name="value">- the input value (must be non-negative)</param>
+	/// <param name="value">the input value (must be non-negative)</param>
 	/// <returns>square root of value</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T sqrt(T value) noexcept {
@@ -353,7 +353,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the largest value among all provided numeric arguments.
 	/// </summary>
-	/// <param name="args">- variable number of arguments to compare</param>
+	/// <param name="args">variable number of arguments to compare</param>
 	/// <returns>largest value among arguments</returns>
 	template<typename... T>
 	std::common_type_t<T...> max(T... args) {
@@ -364,7 +364,7 @@ namespace sml {
 	/// <summary>
 	/// Returns the smallest value among all provided numeric arguments.
 	/// </summary>
-	/// <param name="args">- variable number of arguments to compare</param>
+	/// <param name="args">variable number of arguments to compare</param>
 	/// <returns>smallest value among arguments</returns>
 	template<typename... T>
 	std::common_type_t<T...> min(T... args) {
@@ -375,7 +375,7 @@ namespace sml {
 	/// <summary>
 	/// Returns value rounded to the nearest integer value.
 	/// </summary>
-	/// <param name="value">- the input value</param>
+	/// <param name="value">the input value</param>
 	/// <returns>value rounded to nearest integer in original type</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline T round(T value) noexcept {
@@ -385,7 +385,7 @@ namespace sml {
 	/// <summary>
 	/// Returns value rounded to the nearest integer value, cast as int32.
 	/// </summary>
-	/// <param name="value">- the input floating point value</param>
+	/// <param name="value">the input floating point value</param>
 	/// <returns>value rounded to nearest integer as int32</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline i32 round_to_int32(T value) noexcept {
@@ -395,7 +395,7 @@ namespace sml {
 	/// <summary>
 	/// Returns value rounded to the nearest integer value, cast as int64.
 	/// </summary>
-	/// <param name="value">- the input floating point value</param>
+	/// <param name="value">the input floating point value</param>
 	/// <returns>value rounded to nearest integer as int64</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline i64 round_to_int64(T value) noexcept {
@@ -405,7 +405,7 @@ namespace sml {
 	/// <summary>
 	/// Returns value rounded to the nearest integer value, cast as native integer (int64 on 64-bit systems, int32 on 32-bit systems).
 	/// </summary>
-	/// <param name="value">- the input floating point value</param>
+	/// <param name="value">the input floating point value</param>
 	/// <returns>value rounded to nearest integer as native integer</returns>
 	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 	inline i64 round_to_int(T value) noexcept {

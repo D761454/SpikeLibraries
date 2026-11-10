@@ -50,6 +50,13 @@ File Summary:
 #include "spike/def_aliases.h"
 
 namespace memsys {
+	/// <summary>
+	/// Calculates the size required by an object of size 'value' with alignment 'alignment' 
+	/// returning the total size needed to place objects of that size subsequently in memory while respecting alignment
+	/// </summary>
+	/// <param name="value">size of the object to align</param>
+	/// <param name="alignment">alignemnt required by the object</param>
+	/// <returns>memory space required to house the object while respecting alignment</returns>
 	static inline constexpr const usize AlignUp(usize value, usize alignment) {
 		assert(alignment != 0 && (alignment & (alignment - 1)) == 0 && "Alignment must be power of two");
 		return (value + alignment - 1) & ~(alignment - 1);
@@ -69,6 +76,13 @@ namespace memsys {
 		~MemoryHeader() = default;
 	};
 
+	/// <summary>
+	/// Determines if a pointer is situated between 2 memory positions
+	/// </summary>
+	/// <param name="ptr">pointer to check</param>
+	/// <param name="start">lower bound for the range check</param>
+	/// <param name="end">upper bound for the range check</param>
+	/// <returns>if the pointer is located between start and end</returns>
 	inline bool IsPointerOwned(const void* ptr, const uptr start, const uptr end) {
 		assert(ptr != nullptr && "Cannot check ownership of a nullptr!");
 		if (!ptr) return false;

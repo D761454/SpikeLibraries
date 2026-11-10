@@ -71,12 +71,10 @@ namespace sml {
 		vector3(f32 ix, f32 iy, f32 iz) noexcept : x(ix), y(iy), z(iz) {}
 		explicit vector3(f32 xyz) : x(xyz), y(xyz), z(xyz) {}
 
-		// ensure POD
 		vector3(const vector3& other) = default;
 		vector3(vector3&& other) = default;
 		vector3& operator=(const vector3& other) = default;
 		vector3& operator=(vector3&& other) = default;
-		// ensure POD
 
 		inline f32 operator[](u32 i) const {
 			switch (i) {
@@ -95,47 +93,6 @@ namespace sml {
 			default: return x;
 			}
 		}
-
-		/// <summary>
-		/// Returns a normalized vector based on the current vector.
-		/// The normalized vector has a magnitude of 1 and is in the same direction as the current vector.
-		/// </summary>
-		/// <returns>vector with a magnitude of 1 and preserved direction</returns>
-		vector3 Normalized() const noexcept;
-
-		/// <summary>
-		/// Returns the length of this vector.
-		/// </summary>
-		/// <returns>vector length</returns>
-		f32 Magnitude() const noexcept;
-
-		/// <summary>
-		/// Set the X, Y and Z components of this vector
-		/// </summary>
-		/// <param name="N">- new vector data</param>
-		inline void Set(const vector3& N) noexcept { x = N.x; y = N.y; z = N.z; }
-		/// <summary>
-		/// Set the X, Y and Z components of this vector
-		/// </summary>
-		/// <param name="ix">- new X value</param>
-		/// <param name="iy">- new Y value</param>
-		/// <param name="iz">- new Z value</param>
-		inline void Set(f32 ix, f32 iy, f32 iz) noexcept { x = ix; y = iy; z = iz; }
-
-		/// <summary>
-		/// Returns a vector that is made from the smallest components of two vectors.
-		/// </summary>
-		/// <param name="lhs">- vector to compare</param>
-		/// <param name="rhs">- vector to compare</param>
-		/// <returns>vector made from the smallest components of two vectors</returns>
-		static vector3 Min(const vector3& lhs, const vector3& rhs) noexcept;
-		/// <summary>
-		/// Returns a vector that is made from the largest components of two vectors.
-		/// </summary>
-		/// <param name="lhs">- vector to compare</param>
-		/// <param name="rhs">- vector to compare</param>
-		/// <returns>vector made from the largest components of two vectors</returns>
-		static vector3 Max(const vector3& lhs, const vector3& rhs) noexcept;
 
 		/// <summary>
 		/// Shorthand for writing vector3(0, 1, 0).
@@ -171,53 +128,94 @@ namespace sml {
 		static const vector3 zero;
 
 		/// <summary>
+		/// Returns the length of this vector.
+		/// </summary>
+		/// <returns>vector length</returns>
+		f32 Magnitude() const noexcept;
+
+		/// <summary>
+		/// Returns a normalized vector based on the current vector.
+		/// The normalized vector has a magnitude of 1 and is in the same direction as the current vector.
+		/// </summary>
+		/// <returns>vector with a magnitude of 1 and preserved direction</returns>
+		vector3 Normalized() const noexcept;
+
+		/// <summary>
+		/// Set the X, Y and Z components of this vector
+		/// </summary>
+		/// <param name="N">new vector data</param>
+		inline void Set(const vector3& N) noexcept { x = N.x; y = N.y; z = N.z; }
+		/// <summary>
+		/// Set the X, Y and Z components of this vector
+		/// </summary>
+		/// <param name="ix">new X value</param>
+		/// <param name="iy">new Y value</param>
+		/// <param name="iz">new Z value</param>
+		inline void Set(f32 ix, f32 iy, f32 iz) noexcept { x = ix; y = iy; z = iz; }
+
+		/// <summary>
+		/// Returns a vector that is made from the smallest components of two vectors.
+		/// </summary>
+		/// <param name="lhs">vector to compare</param>
+		/// <param name="rhs">vector to compare</param>
+		/// <returns>vector made from the smallest components of two vectors</returns>
+		static vector3 Min(const vector3& lhs, const vector3& rhs) noexcept;
+		/// <summary>
+		/// Returns a vector that is made from the largest components of two vectors.
+		/// </summary>
+		/// <param name="lhs">vector to compare</param>
+		/// <param name="rhs">vector to compare</param>
+		/// <returns>vector made from the largest components of two vectors</returns>
+		static vector3 Max(const vector3& lhs, const vector3& rhs) noexcept;
+
+		/// <summary>
 		/// Gets the unsigned angle in degrees between lhs and rhs.
 		/// </summary>
-		/// <param name="lhs">- first vector</param>
-		/// <param name="rhs">- second vector</param>
+		/// <param name="lhs">first vector</param>
+		/// <param name="rhs">second vector</param>
 		/// <returns>angle between the 2 vectors in degrees</returns>
 		static f32 Angle(const vector3& lhs, const vector3& rhs) noexcept;
 		/// <summary>
 		/// Calculates the cross product of two three-dimensional vectors.
 		/// </summary>
-		/// <param name="lhs">- first vector</param>
-		/// <param name="rhs">- second vector</param>
+		/// <param name="lhs">first vector</param>
+		/// <param name="rhs">second vector</param>
 		/// <returns>cross product vector perpendicular to both inputs</returns>
 		static vector3 Cross(const vector3& lhs, const vector3& rhs) noexcept;
 		/// <summary>
 		/// Calculates the dot product of two three-dimensional vectors defined in the same coordinate space.
 		/// </summary>
-		/// <param name="lhs">- first vector</param>
-		/// <param name="rhs">- second vector</param>
+		/// <param name="lhs">first vector</param>
+		/// <param name="rhs">second vector</param>
 		/// <returns>dot product scalar value</returns>
 		static f32 Dot(const vector3& lhs, const vector3& rhs) noexcept;
 		/// <summary>
 		/// Returns the distance between lhs and rhs.
 		/// </summary>
-		/// <param name="lhs">- first point</param>
-		/// <param name="rhs">- second point</param>
+		/// <param name="lhs">first point</param>
+		/// <param name="rhs">second point</param>
 		/// <returns>distance between the two points</returns>
 		static f32 Distance(const vector3& lhs, const vector3& rhs) noexcept;
 
 		/// <summary>
 		/// Modifies this vector to ensure a magnitude of 1 while preserving direction.
 		/// </summary>
-		/// <param name="v">- vector to normalize</param>
+		/// <param name="v">vector to normalize</param>
 		/// <returns>normalized vector with magnitude of 1 and preserved direction</returns>
 		static vector3 Normalize(const vector3& v) noexcept;
 		/// <summary>
 		/// Linearly interpolates between vectors lhs and rhs by t.
 		/// </summary>
-		/// <param name="lhs">- start vector</param>
-		/// <param name="rhs">- end vector</param>
-		/// <param name="t">- interpolation factor (typically in range [0, 1])</param>
+		/// <param name="lhs">start vector</param>
+		/// <param name="rhs">end vector</param>
+		/// <param name="t">interpolation factor (typically in range [0, 1])</param>
 		/// <returns>vector representing a point at t, between lhs and rhs</returns>
 		static vector3 Lerp(const vector3& lhs, const vector3& rhs, f32 t) noexcept;
 		/// <summary>
 		/// Multiplies two vectors component-wise.
 		/// </summary>
-		/// <param name="lhs">- first vector</param>
-		/// <param name="rhs">- second vector</param>
+		/// <param name="lhs">first vector</param>
+		/// <param name="rhs">second vector</param>
 		/// <returns>component-wise product</returns>
 		static vector3 Scale(const vector3& lhs, const vector3& rhs) noexcept;
 

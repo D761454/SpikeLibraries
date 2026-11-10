@@ -65,7 +65,7 @@ namespace sml {
 		/// <summary>
 		/// returns a point along the rays path
 		/// </summary>
-		/// <param name="dist">- distance along the rays path</param>
+		/// <param name="dist">distance along the rays path</param>
 		/// <returns>world position at distance dist along the ray</returns>
 		vector2 GetPoint(f32 dist) const noexcept;
 

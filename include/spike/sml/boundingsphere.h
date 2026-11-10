@@ -67,7 +67,6 @@ namespace sml {
 		BoundingSphere(BoundingSphere&& other) = default;
 		BoundingSphere& operator=(const BoundingSphere& other) = default;
 		BoundingSphere& operator=(BoundingSphere&& other) = default;
-		// ensure POD
 
 		/// <summary>
 		/// Returns a formatted string for this bounding sphere.

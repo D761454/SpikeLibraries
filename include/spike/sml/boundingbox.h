@@ -69,16 +69,27 @@ namespace sml {
 		BoundingBox(BoundingBox&& other) = default;
 		BoundingBox& operator=(const BoundingBox& other) = default;
 		BoundingBox& operator=(BoundingBox&& other) = default;
-		// ensure POD
 
+		/// <summary>
+		/// Used to provide the minimum vertex of the BoundingBox
+		/// </summary>
+		/// <returns>Minimum vertex of the bounding box</returns>
 		inline sml::vector3 Min() const noexcept {
 			return center - extents;
 		}
 
+		/// <summary>
+		/// Used to provide the maximum vertex of the BoundingBox
+		/// </summary>
+		/// <returns>Maximum vertex of the bounding box</returns>
 		inline sml::vector3 Max() const noexcept {
 			return center + extents;
 		}
 
+		/// <summary>
+		/// used to acquire the total size of the bounding box across all 3 axis
+		/// </summary>
+		/// <returns>The size of the bounding box on the X, Y and z axis</returns>
 		inline sml::vector3 Size() const noexcept {
 			return extents * 2;
 		}
@@ -86,48 +97,48 @@ namespace sml {
 		/// <summary>
 		/// Finds the closest point on or inside this bounding box to the given point.
 		/// </summary>
-		/// <param name="point">- the external point</param>
+		/// <param name="point">the external point</param>
 		/// <returns>closest point on or within the bounding box</returns>
 		sml::vector3 ClosestPoint(const sml::vector3& point) const noexcept;
 
 		/// <summary>
 		/// Checks if the given point is contained within this bounding box.
 		/// </summary>
-		/// <param name="point">- the point to test</param>
+		/// <param name="point">the point to test</param>
 		/// <returns>true if point is within the bounding box, false otherwise</returns>
 		bool Contains(const sml::vector3& point) const noexcept;
 
 		/// <summary>
 		/// Expands this bounding box to encapsulate the given point.
 		/// </summary>
-		/// <param name="point">- the point to encapsulate</param>
+		/// <param name="point">the point to encapsulate</param>
 		void Encapsulate(const sml::vector3& point) noexcept;
 
 		/// <summary>
 		/// Expands this bounding box by the specified amount in all directions.
 		/// </summary>
-		/// <param name="amount">- the expansion amount</param>
+		/// <param name="amount">the expansion amount</param>
 		void Expand(f32 amount) noexcept;
 
 		/// <summary>
 		/// Tests if a ray intersects this bounding box.
 		/// </summary>
-		/// <param name="ray">- the ray to test</param>
+		/// <param name="ray">the ray to test</param>
 		/// <returns>true if ray intersects bounding box, false otherwise</returns>
 		bool IntersectRay(const Ray& ray) const;
 
 		/// <summary>
 		/// Tests if this bounding box intersects with another bounding box.
 		/// </summary>
-		/// <param name="bounds">- the other bounding box</param>
+		/// <param name="bounds">the other bounding box</param>
 		/// <returns>true if bounding boxes intersect, false otherwise</returns>
 		bool Intersect(const BoundingBox& bounds) const noexcept;
 
 		/// <summary>
 		/// Sets the min and max bounds of this bounding box and recalculates derived values.
 		/// </summary>
-		/// <param name="min">- minimum corner</param>
-		/// <param name="max">- maximum corner</param>
+		/// <param name="min">minimum corner</param>
+		/// <param name="max">maximum corner</param>
 		void SetMinMax(const sml::vector3& min, const sml::vector3& max) noexcept;
 
 		/// <summary>

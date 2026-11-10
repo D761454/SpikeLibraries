@@ -67,6 +67,31 @@ namespace sml {
 	struct vector2 {
 		f32 x, y;
 
+		vector2() noexcept : x(0.f), y(0.f) {}
+		vector2(f32 ix, f32 iy) noexcept : x(ix), y(iy) {}
+		explicit vector2(f32 xy) : x(xy), y(xy) {}
+
+		vector2(const vector2& other) = default;
+		vector2(vector2&& other) = default;
+		vector2& operator=(const vector2& other) = default;
+		vector2& operator=(vector2&& other) = default;
+
+		inline f32 operator[](u32 i) const noexcept {
+			switch (i) {
+			case 0: return x;
+			case 1: return y;
+			default: return x;
+			}
+		}
+
+		inline f32& operator[](u32 i) noexcept {
+			switch (i) {
+			case 0: return x;
+			case 1: return y;
+			default: return x;
+			}
+		}
+
 		/// <summary>
 		/// Shorthand for writing vector2(0, 1).
 		/// </summary>
@@ -92,32 +117,11 @@ namespace sml {
 		/// </summary>
 		static const vector2 zero;
 
-		vector2() noexcept : x(0.f), y(0.f) {}
-		vector2(f32 ix, f32 iy) noexcept : x(ix), y(iy) {}
-		explicit vector2(f32 xy) : x(xy), y(xy) {}
-
-		// enusure POD
-		vector2(const vector2& other) = default;
-		vector2(vector2&& other) = default;
-		vector2& operator=(const vector2& other) = default;
-		vector2& operator=(vector2&& other) = default;
-		// ensure POD
-
-		inline f32 operator[](u32 i) const noexcept {
-			switch (i) {
-			case 0: return x;
-			case 1: return y;
-			default: return x;
-			}
-		}
-
-		inline f32& operator[](u32 i) noexcept {
-			switch (i) {
-			case 0: return x;
-			case 1: return y;
-			default: return x;
-			}
-		}
+		/// <summary>
+		/// Returns the length of this vector.
+		/// </summary>
+		/// <returns>vector length</returns>
+		f32 Magnitude() const noexcept;
 
 		/// <summary>
 		/// Returns a normalized vector based on the current vector.
@@ -127,12 +131,6 @@ namespace sml {
 		vector2	Normalized() const noexcept;
 
 		/// <summary>
-		/// Returns the length of this vector.
-		/// </summary>
-		/// <returns>vector length</returns>
-		f32	Magnitude() const noexcept;
-
-		/// <summary>
 		/// Set the X and Y components of this vector
 		/// </summary>
 		/// <param name="N">new vector data</param>
@@ -140,22 +138,22 @@ namespace sml {
 		/// <summary>
 		/// Set the X and Y components of this vector
 		/// </summary>
-		/// <param name="ix">- new X value</param>
-		/// <param name="iy">- new Y value</param>
+		/// <param name="ix">new X value</param>
+		/// <param name="iy">new Y value</param>
 		inline void Set(f32 ix, f32 iy) noexcept { x = ix; y = iy; }
 
 		/// <summary>
 		/// Returns a vector that is made from the smallest components of two vectors.
 		/// </summary>
-		/// <param name="lhs">- vector to compare</param>
-		/// <param name="rhs">- vector to compare</param>
+		/// <param name="lhs">vector to compare</param>
+		/// <param name="rhs">vector to compare</param>
 		/// <returns>vector made from the smallest components of two vectors</returns>
 		static vector2 Min(const vector2& lhs, const vector2& rhs) noexcept;
 		/// <summary>
 		/// Returns a vector that is made from the largest components of two vectors.
 		/// </summary>
-		/// <param name="lhs">- vector to compare</param>
-		/// <param name="rhs">- vector to compare</param>
+		/// <param name="lhs">vector to compare</param>
+		/// <param name="rhs">vector to compare</param>
 		/// <returns>vector made from the largest components of two vectors</returns>
 		static vector2 Max(const vector2& lhs, const vector2& rhs) noexcept;
 
@@ -238,8 +236,9 @@ namespace sml {
 		vector3 ToVector3XY() const noexcept;
 
 		/// <summary>
-		/// Returns a formatted string for this Vector
+		/// Returns a formatted string for this vector.
 		/// </summary>
+		/// <returns>string representation of this vector</returns>
 		string ToString() const noexcept;
 	};
 }

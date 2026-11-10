@@ -55,9 +55,19 @@ File Summary:
 #include "spike/sml/vector4.h"
 
 namespace sml {
+	/// <summary>
+	/// Colour representation using 3 float values, no alpha channel
+	/// </summary>
 	struct colour96;
+
+	/// <summary>
+	/// Colour representation using 4 float values
+	/// </summary>
 	struct colour128;
 
+	/// <summary>
+	/// Colour representation using 3 byte values, no alpha channel
+	/// </summary>
 	struct colour24 {
 		u8 r, g, b;
 
@@ -65,19 +75,17 @@ namespace sml {
 		colour24(u8 ir, u8 ig, u8 ib) noexcept;
 		explicit colour24(u8 rgb);
 
-		// ensure POD
 		colour24(const colour24& other) = default;
 		colour24(colour24&& other) = default;
 		colour24& operator=(const colour24& other) = default;
 		colour24& operator=(colour24&& other) = default;
-		// ensure POD
 
 		/// <summary>
 		/// Linearly interpolates between two colours by t.
 		/// </summary>
-		/// <param name="a">- start colour</param>
-		/// <param name="b">- end colour</param>
-		/// <param name="t">- interpolation factor</param>
+		/// <param name="a">start colour</param>
+		/// <param name="b">end colour</param>
+		/// <param name="t">interpolation factor</param>
 		/// <returns>interpolated colour</returns>
 		static colour24 Lerp(const colour24& a, const colour24& b, f32 t) noexcept;
 
@@ -138,6 +146,9 @@ namespace sml {
 		static colour24 aliceBlue;
 	};
 
+	/// <summary>
+	/// Colour representation using 4 byte values
+	/// </summary>
 	struct colour32 {
 		u8 r, g, b, a;
 
@@ -146,19 +157,17 @@ namespace sml {
 		colour32(u8 rgb, u8 ia) noexcept;
 		colour32(const colour24& col, u8 ia = 255) noexcept;
 
-		// ensure POD
 		colour32(const colour32& other) = default;
 		colour32(colour32&& other) = default;
 		colour32& operator=(const colour32& other) = default;
 		colour32& operator=(colour32&& other) = default;
-		// ensure POD
 
 		/// <summary>
 		/// Linearly interpolates between two colours by t.
 		/// </summary>
-		/// <param name="a">- start colour</param>
-		/// <param name="b">- end colour</param>
-		/// <param name="t">- interpolation factor</param>
+		/// <param name="a">start colour</param>
+		/// <param name="b">end colour</param>
+		/// <param name="t">interpolation factor</param>
 		/// <returns>interpolated colour</returns>
 		static colour32 Lerp(const colour32& a, const colour32& b, f32 t) noexcept;
 
@@ -209,6 +218,9 @@ namespace sml {
 		static colour32 aliceBlue;
 	};
 
+	/// <summary>
+	/// Colour representation using 3 float values, no alpha channel
+	/// </summary>
 	struct colour96 {
 		f32 r, g, b;
 
@@ -216,19 +228,17 @@ namespace sml {
 		colour96(f32 ir, f32 ig, f32 ib) noexcept;
 		explicit colour96(f32 rgb);
 
-		// ensure POD
 		colour96(const colour96& other) = default;
 		colour96(colour96&& other) = default;
 		colour96& operator=(const colour96& other) = default;
 		colour96& operator=(colour96&& other) = default;
-		// ensure POD
 
 		/// <summary>
 		/// Linearly interpolates between two colours by t.
 		/// </summary>
-		/// <param name="a">- start colour</param>
-		/// <param name="b">- end colour</param>
-		/// <param name="t">- interpolation factor</param>
+		/// <param name="a">start colour</param>
+		/// <param name="b">end colour</param>
+		/// <param name="t">interpolation factor</param>
 		/// <returns>interpolated colour</returns>
 		static colour96 Lerp(const colour96& a, const colour96& b, f32 t) noexcept;
 
@@ -247,6 +257,9 @@ namespace sml {
 		string ToString() const noexcept;
 	};
 
+	/// <summary>
+	/// Colour representation using 4 float values
+	/// </summary>
 	struct colour128 {
 		f32 r, g, b, a;
 
@@ -255,19 +268,17 @@ namespace sml {
 		colour128(f32 rgb, f32 ia = 1.f) noexcept;
 		colour128(const colour96& col, f32 ia = 1.f) noexcept;
 
-		// ensure POD
 		colour128(const colour128& other) = default;
 		colour128(colour128&& other) = default;
 		colour128& operator=(const colour128& other) = default;
 		colour128& operator=(colour128&& other) = default;
-		// ensure POD
 
 		/// <summary>
 		/// Linearly interpolates between two colours by t.
 		/// </summary>
-		/// <param name="a">- start colour</param>
-		/// <param name="b">- end colour</param>
-		/// <param name="t">- interpolation factor</param>
+		/// <param name="a">start colour</param>
+		/// <param name="b">end colour</param>
+		/// <param name="t">interpolation factor</param>
 		/// <returns>interpolated colour</returns>
 		static colour128 Lerp(const colour128& a, const colour128& b, f32 t) noexcept;
 

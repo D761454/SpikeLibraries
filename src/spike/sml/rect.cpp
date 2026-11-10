@@ -50,18 +50,14 @@ namespace sml {
 	}
 
 	bool Rect::Overlaps(const Rect& other) const noexcept {
-		if (Min() > other.Min()) {
-			if (Min() < other.Max()) {
-				return true;
-			}
-			return false;
-		}
-		else if (Max() < other.Max()) {
-			if (Max() > other.Min()) {
-				return true;
-			}
-			return false;
-		}
+		const vector2 min = Min();
+		const vector2 max = Max();
+		const vector2 omin = other.Min();
+		const vector2 omax = other.Max();
+
+		if (max.x < omin.x || min.x > omax.x) return false;
+		if (max.y < omin.y || min.y > omax.y) return false;
+		return true;
 
 		return false;
 	}
