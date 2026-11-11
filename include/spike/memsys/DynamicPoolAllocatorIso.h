@@ -63,7 +63,12 @@ File Summary:
 // need to edit allocatprs to allow self governing memory versions
 
 namespace memsys {
-
+    /// <summary>
+    /// This is an allocator that holds a dynamic amount of memory pools, generating a new pool on filling all available pools.
+    /// This Iso version manages its memory itself.
+    /// </summary>
+    /// <typeparam name="T">Object type held within the pools</typeparam>
+    /// <typeparam name="Capacity">The size of each dynamically allocated pool</typeparam>
     template<class T, usize Capacity>
     class DynamicPoolAllocatorIso {
         static_assert(Capacity > 0);

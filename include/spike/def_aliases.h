@@ -831,4 +831,7 @@ inline constexpr f64 kEpsilon = 1e-6;
 
 inline constexpr f32 kU8toF32 = 1.f / 255.f; // can be used for converting u8 colour components to 0-1f representation and vice-versa
 
+inline constexpr i64 kMegaByte = 1048576;
+inline constexpr i64 kGigaByte = 1073741824;
+
 #endif

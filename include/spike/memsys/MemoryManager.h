@@ -52,6 +52,8 @@ namespace memsys {
 	/// </summary>
 	class MemoryManager {
 	private:
+		inline static const usize kTotalSize = kMegaByte * 128;
+
 		StackAllocator* _allocator;
 		void* _globalMemoryBase;
 
@@ -59,24 +61,48 @@ namespace memsys {
 		std::list<void*> _freeChunks; // store memory to free that is not at the head of the stack
 
 		MemoryManager(const MemoryManager&) = delete;
-		MemoryManager& operator=(MemoryManager&) = delete;
+		MemoryManager& operator=(const MemoryManager&) = delete;
 
 	public:
 		MemoryManager();
 		~MemoryManager();
 
+		/// <summary>
+		/// Returns a pointer in memory to an allocated memory chunk of size. If no chunk is found / available returns nullptr.
+		/// </summary>
+		/// <param name="size">memory size requested</param>
+		/// <param name="id">user id to associate with the allocated chunk</param>
+		/// <returns>pointer to memory if there is space available, otherwise nullptr</returns>
 		void* AllocateChunk(const usize size, const char* id = nullptr);
 
+		/// <summary>
+		/// Frees a previously allocated memory chunk.
+		/// </summary>
+		/// <param name="ptr">pointer to the base of the allocated memory chunk to be freed</param>
 		void FreeChunk(void* ptr);
 
+		/// <summary>
+		/// Logs the current memory usage using Debug::Log. Note: the memory logged is the total allocated, not the total used within those allocations!
+		/// </summary>
 		void LogMemoryUsage() const;
 
+		/// <summary>
+		/// Checks if there are nay unfreed chunks in memory. Recommended for use on shutdown as a security check.
+		/// </summary>
 		void IntegrityCheck() const;
 
+		/// <summary>
+		/// Used to get the total allocated/used memory from the managers stack allocator.
+		/// </summary>
+		/// <returns>the total memory currently used within the managers stack allocator</returns>
 		usize GetTotalAllocatedMemory();
 	};
 
-	extern MemoryManager* coreMemoryManager;
+	/// <summary>
+	/// Retrieve the singular instance of the memory manager
+	/// </summary>
+	/// <returns>the memory manager instance</returns>
+	MemoryManager& GetMemoryManager();
 }
 
 #endif

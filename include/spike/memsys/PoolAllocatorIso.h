@@ -62,6 +62,7 @@ namespace memsys {
     /// <summary>
     /// This is an allocator that holds a pool of fixed-size memory blocks for fast allocation / freeing.
     /// This is useful for allocating many small objects of the same size, such as particles or game entities.
+    /// This Iso version manages its memory itself.
     /// </summary>
     template<class T, usize Capacity>
     class PoolAllocatorIso {

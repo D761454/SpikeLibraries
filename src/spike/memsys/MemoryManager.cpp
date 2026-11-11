@@ -49,8 +49,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/memsys/StackAllocator.h"
 
 namespace memsys {
-	inline constexpr usize kTotalSize = 1048576 * 128;
-
 	MemoryManager::MemoryManager() {
 		_globalMemoryBase = malloc(kTotalSize);
 
@@ -84,8 +82,7 @@ namespace memsys {
 	}
 
 	void MemoryManager::FreeChunk(void* ptr) {
-		if (ptr == nullptr) return;
-
+		if (!ptr) return;
 		if (ptr == _allocatedChunks.back().second) {
 			_allocator->Free(ptr);
 			_allocatedChunks.pop_back();
@@ -143,5 +140,8 @@ namespace memsys {
 		return _allocator->GetAllocatedMemory();
 	}
 
-	MemoryManager* CoreMemoryManager = new MemoryManager();
+	MemoryManager& GetMemoryManager() {
+		static MemoryManager instance;
+		return instance;
+	}
 }
