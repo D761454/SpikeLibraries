@@ -99,9 +99,18 @@ namespace memsys {
 
         ~DynamicPoolAllocatorIso();
 
+        /// <summary>
+        /// Used to construct on object within the first empty slot in an available memory pool
+        /// </summary>
+        /// <param name="...args">constructor arguments to be passed for the created object of type T</param>
+        /// <returns>pointer to the created object, or nullptr if the object could not be created</returns>
         template<class... Args>
         T* Create(Args&&... args);
 
+        /// <summary>
+        /// Used to destroy an object, if the object is found within any of the memory pools
+        /// </summary>
+        /// <param name="obj">pointer to the object to delete</param>
         void Destroy(T* obj);
 
         [[deprecated("Work In Progress. Likely broken or has faulty logic / lack of edge case handling.")]] void* DuplicateObject(void* src) {
@@ -109,8 +118,16 @@ namespace memsys {
             return nullptr;
         }
 
+        /// <summary>
+        /// returns a vector of pointers to all created objects within each memory pool
+        /// </summary>
+        /// <returns>a vector of object pointers</returns>
         std::vector<T*> GetAllocatedObjects();
 
+        /// <summary>
+        /// returns the first valid object found within the memory pools
+        /// </summary>
+        /// <returns>pointer to the object or nullptr if no objects of type T are present</returns>
         T* GetFirstAllocatedObject();
     };
 

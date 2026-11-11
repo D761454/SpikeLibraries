@@ -63,7 +63,18 @@ namespace memsys {
 		MemoryUser();
 		virtual ~MemoryUser() {}
 
+		/// <summary>
+		/// Used to acquire a chunk of memory of size from the memory manager, the chunk is labeled under the passed id for error checking
+		/// </summary>
+		/// <param name="size">amount of memory requested / size of the memory chunk returned</param>
+		/// <param name="id">id to associate with the allocated memory chunk</param>
+		/// <returns>pointer to the base of the allocated memory chunk, if no space available, returns nullptr</returns>
 		void* RequestMemoryChunk(const usize size, const char* id = nullptr) const;
+
+		/// <summary>
+		/// frees a memory chunk from the memory manager, allowing the chunk to be reused on future allocations
+		/// </summary>
+		/// <param name="ptr">pointer to the base of the memory chunk to be freed</param>
 		void FreeMemoryChunk(void* ptr) const;
 	};
 }

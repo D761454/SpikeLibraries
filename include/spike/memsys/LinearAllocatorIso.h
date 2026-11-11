@@ -71,20 +71,6 @@ namespace memsys {
 		void* _memoryBase;
 		const usize _memorySize;
 
-		inline bool IsPowerOfTwo(uptr n) const { return (n & (n - 1)) == 0; }
-
-		uptr AlignForward(uptr address, usize alignment) const {
-			assert(this->IsPowerOfTwo(alignment) && "Alignment must be a power of two!");
-
-			usize adjustment = alignment - (address & (alignment - 1));
-
-			if (adjustment == alignment) {
-				return address;
-			}
-
-			return address + adjustment;
-		}
-
 	public:
 		LinearAllocatorIso(const usize memorySize) : _memoryBase(malloc(memorySize)), _memorySize(memorySize), _allocationCount(0), _allocatedMemory(0) {
 			assert(_memoryBase != nullptr && "LinearAllocatorIso: Memory base is nullptr!");
@@ -129,6 +115,13 @@ namespace memsys {
 		LinearAllocatorIso(const LinearAllocatorIso&) = delete;
 		LinearAllocatorIso(LinearAllocatorIso&&) = delete;
 	};
+
+#pragma region Implementation
+
+
+
+#pragma endregion
+
 }
 
 #endif

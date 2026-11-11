@@ -95,7 +95,7 @@ namespace memsys {
 		/// Used to get the total allocated/used memory from the managers stack allocator.
 		/// </summary>
 		/// <returns>the total memory currently used within the managers stack allocator</returns>
-		usize GetTotalAllocatedMemory();
+		const usize GetTotalAllocatedMemory() const noexcept;
 	};
 
 	/// <summary>

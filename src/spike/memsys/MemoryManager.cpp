@@ -136,8 +136,8 @@ namespace memsys {
 		}
 	}
 
-	usize MemoryManager::GetTotalAllocatedMemory() {
-		return _allocator->GetAllocatedMemory();
+	const usize MemoryManager::GetTotalAllocatedMemory() const noexcept {
+		return _allocator ? _allocator->GetAllocatedMemory() : 0;
 	}
 
 	MemoryManager& GetMemoryManager() {
