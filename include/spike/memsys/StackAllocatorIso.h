@@ -95,6 +95,14 @@ namespace memsys {
 
 		void* Allocate(usize size, usize alignment = alignof(std::max_align_t));
 
+		/// <summary>
+		/// Allocate a memory chunk of sizeof T, ensuring alignment of T is satisfied
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns>pointer to the allocated object or nulltpr if it could not be allocated</returns>
+		template<typename T, typename... Args>
+		T* Allocate(Args&&... args);
+
 		void Free(void* ptr);
 
 		void Reset() noexcept;
@@ -112,42 +120,95 @@ namespace memsys {
 
 	void* StackAllocatorIso::Allocate(usize size, usize alignment) {
 		assert(size > 0 && "StackAllocator: Memory allocation must have a size > 0!");
+		const usize headerSize = sizeof(MemoryHeader);
+		const usize offsetStorageSize = sizeof(uptr);
 
-		usize newAlignment = std::max(alignof(MemoryHeader), alignment);
-		size += sizeof(MemoryHeader);
+		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
-		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
+		usize headerAdjustment = GetAdjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader));
+		byte* headerAddress = baseAddress + headerAdjustment;
 
-		usize adjustment = GetAdjustment(reinterpret_cast<uptr>(currentAddress), newAlignment);
-		size += adjustment;
+		byte* offsetStorageAddress = headerAddress + headerSize;
 
-		if (_allocatedMemory + size > _memorySize) {
+		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
+		usize objectAdjustment = GetAdjustment(reinterpret_cast<uptr>(objectAddress), alignment);
+		objectAddress += objectAdjustment;
+
+		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
+
+		if (_allocatedMemory + totalSize > _memorySize) {
 			Debug::LogError("Cannot Allocate to stack allocator, no free space to fit object of size: ", size);
 			return nullptr;
 		}
 
-		currentAddress += adjustment;
+		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
-		MemoryHeader* basePtr = reinterpret_cast<MemoryHeader*>(currentAddress);
-		MemoryHeader* mH = std::construct_at(basePtr, size);
+		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
+		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
 
-		void* vP = reinterpret_cast<void*>(mH + 1);
-
-		_allocatedMemory += size;
+		_allocatedMemory += totalSize;
 		_allocationCount++;
 
 		_stack.push_back(mH);
 
-		return vP;
+		return reinterpret_cast<void*>(objectAddress);
+	}
+
+	template<typename T, typename... Args>
+	T* StackAllocatorIso::Allocate(Args&&... args) {
+		const usize objectSize = sizeof(T);
+		const usize headerSize = sizeof(MemoryHeader);
+		const usize objectAlignment = alignof(T);
+		const usize offsetStorageSize = sizeof(uptr);
+
+		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
+
+		usize headerAdjustment = GetAdjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader));
+		byte* headerAddress = baseAddress + headerAdjustment;
+
+		byte* offsetStorageAddress = headerAddress + headerSize;
+
+		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
+		usize objectAdjustment = GetAdjustment(reinterpret_cast<uptr>(objectAddress), objectAlignment);
+		objectAddress += objectAdjustment;
+
+		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
+
+		if (_allocatedMemory + totalSize > _memorySize) {
+			Debug::LogError("Cannot Allocate to stack allocator, no free space to fit object of size: ", objectSize);
+			return nullptr;
+		}
+
+		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
+
+		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
+		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
+
+		_allocatedMemory += totalSize;
+		_allocationCount++;
+
+		_stack.push_back(mH);
+
+		try {
+			return std::construct_at(reinterpret_cast<T*>(objectAddress), std::forward<Args>(args)...);
+		}
+		catch (...) {
+			--_allocationCount;
+			_allocatedMemory -= totalSize;
+
+			throw;
+		}
 	}
 
 	void StackAllocatorIso::Free(void* ptr) {
 		assert(ptr && "StackAllocator: Free: Cannot Free a nullptr!");
 
-		MemoryHeader* mH = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(ptr) - sizeof(MemoryHeader));
+		const usize offsetStorageSize = sizeof(uptr);
+		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);
+		MemoryHeader* mH = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(ptr) - offsetToHeader);
 
 #if _DEBUG
-		assert(mH->checkVal == kCheckVal && "StackAllocatorIso: Free: Memory corruption detected! CheckVal does not match expected value.");
+		assert(mH->checkVal == kCheckVal && "StackAllocator: Free: Memory corruption detected! CheckVal does not match expected value.");
 #endif
 
 		if (mH == _stack.back()) {
