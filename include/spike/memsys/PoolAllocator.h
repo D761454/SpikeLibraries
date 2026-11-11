@@ -124,7 +124,7 @@ namespace memsys {
             Reset();
         }
 
-        template<class... Args>
+        template<typename... Args>
         T* Create(Args&&... args);
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace memsys {
 
 #pragma region Implementation
 
-    template<class T, usize Capacity> template<class... Args>
+    template<class T, usize Capacity> template<typename... Args>
     T* PoolAllocator<T, Capacity>::Create(Args&&... args) {
         if (!_free) return nullptr;
 
