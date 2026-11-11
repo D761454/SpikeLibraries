@@ -53,9 +53,11 @@ File Summary:
 #include <stdlib.h>
 #endif
 #include <memory>
+#include <utility>
 #include <cassert>
 #include <vector>
 #include <cstddef>
+#include <algorithm>
 
 #include "spike/def_aliases.h"
 #include "spike/debugl/debug.hpp"
@@ -111,14 +113,22 @@ namespace memsys {
 	void* StackAllocatorIso::Allocate(usize size, usize alignment) {
 		assert(size > 0 && "StackAllocator: Memory allocation must have a size > 0!");
 
+		usize newAlignment = std::max(alignof(MemoryHeader), alignment);
 		size += sizeof(MemoryHeader);
+
+		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
+
+		usize adjustment = GetAdjustment(reinterpret_cast<uptr>(currentAddress), newAlignment);
+		size += adjustment;
 
 		if (_allocatedMemory + size > _memorySize) {
 			Debug::LogError("Cannot Allocate to stack allocator, no free space to fit object of size: ", size);
 			return nullptr;
 		}
 
-		MemoryHeader* basePtr = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory);
+		currentAddress += adjustment;
+
+		MemoryHeader* basePtr = reinterpret_cast<MemoryHeader*>(currentAddress);
 		MemoryHeader* mH = std::construct_at(basePtr, size);
 
 		void* vP = reinterpret_cast<void*>(mH + 1);
