@@ -134,7 +134,7 @@ namespace memsys {
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
 		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
-		*reinterpret_cast<uptr*>(offsetStorageAddress) = offsetToHeader;
+		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
 
 		_allocatedMemory += totalSize;
 		_allocationCount++;
@@ -172,7 +172,7 @@ namespace memsys {
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
 		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
-		*reinterpret_cast<uptr*>(offsetStorageAddress) = offsetToHeader;
+		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
 
 		_allocatedMemory += totalSize;
 		_allocationCount++;
@@ -193,7 +193,8 @@ namespace memsys {
 	void StackAllocator::Free(void* ptr) {
 		assert(ptr && "StackAllocator: Free: Cannot Free a nullptr!");
 
-		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - sizeof(uptr));
+		const usize offsetStorageSize = sizeof(uptr);
+		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);
 		MemoryHeader* mH = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(ptr) - offsetToHeader);
 
 #if _DEBUG
