@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 
 File Summary:
-
+	Holds generic memory functions used throughout memsys
 
 ----------------------------------------------------------------------
 */
@@ -60,6 +60,34 @@ namespace memsys {
 	static inline constexpr const usize AlignUp(usize value, usize alignment) {
 		assert(alignment != 0 && (alignment & (alignment - 1)) == 0 && "Alignment must be power of two");
 		return (value + alignment - 1) & ~(alignment - 1);
+	}
+
+	/// <summary>
+	/// Used to get the offset needed to align ptr in memory based on adjustment
+	/// </summary>
+	/// <param name="ptr">pointer to the memory location to align</param>
+	/// <param name="alignment">desired alignment for an object at ptr</param>
+	/// <returns>amount of bytes needed to shift ptr by to correctly align it</returns>
+	static inline usize GetAdjustment(uptr ptr, usize alignment) {
+		assert(alignment == 1 || (alignment & (alignment - 1)) == 0 && "Alignment must be a power of 2, or 1");
+
+		usize adjustment = alignment - (ptr & (alignment - 1));
+		if (adjustment == alignment) return 0;
+		return adjustment;
+	}
+
+	/// <summary>
+	/// Used to shift an address' position to ensure memory alignment
+	/// </summary>
+	/// <param name="ptr">pointer to the memory location to align</param>
+	/// <param name="alignment">desired alignment for an object at ptr</param>
+	/// <returns>aligned pointer</returns>
+	static inline uptr AlignForward(uptr ptr, usize alignment) {
+		assert(alignment == 1 || (alignment & (alignment - 1)) == 0 && "Alignment must be a power of 2, or 1");
+
+		usize adjustment = alignment - (ptr & (alignment - 1));
+		if (adjustment == alignment) return ptr;
+		return ptr + adjustment;
 	}
 
 #if _DEBUG

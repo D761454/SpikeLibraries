@@ -51,10 +51,14 @@ File Summary:
 #elif defined(__APPLE__)
 #include <stdlib.h>
 #endif
+#include <memory>
+#include <utility>
 #include <cassert>
 #include <cstddef>
 
 #include "spike/def_aliases.h"
+
+#include "spike/memsys/Allocator.h"
 
 namespace memsys {
 	/// <summary>
@@ -71,20 +75,6 @@ namespace memsys {
 		void* _memoryBase;
 		const usize _memorySize;
 
-		inline bool IsPowerOfTwo(uptr n) const { return (n & (n - 1)) == 0; }
-
-		uptr AlignForward(uptr address, usize alignment) const {
-			assert(this->IsPowerOfTwo(alignment) && "Alignment must be a power of two!");
-
-			usize adjustment = alignment - (address & (alignment - 1));
-
-			if (adjustment == alignment) {
-				return address;
-			}
-
-			return address + adjustment;
-		}
-
 	public:
 		LinearAllocatorIso(const usize memorySize) : _memoryBase(malloc(memorySize)), _memorySize(memorySize), _allocationCount(0), _allocatedMemory(0) {
 			assert(_memoryBase != nullptr && "LinearAllocatorIso: Memory base is nullptr!");
@@ -97,25 +87,32 @@ namespace memsys {
 			_memoryBase = nullptr;
 		}
 
-		void* Allocate(usize size, usize alignment = alignof(std::max_align_t)) {
-			assert(size > 0 && "LinearAllocatorIso: Memory allocation must have a size > 0!");
-			
-			// need to tweak to align forward 
+		/// <summary>
+		/// Allocate a memory chunk of size with the specified alignment
+		/// </summary>
+		/// <param name="size">size of memory chunk to allocate</param>
+		/// <param name="alignment">alignment of object within memory chunk</param>
+		/// <returns>pointer to the memory chunk or nullptr if it could not be allocated</returns>
+		void* Allocate(usize size, usize alignment = alignof(std::max_align_t));
 
-			if (_allocatedMemory + size > _memorySize) return nullptr;
+		/// <summary>
+		/// Allocate a memory chunk of sizeof T, ensuring alignment of T is satisfied
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns>pointer to the allocated object or nulltpr if it could not be allocated</returns>
+		template<typename T, typename... Args>
+		T* Allocate(Args&&... args);
 
-			byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
-
-			_allocatedMemory += size;
-			_allocationCount++;
-
-			return reinterpret_cast<void*>(currentAddress);
-		}
-
+		/// <summary>
+		/// LinearAllocator: Free: Cannot Free Memory Individually!
+		/// </summary>
 		void Free(void* ptr) {
 			assert(0 && "LinearAllocator: Free: Cannot Free Memory Individually!");
 		}
 
+		/// <summary>
+		/// Resets the allocators memory usage and allocation count pointers to 0
+		/// </summary>
 		void Reset() noexcept {
 			_allocatedMemory = 0;
 			_allocationCount = 0;
@@ -129,6 +126,56 @@ namespace memsys {
 		LinearAllocatorIso(const LinearAllocatorIso&) = delete;
 		LinearAllocatorIso(LinearAllocatorIso&&) = delete;
 	};
+
+#pragma region Implementation
+
+	void* LinearAllocatorIso::Allocate(usize size, usize alignment) {
+		assert(size > 0 && "LinearAllocator: Memory allocation must have a size > 0!");
+
+		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
+
+		usize adjustment = GetAdjustment(reinterpret_cast<uptr>(currentAddress), alignment);
+		size += adjustment;
+
+		if (_allocatedMemory + size > _memorySize) return nullptr;
+
+		currentAddress += adjustment;
+
+		_allocatedMemory += size;
+		_allocationCount++;
+
+		return reinterpret_cast<void*>(currentAddress);
+	}
+
+	template<typename T, typename... Args>
+	T* LinearAllocatorIso::Allocate(Args&&... args) {
+		i32 size = sizeof(T);
+
+		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
+
+		usize adjustment = GetAdjustment(reinterpret_cast<uptr>(currentAddress), alignof(T));
+		size += adjustment;
+
+		if (_allocatedMemory + size > _memorySize) return nullptr;
+
+		currentAddress += adjustment;
+
+		_allocatedMemory += size;
+		_allocationCount++;
+
+		try {
+			return std::construct_at(reinterpret_cast<T*>(currentAddress), std::forward<Args>(args)...);
+		}
+		catch (...) {
+			--_allocationCount;
+			_allocatedMemory -= size;
+
+			throw;
+		}
+	}
+
+#pragma endregion
+
 }
 
 #endif

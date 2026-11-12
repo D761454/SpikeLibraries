@@ -62,6 +62,7 @@ namespace memsys {
     /// <summary>
     /// This is an allocator that holds a pool of fixed-size memory blocks for fast allocation / freeing.
     /// This is useful for allocating many small objects of the same size, such as particles or game entities.
+    /// This Iso version manages its memory itself.
     /// </summary>
     template<class T, usize Capacity>
     class PoolAllocatorIso {
@@ -101,7 +102,12 @@ namespace memsys {
             Reset();
         }
 
-        template<class... Args>
+        /// <summary>
+        /// Used to construct an object of type T within the next free slot in the memory pool
+        /// </summary>
+        /// <param name="...args">constructor arguments to be passed for the created object of type T</param>
+        /// <returns>pointer to the created object, or nullptr if the object could not be created</returns>
+        template<typename... Args>
         T* Create(Args&&... args);
 
         /// <summary>
@@ -128,7 +134,7 @@ namespace memsys {
 
 #pragma region Implementation
 
-    template<class T, usize Capacity> template<class... Args>
+    template<class T, usize Capacity> template<typename... Args>
     T* PoolAllocatorIso<T, Capacity>::Create(Args&&... args) {
         if (!_free) return nullptr;
 

@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/memsys/MemoryManager.h"
 
 namespace memsys {
-	MemoryUser::MemoryUser() : _memoryManager(coreMemoryManager) {}
+	MemoryUser::MemoryUser() : _memoryManager(&GetMemoryManager()) {}
 
 	void* MemoryUser::RequestMemoryChunk(const usize size, const char* id) const {
 		return this->_memoryManager->AllocateChunk(size, id);
