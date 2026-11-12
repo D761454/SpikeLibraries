@@ -39,19 +39,19 @@ jobs:
             c_compiler: gcc
             cpp_compiler: g++
             build_type: Release
-            archive_name: SpikeLibraries-Linux-x64.tar.gz
+            archive_name: SpikeLibraries-Linux-gcc-x64.tar.gz
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
-            archive_name: SpikeLibraries-Linux-Clang.tar.gz
+            archive_name: SpikeLibraries-Linux-clang-x64.tar.gz
 
           # Linux ARM64
           - os: ubuntu-24.04-arm
             c_compiler: gcc
             cpp_compiler: g++
             build_type: Release
-            archive_name: SpikeLibraries-Linux-ARM64.tar.gz
+            archive_name: SpikeLibraries-Linux-gcc-arm64.tar.gz
 
           # Windows x64
           - os: windows-latest
@@ -65,19 +65,19 @@ jobs:
             c_compiler: cl
             cpp_compiler: cl
             build_type: Release
-            archive_name: SpikeLibraries-Windows-ARM64.zip
+            archive_name: SpikeLibraries-Windows-arm64.zip
 
           # macOS ARM64
           - os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
-            archive_name: SpikeLibraries-macOS-arm64.tar.gz
+            archive_name: SpikeLibraries-macOS-clang-arm64.tar.gz
           - os: macos-26-intel
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
-            archive_name: SpikeLibraries-macOS-intel-arm64.tar.gz
+            archive_name: SpikeLibraries-macOS-intel-clang-arm64.tar.gz
 
     steps:
     - uses: actions/checkout@v4
