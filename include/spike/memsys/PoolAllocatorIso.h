@@ -102,6 +102,11 @@ namespace memsys {
             Reset();
         }
 
+        /// <summary>
+        /// Used to construct an object of type T within the next free slot in the memory pool
+        /// </summary>
+        /// <param name="...args">constructor arguments to be passed for the created object of type T</param>
+        /// <returns>pointer to the created object, or nullptr if the object could not be created</returns>
         template<typename... Args>
         T* Create(Args&&... args);
 

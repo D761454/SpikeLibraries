@@ -93,6 +93,9 @@ namespace memsys {
 		template<typename T, typename... Args>
 		T* Allocate(Args&&... args);
 
+		/// <summary>
+		/// LinearAllocator: Free: Cannot Free Memory Individually!
+		/// </summary>
 		void Free(void* ptr) {
 			assert(0 && "LinearAllocator: Free: Cannot Free Memory Individually!");
 		}

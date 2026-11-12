@@ -78,23 +78,24 @@ namespace memsys {
             ~Chunk() = default;
         };
 
-        Chunk* _free = nullptr;
         u64 _allocationCount = 0;
         usize _allocatedMemory = 0;
 
+        Chunk* _free = nullptr;
+
         const void* _memoryBase = nullptr;
         const usize _memorySize = 0;
+
+        const uptr _start;
+        const uptr _end;
 
 #if _DEBUG
         std::array<std::pair<bool, Chunk*>, Capacity> _checker{};
 #endif
 
-        const uptr _start;
-        const uptr _end;
-
     public:
-        PoolAllocator(const void* memoryBase, const usize memorySize)
-            : _memoryBase(memoryBase),
+        PoolAllocator(const void* memoryBase, const usize memorySize) : 
+            _memoryBase(memoryBase),
             _memorySize(memorySize),
             _start(reinterpret_cast<uptr>(memoryBase)),
             _end(reinterpret_cast<uptr>(memoryBase) + memorySize) {
@@ -124,6 +125,11 @@ namespace memsys {
             Reset();
         }
 
+        /// <summary>
+        /// Used to construct an object of type T within the next free slot in the memory pool
+        /// </summary>
+        /// <param name="...args">constructor arguments to be passed for the created object of type T</param>
+        /// <returns>pointer to the created object, or nullptr if the object could not be created</returns>
         template<typename... Args>
         T* Create(Args&&... args);
 

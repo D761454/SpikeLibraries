@@ -75,24 +75,39 @@ namespace memsys {
 		u64 _allocationCount;
 		usize _allocatedMemory;
 
-		void* _memoryBase;
+		const void* _memoryBase;
 		const usize _memorySize;
+
+		const uptr _start;
+		const uptr _end;
 
 		std::vector<MemoryHeader*> _stack;
 		std::vector<MemoryHeader*> _toFree;
 
 	public:
-		StackAllocatorIso(const usize memorySize) : _memoryBase(malloc(memorySize)), _memorySize(memorySize), _allocationCount(0), _allocatedMemory(0) {
+		StackAllocatorIso(const usize memorySize) : 
+			_memoryBase(malloc(memorySize)), 
+			_memorySize(memorySize), 
+			_allocationCount(0), 
+			_allocatedMemory(0),
+			_start(reinterpret_cast<uptr>(_memoryBase) + (sizeof(MemoryHeader) + sizeof(uptr))),
+			_end(reinterpret_cast<uptr>(_memoryBase) + memorySize)
+		{
 			assert(_memoryBase != nullptr && "StackAllocatorIso: Memory base is nullptr!");
 		}
 
 		~StackAllocatorIso() { 
 			Reset();
 
-			free(_memoryBase);
-			_memoryBase = nullptr;
+			free(const_cast<void*>(_memoryBase));
 		}
 
+		/// <summary>
+		/// Allocate a memory chunk of size with the specified alignment
+		/// </summary>
+		/// <param name="size">size of memory chunk to allocate</param>
+		/// <param name="alignment">alignment of object within memory chunk</param>
+		/// <returns>pointer to the memory chunk or nullptr if it could not be allocated</returns>
 		void* Allocate(usize size, usize alignment = alignof(std::max_align_t));
 
 		/// <summary>
@@ -103,8 +118,16 @@ namespace memsys {
 		template<typename T, typename... Args>
 		T* Allocate(Args&&... args);
 
+		/// <summary>
+		/// Removes the allocated memory for the chunk at ptr, decrementing the allocation count and memory usage. 
+		/// If the chunk if not at the back of the stack, it is added to a free list for handling on a subsequent free call.
+		/// </summary>
+		/// <param name="ptr">pointer to the memory chunk to be freed</param>
 		void Free(void* ptr);
 
+		/// <summary>
+		/// Sets the memory usage and allocation count to 0, clearing the stack and toFree lists.
+		/// </summary>
 		void Reset() noexcept;
 
 		inline const void* GetMemoryBase() const { return _memoryBase; }
@@ -202,6 +225,11 @@ namespace memsys {
 
 	void StackAllocatorIso::Free(void* ptr) {
 		assert(ptr && "StackAllocator: Free: Cannot Free a nullptr!");
+
+		if (!IsPointerOwned(ptr, _start, _end)) {
+			assert(false && "StackAllocator: Free: pointer is not owned!");
+			return;
+		}
 
 		const usize offsetStorageSize = sizeof(uptr);
 		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);
