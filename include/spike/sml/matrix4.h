@@ -51,7 +51,6 @@ File Summary:
 #include <array>
 
 #include "spike/def_aliases.h"
-#include "spike/stl_aliases.h"
 
 #include "spike/sml/vector3.h"
 #include "spike/sml/vector4.h"
@@ -77,11 +76,11 @@ namespace sml {
 		explicit matrix4(const std::array<f32, 16> arr) noexcept : _data(arr) {}
 
 		/// <summary>
-		/// Access a column by index (0..3).
-		/// operator[] returns the column at the specified index. To read/write element at (row, col) use matrix[col][row].
+		/// Access to an element by index (0..15).
+		/// Elements are stored in column major
 		/// </summary>
-		/// <param name="index">column index in the range 0..3</param>
-		/// <returns>reference to the selected column</returns>
+		/// <param name="index">element index in the range 0..15</param>
+		/// <returns>reference to selected matrix element</returns>
 		inline f32& operator[](const u32 index) {
 			assert(index < 16 && "Index Out of Range! matrix4 data in range 0-15.");
 
@@ -89,10 +88,11 @@ namespace sml {
 		}
 
 		/// <summary>
-		/// Const access to a column by index (0..3).
+		/// Const access to an element by index (0..15).
+		/// Elements are stored in column major
 		/// </summary>
-		/// <param name="index">column index in the range 0..3</param>
-		/// <returns>selected matrix column</returns>
+		/// <param name="index">element index in the range 0..15</param>
+		/// <returns>selected matrix element</returns>
 		inline const f32 operator[](const u32 index) const {
 			assert(index < 16 && "Index Out of Range! matrix4 data in range 0-15.");
 
@@ -303,7 +303,7 @@ namespace sml {
 		/// <returns>selected matrix column</returns>
 		sml::vector4 GetColumn(const u32 index) const;
 		/// <summary>
-		/// Returns the row assembled from the columns (row r = { data[0][r], data[1][r], data[2][r], data[3][r] }).
+		/// Returns the row assembled from the columns at index (0..3).
 		/// </summary>
 		/// <param name="index">row index in the range 0..3</param>
 		/// <returns>selected matrix row</returns>
