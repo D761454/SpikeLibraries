@@ -78,7 +78,7 @@ namespace sml {
 		/// <param name="index">element index in the range 0..8</param>
 		/// <returns>reference to selected matrix element</returns>
 		inline f32& operator[](const u32 index) {
-			assert(index < 9 && "Index Out of Range! matrix4 data in range 0-8.");
+			assert(index < 9 && "Index Out of Range! matrix3 data in range 0-8.");
 
 			return _data[index];
 		}
@@ -90,7 +90,7 @@ namespace sml {
 		/// <param name="index">element index in the range 0..8</param>
 		/// <returns>selected matrix element</returns>
 		inline const f32 operator[](const u32 index) const {
-			assert(index < 9 && "Index Out of Range! matrix4 data in range 0-8.");
+			assert(index < 9 && "Index Out of Range! matrix3 data in range 0-8.");
 
 			return _data[index];
 		}

@@ -48,9 +48,9 @@ File Summary:
 */
 
 #include <cassert>
+#include <array>
 
 #include "spike/def_aliases.h"
-#include "spike/stl_aliases.h"
 
 #include "spike/sml/vector2.h"
 
@@ -61,116 +61,76 @@ namespace sml {
 	/// Each MatrixRow instance therefore represents a column and elements are accessed as data[column][row].
 	/// </summary>
 	struct matrix2 {
-	protected:
-		/// <summary>
-		/// Representation of 2 floats within a matrix column.
-		/// This struct provides simple access overloads for the 2 elements of a column.
-		/// Note: although named MatrixRow for historical reasons, instances represent columns in memory.
-		/// Use matrix[column][row] to access element at (row, column).
-		/// </summary>
-		struct MatrixRow {
-		private:
-			f32 data[2];
-
-		public:
-			static MatrixRow zero;
-
-			MatrixRow() noexcept : data{} {}
-			MatrixRow(f32 a, f32 b) noexcept : data{ a, b } {}
-
-			/// <summary>Returns the number of zero elements in this column.</summary>
-			/// <returns>number of zero elements</returns>
-			u8 ZeroCount() const noexcept {
-				u8 count = 0;
-				for (int i = 0; i < 2; i++) {
-					if (data[i] == 0) {
-						count++;
-					}
-				}
-				return count;
-			}
-
-			/// <summary>
-			/// Access the element at the given index within this column.
-			/// Index is the row (0..1).
-			/// </summary>
-			/// <param name="index">row index in the range 0..1</param>
-			/// <returns>reference to the selected element</returns>
-			inline f32& operator[](const u32 index) {
-				assert(index < 2 && "Index Out of Range! MatrixRow data in range 0-1.");
-
-				return data[index];
-			}
-
-			/// <summary>
-			/// Const access to the element at the given row index in this column.
-			/// </summary>
-			/// <param name="index">row index in the range 0..1</param>
-			/// <returns>selected element</returns>
-			inline const f32 operator[](const u32 index) const {
-				assert(index < 2 && "Index Out of Range! MatrixRow data in range 0-1.");
-
-				return data[index];
-			}
-
-			MatrixRow operator+(const MatrixRow& other) const;
-			MatrixRow operator-(const MatrixRow& other) const;
-			MatrixRow operator*(const f32& scalar) const;
-			f32 operator*(const MatrixRow& other) const;
-			MatrixRow& operator=(const MatrixRow& other);
-
-			bool operator==(const MatrixRow& other) const;
-			bool operator!=(const MatrixRow& other) const;
-
-			string ToString() const noexcept;
-		};
-
 	private:
-		// Each element in data[] is a column (column-major). Access element (row r, column c) as data[c][r]
-		MatrixRow data[2];
+		std::array<f32, 4> _data;
 
 	public:
 		static matrix2 identity;
 		static matrix2 zero;
 
-		matrix2() noexcept : data{} {}
-		matrix2(MatrixRow a, MatrixRow b) noexcept : data{ a, b } {}
+		matrix2() noexcept : _data({}) {}
+		explicit matrix2(const std::array<f32, 4> arr) noexcept : _data(arr) {}
 
 		/// <summary>
-		/// Access a column by index (0..1).
-		/// operator[] returns the column at the specified index. To read/write element at (row, col) use matrix[col][row].
+		/// Access to an element by index (0..3).
+		/// Elements are stored in column major
 		/// </summary>
-		/// <param name="index">column index in the range 0..1</param>
-		/// <returns>reference to the selected column</returns>
-		inline MatrixRow& operator[](const u32 index) {
-			assert(index < 2 && "Index Out of Range! matrix2 data in range 0-1.");
+		/// <param name="index">element index in the range 0..3</param>
+		/// <returns>reference to selected matrix element</returns>
+		inline f32& operator[](const u32 index) {
+			assert(index < 4 && "Index Out of Range! matrix2 data in range 0-3.");
 
-			return data[index];
+			return _data[index];
 		}
 
 		/// <summary>
-		/// Const access to a column by index (0..1).
+		/// Const access to an element by index (0..3).
+		/// Elements are stored in column major
 		/// </summary>
-		/// <param name="index">column index in the range 0..1</param>
-		/// <returns>selected matrix column</returns>
-		inline const MatrixRow operator[](const u32 index) const {
-			assert(index < 2 && "Index Out of Range! matrix2 data in range 0-1.");
+		/// <param name="index">element index in the range 0..3</param>
+		/// <returns>selected matrix element</returns>
+		inline const f32 operator[](const u32 index) const {
+			assert(index < 4 && "Index Out of Range! matrix2 data in range 0-3.");
 
-			return data[index];
+			return _data[index];
 		}
+
+		/// <summary>
+		/// The determinant of the matrix.
+		/// </summary>
+		/// <returns>determinant of this matrix</returns>
+		f32	Determinant() const noexcept;
+
+		/// <summary>
+		/// The inverse of this matrix.
+		/// </summary>
+		/// <returns>inverse matrix</returns>
+		matrix2	Inverse() const noexcept;
+
+		/// <summary>
+		/// Checks whether this is an identity matrix.
+		/// </summary>
+		/// <returns>true if this is an identity matrix</returns>
+		bool IsIdentity() const noexcept;
+
+		/// <summary>
+		/// Returns the transpose of this matrix
+		/// </summary>
+		/// <returns>transposed matrix</returns>
+		matrix2	Transpose() const noexcept;
 
 		/// <summary>
 		/// Returns the stored column at index (0..1).
 		/// </summary>
 		/// <param name="index">column index in the range 0..1</param>
 		/// <returns>selected matrix column</returns>
-		MatrixRow GetColumn(const u16 index) const;
+		sml::vector2 GetColumn(const u32 index) const;
 		/// <summary>
-		/// Returns the row assembled from the columns (row r = { data[0][r], data[1][r] }).
+		/// Returns the row assembled from the columns at index (0..1).
 		/// </summary>
 		/// <param name="index">row index in the range 0..1</param>
 		/// <returns>selected matrix row</returns>
-		MatrixRow GetRow(const u16 index) const;
+		sml::vector2 GetRow(const u32 index) const;
 
 		matrix2 operator+(const matrix2& other) const;
 		matrix2 operator-(const matrix2& other) const;
@@ -185,11 +145,8 @@ namespace sml {
 		bool operator==(const matrix2& other) const;
 		bool operator!=(const matrix2& other) const;
 
-		/// <summary>
-		/// Returns a formatted string for this matrix2
-		/// </summary>
-		/// <returns>string representation of this matrix2</returns>
-		string ToString() const noexcept;
+		const f32* Data() const noexcept { return &_data[0]; }
+		f32* Data() noexcept { return &_data[0]; }
 	};
 }
 
