@@ -328,8 +328,8 @@ namespace sml {
 
 	matrix4 matrix4::Transpose() const noexcept {
 		matrix4 out;
-		for (u32 r = 0; r < 4; ++r) {
-			for (u32 c = 0; c < 4; ++c) {
+		for (i32 r = 0; r < 4; ++r) {
+			for (i32 c = 0; c < 4; ++c) {
 				out[c * 4 + r] = _data[r * 4 + c];
 			}
 		}
@@ -525,37 +525,37 @@ namespace sml {
 
 	matrix4 matrix4::operator+(const matrix4& other) const {
 		return matrix4({
-			_data[0] + other[0], _data[4] + other[4], _data[8] + other[8], _data[12] + other[12],
-			_data[1] + other[1], _data[5] + other[5], _data[9] + other[9], _data[13] + other[13],
-			_data[2] + other[2], _data[6] + other[6], _data[10] + other[10], _data[14] + other[14],
-			_data[3] + other[3], _data[7] + other[7], _data[11] + other[11], _data[15] + other[15]
+			_data[0] + other[0], _data[1] + other[1], _data[2] + other[2], _data[3] + other[3],
+			_data[4] + other[4], _data[5] + other[5], _data[6] + other[6], _data[7] + other[7],
+			_data[8] + other[8], _data[9] + other[9], _data[10] + other[10], _data[11] + other[11],
+			_data[12] + other[12], _data[13] + other[13], _data[14] + other[14], _data[15] + other[15]
 		});
 	}
 
 	matrix4 matrix4::operator-(const matrix4& other) const {
 		return matrix4({
-			_data[0] - other[0], _data[4] - other[4], _data[8] - other[8], _data[12] - other[12],
-			_data[1] - other[1], _data[5] - other[5], _data[9] - other[9], _data[13] - other[13],
-			_data[2] - other[2], _data[6] - other[6], _data[10] - other[10], _data[14] - other[14],
-			_data[3] - other[3], _data[7] - other[7], _data[11] - other[11], _data[15] - other[15]
+			_data[0] - other[0], _data[1] - other[1], _data[2] - other[2], _data[3] - other[3],
+			_data[4] - other[4], _data[5] - other[5], _data[6] - other[6], _data[7] - other[7],
+			_data[8] - other[8], _data[9] - other[9], _data[10] - other[10], _data[11] - other[11],
+			_data[12] - other[12], _data[13] - other[13], _data[14] - other[14], _data[15] - other[15]
 		});
 	}
 
 	matrix4 matrix4::operator*(const f32& scalar) const {
 		return matrix4({
-			_data[0] * scalar, _data[4] * scalar, _data[8] * scalar, _data[12] * scalar,
-			_data[1] * scalar, _data[5] * scalar, _data[9] * scalar, _data[13] * scalar,
-			_data[2] * scalar, _data[6] * scalar, _data[10] * scalar, _data[14] * scalar,
-			_data[3] * scalar, _data[7] * scalar, _data[11] * scalar, _data[15] * scalar
+			_data[0] * scalar, _data[1] * scalar, _data[2] * scalar, _data[3] * scalar,
+			_data[4] * scalar, _data[5] * scalar, _data[6] * scalar, _data[7] * scalar,
+			_data[8] * scalar, _data[9] * scalar, _data[10] * scalar, _data[11] * scalar,
+			_data[12] * scalar, _data[13] * scalar, _data[14] * scalar, _data[15] * scalar
 		});
 	}
 
 	matrix4 matrix4::operator*(const matrix4& other) const {
 		matrix4 out;
-		for (u32 c = 0; c < 4; ++c) {
-			for (u32 r = 0; r < 4; ++r) {
+		for (i32 c = 0; c < 4; ++c) {
+			for (i32 r = 0; r < 4; ++r) {
 				f32 sum = 0.0f;
-				for (u32 k = 0; k < 4; ++k) {
+				for (i32 k = 0; k < 4; ++k) {
 					sum += _data[k * 4 + r] * other[c * 4 + k];
 				}
 				out[c * 4 + r] = sum;

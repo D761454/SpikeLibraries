@@ -68,6 +68,8 @@ namespace sml {
 	private:
 		std::array<f32, 16> _data;
 
+		using data_size_type = std::array<f32, 16>::size_type;
+
 	public:
 		static matrix4 identity;
 		static matrix4 zero;

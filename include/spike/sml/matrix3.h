@@ -64,6 +64,8 @@ namespace sml {
 	private:
 		std::array<f32, 9> _data;
 
+		using data_size_type = std::array<f32, 9>::size_type;
+
 	public:
 		static matrix3 identity;
 		static matrix3 zero;
@@ -118,6 +120,17 @@ namespace sml {
 		/// </summary>
 		/// <returns>transposed matrix</returns>
 		matrix3	Transpose() const noexcept;
+
+		/// <summary>
+		/// In-place multiply: this = this * other (post-multiply)
+		/// </summary>
+		/// <param name="other">matrix to multiply by</param>
+		void Multiply(const matrix3& other);
+		/// <summary>
+		/// In-place multiply: this = other * this (pre-multiply)
+		/// </summary>
+		/// <param name="other">matrix to multiply by</param>
+		void PreMultiply(const matrix3& other);
 
 		/// <summary>
 		/// Returns the stored column at index (0..2).

@@ -76,7 +76,7 @@ namespace sml {
 		vector2& operator=(const vector2& other) = default;
 		vector2& operator=(vector2&& other) = default;
 
-		inline f32 operator[](u32 i) const noexcept {
+		inline f32 operator[](i32 i) const noexcept {
 			switch (i) {
 			case 0: return x;
 			case 1: return y;
@@ -84,7 +84,7 @@ namespace sml {
 			}
 		}
 
-		inline f32& operator[](u32 i) noexcept {
+		inline f32& operator[](i32 i) noexcept {
 			switch (i) {
 			case 0: return x;
 			case 1: return y;
