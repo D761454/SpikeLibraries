@@ -71,7 +71,12 @@ namespace sml {
 		static matrix3 zero;
 
 		matrix3() noexcept : _data({}) {}
-		explicit matrix3(const std::array<f32, 9> arr) noexcept : _data(arr) {}
+		
+		matrix3(f32(&arr)[9]) noexcept {
+			std::copy(std::cbegin(arr), std::cend(arr), std::begin(_data));
+		}
+
+		constexpr explicit matrix3(const std::array<f32, 9>& arr) noexcept : _data(arr) {}
 
 		/// <summary>
 		/// Access to an element by index (0..8).

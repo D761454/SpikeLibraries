@@ -160,11 +160,6 @@ namespace sml {
 		};
 	}
 
-	matrix2& matrix2::operator=(const matrix2& other) {
-		std::memcpy(&_data[0], other.Data(), sizeof(matrix2));
-		return *this;
-	}
-
 	bool matrix2::operator==(const matrix2& other) const {
 		return _data[0] == other[0] && _data[1] == other[1] && _data[2] == other[2] && _data[3] == other[3];
 	}

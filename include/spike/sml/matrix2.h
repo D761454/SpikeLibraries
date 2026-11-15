@@ -63,7 +63,6 @@ namespace sml {
 	struct matrix2 {
 	private:
 		std::array<f32, 4> _data;
-
 		using data_size_type = std::array<f32, 4>::size_type;
 
 	public:
@@ -71,7 +70,12 @@ namespace sml {
 		static matrix2 zero;
 
 		matrix2() noexcept : _data({}) {}
-		explicit matrix2(const std::array<f32, 4> arr) noexcept : _data(arr) {}
+
+		matrix2(f32(&arr)[4]) noexcept {
+			std::copy(std::cbegin(arr), std::cend(arr), std::begin(_data));
+		}
+
+		constexpr explicit matrix2(const std::array<f32, 4>& arr) noexcept : _data(arr) {}
 
 		/// <summary>
 		/// Access to an element by index (0..3).
@@ -155,8 +159,6 @@ namespace sml {
 
 		matrix2 operator*(const matrix2& other) const;
 		vector2 operator*(const vector2& other) const;
-
-		matrix2& operator=(const matrix2& other);
 
 		bool operator==(const matrix2& other) const;
 		bool operator!=(const matrix2& other) const;
