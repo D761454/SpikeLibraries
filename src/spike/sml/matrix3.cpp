@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/def_aliases.h"
 
 #include "spike/sml/vector3.h"
+#include "spike/sml/sml_core.h"
 
 namespace sml {
 	matrix3 matrix3::identity = matrix3({
@@ -80,11 +81,47 @@ namespace sml {
 	}
 
 	f32 matrix3::Determinant() const noexcept {
+		f64 m00 = _data[0], m10 = _data[1], m20 = _data[2];
+		f64 m01 = _data[3], m11 = _data[4], m21 = _data[5];
+		f64 m02 = _data[6], m12 = _data[7], m22 = _data[8];
 
+		f64 det = m00 * (m11 * m22 - m12 * m21) -
+			m01 * (m10 * m22 - m12 * m20) +
+			m02 * (m10 * m21 - m11 * m20);
+
+		return (f32)det;
 	}
 
 	matrix3 matrix3::Inverse() const noexcept {
+		f64 m00 = _data[0], m10 = _data[1], m20 = _data[2];
+		f64 m01 = _data[3], m11 = _data[4], m21 = _data[5];
+		f64 m02 = _data[6], m12 = _data[7], m22 = _data[8];
 
+		f64 adj[9];
+		adj[0] = m11 * m22 - m12 * m21;
+		adj[3] = -(m10 * m22 - m12 * m20);
+		adj[6] = m10 * m21 - m11 * m20;
+
+		adj[1] = -(m01 * m22 - m02 * m21);
+		adj[4] = m00 * m22 - m02 * m20;
+		adj[7] = -(m00 * m21 - m01 * m20);
+
+		adj[2] = m01 * m12 - m02 * m11;
+		adj[5] = -(m00 * m12 - m02 * m10);
+		adj[8] = m00 * m11 - m01 * m10;
+
+		f64 det = m00 * adj[0] + m01 * adj[3] + m02 * adj[6];
+
+		if (sml::abs(det) < 1e-8) {
+			return matrix3::zero;
+		}
+
+		f64 invDet = 1.0 / det;
+		matrix3 out;
+		for (i32 i = 0; i < 9; ++i) {
+			out[i] = (f32)(adj[i] * invDet);
+		}
+		return out;
 	}
 
 	bool matrix3::IsIdentity() const noexcept {
@@ -114,7 +151,7 @@ namespace sml {
 			_data[0] + other[0], _data[1] + other[1], _data[2] + other[2],
 			_data[3] + other[3], _data[4] + other[4], _data[5] + other[5],
 			_data[6] + other[6], _data[7] + other[7], _data[8] + other[8]
-			});
+		});
 	}
 
 	matrix3 matrix3::operator-(const matrix3& other) const {
@@ -122,7 +159,7 @@ namespace sml {
 			_data[0] - other[0], _data[1] - other[1], _data[2] - other[2],
 			_data[3] - other[3], _data[4] - other[4], _data[5] - other[5],
 			_data[6] - other[6], _data[7] - other[7], _data[8] - other[8]
-			});
+		});
 	}
 
 	matrix3 matrix3::operator*(const f32& scalar) const {
@@ -137,7 +174,7 @@ namespace sml {
 		matrix3 out;
 		for (i32 c = 0; c < 3; ++c) {
 			for (i32 r = 0; r < 3; ++r) {
-				f32 sum = 0.0f;
+				f32 sum = 0.f;
 				for (i32 k = 0; k < 3; ++k) {
 					sum += _data[k * 3 + r] * other[c * 3 + k];
 				}

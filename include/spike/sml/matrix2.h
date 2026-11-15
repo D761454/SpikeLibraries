@@ -145,6 +145,9 @@ namespace sml {
 		/// <returns>selected matrix row</returns>
 		sml::vector2 GetRow(const i32 index) const;
 
+		void SetColumn(const i32 index, const sml::vector2& column);
+		void SetRow(const i32 index, const sml::vector2& row);
+
 		matrix2 operator+(const matrix2& other) const;
 		matrix2 operator-(const matrix2& other) const;
 

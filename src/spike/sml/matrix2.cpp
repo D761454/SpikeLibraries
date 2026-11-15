@@ -36,126 +36,140 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/sml/matrix2.h"
 
 #include <cassert>
-#include <string>
+#include <string.h>
 
 #include "spike/def_aliases.h"
-#include "spike/stl_aliases.h"
 
 #include "spike/sml/vector2.h"
+#include "spike/sml/sml_core.h"
 
 namespace sml {
-	// ============================================================================
-	// Static Constants
-	// ============================================================================
-
-	matrix2::MatrixRow matrix2::MatrixRow::zero = MatrixRow();
-
-	matrix2 matrix2::identity = matrix2(
-		{ 1.0f, 0.0f },
-		{ 0.0f, 1.0f }
-	);
+	matrix2 matrix2::identity = matrix2({
+		1.f, 0.f,
+		0.f, 1.f
+	});
 
 	matrix2 matrix2::zero = matrix2();
 
-	// ============================================================================
-	// Member Method Implementations
-	// ============================================================================
+	sml::vector2 matrix2::GetColumn(const i32 index) const {
+		assert(index < 2 && "Index Out of Range! Column in range 0-1.");
+		const i32 base = index * 2;
 
-	matrix2::MatrixRow matrix2::GetColumn(const u16 index) const {
+		return { _data[base], _data[base + 1] };
+	}
+
+	sml::vector2 matrix2::GetRow(const i32 index) const {
 		assert(index < 2 && "Index Out of Range! Column in range 0-1.");
 
-		return { data[0][index], data[1][index] };
+		return { _data[index], _data[index + 2] };
 	}
 
-	matrix2::MatrixRow matrix2::GetRow(const u16 index) const {
-		assert(index < 2 && "Index Out of Range! Row in range 0-1.");
-
-		return { data[index] };
+	void matrix2::SetColumn(const i32 index, const sml::vector2& column) {
+		assert(index < 2 && "Index Out of Range! Column in range 0-1.");
+		const i32 base = index * 2;
+		_data[base] = column.x;
+		_data[base + 1] = column.y;
 	}
 
-	// ============================================================================
-	// Operator Implementations
-	// ============================================================================
+	void matrix2::SetRow(const i32 index, const sml::vector2& row) {
+		assert(index < 2 && "Index Out of Range! Column in range 0-1.");
 
-	matrix2::MatrixRow matrix2::MatrixRow::operator+(const MatrixRow& other) const {
-		return { data[0] + other[0], data[1] + other[1] };
+		_data[index] = row.x;
+		_data[index + 2] = row.y;
 	}
 
-	matrix2::MatrixRow matrix2::MatrixRow::operator-(const MatrixRow& other) const {
-		return { data[0] - other[0], data[1] - other[1] };
+	f32 matrix2::Determinant() const noexcept {
+		f64 m00 = _data[0], m10 = _data[1];
+		f64 m01 = _data[2], m11 = _data[3];
+
+		f64 det = m00 * m11 - m01 * m10;
+		return (f32)det;
 	}
 
-	matrix2::MatrixRow matrix2::MatrixRow::operator*(const f32& scalar) const {
-		return { data[0] * scalar, data[1] * scalar };
+	matrix2 matrix2::Inverse() const noexcept {
+		f64 m00 = _data[0], m10 = _data[1];
+		f64 m01 = _data[2], m11 = _data[3];
+
+		f64 det = m00 * m11 - m01 * m10;
+
+		if (sml::abs(det) < 1e-8) {
+			return matrix2::zero;
+		}
+
+		f64 invDet = 1.0 / det;
+		matrix2 out;
+		out[0] = (f32)(m11 * invDet);
+		out[1] = (f32)(-m10 * invDet);
+		out[2] = (f32)(-m01 * invDet);
+		out[3] = (f32)(m00 * invDet);
+		return out;
 	}
 
-	f32 matrix2::MatrixRow::operator*(const MatrixRow& other) const {
-		return (data[0] * other[0]) + (data[1] * other[1]);
+	bool matrix2::IsIdentity() const noexcept {
+		return *this == matrix2::identity;
 	}
 
-	matrix2::MatrixRow& matrix2::MatrixRow::operator=(const MatrixRow& other) {
-		data[0] = other[0];
-		data[1] = other[1];
-		return *this;
+	matrix2 matrix2::Transpose() const noexcept {
+		matrix2 out;
+		for (i32 r = 0; r < 2; ++r) {
+			for (i32 c = 0; c < 2; ++c) {
+				out[c * 2 + r] = _data[r * 2 + c];
+			}
+		}
+		return out;
 	}
 
-	bool matrix2::MatrixRow::operator==(const MatrixRow& other) const {
-		return data[0] == other[0] &&
-			data[1] == other[1];
+	void matrix2::Multiply(const matrix2& other) {
+		*this = (*this) * other;
 	}
 
-	bool matrix2::MatrixRow::operator!=(const MatrixRow& other) const {
-		return data[0] != other[0] ||
-			data[1] != other[1];
+	void matrix2::PreMultiply(const matrix2& other) {
+		*this = other * (*this);
 	}
 
 	matrix2 matrix2::operator+(const matrix2& other) const {
-		return { data[0] + other[0], data[1] + other[1] };
+		return matrix2({ _data[0] + other[0], _data[1] + other[1], _data[2] + other[2], _data[3] + other[3] });
 	}
 
 	matrix2 matrix2::operator-(const matrix2& other) const {
-		return { data[0] - other[0], data[1] - other[1] };
+		return matrix2({ _data[0] - other[0], _data[1] - other[1], _data[2] - other[2], _data[3] - other[3] });
 	}
 
 	matrix2 matrix2::operator*(const f32& scalar) const {
-		return { data[0] * scalar, data[1] * scalar };
+		return matrix2({ _data[0] * scalar, _data[1] * scalar, _data[2] * scalar, _data[3] * scalar});
 	}
 
 	matrix2 matrix2::operator*(const matrix2& other) const {
-		return {
-			{ data[0] * other.GetColumn(0), data[0] * other.GetColumn(1) },
-			{ data[1] * other.GetColumn(0), data[1] * other.GetColumn(1) }
-		};
+		matrix2 out;
+		for (i32 c = 0; c < 2; ++c) {
+			for (i32 r = 0; r < 2; ++r) {
+				f32 sum = 0.f;
+				for (i32 k = 0; k < 3; ++k) {
+					sum += _data[k * 2 + r] * other[c * 2 + k];
+				}
+				out[c * 2 + r] = sum;
+			}
+		}
+		return out;
 	}
 
 	vector2 matrix2::operator*(const vector2& other) const {
 		return {
-			(data[0][0] * other.x) + (data[0][1] * other.y),
-			(data[1][0] * other.x) + (data[1][1] * other.y)
+			(_data[0] * other.x) + (_data[2] * other.y),
+			(_data[1] * other.x) + (_data[3] * other.y)
 		};
 	}
 
 	matrix2& matrix2::operator=(const matrix2& other) {
-		data[0] = other[0];
-		data[1] = other[1];
+		std::memcpy(&_data[0], other.Data(), sizeof(matrix2));
 		return *this;
 	}
 
 	bool matrix2::operator==(const matrix2& other) const {
-		return data[0] == other[0] &&
-			data[1] == other[1];
+		return _data[0] == other[0] && _data[1] == other[1] && _data[2] == other[2] && _data[3] == other[3];
 	}
 
 	bool matrix2::operator!=(const matrix2& other) const {
-		return data[0] != other[0] ||
-			data[1] != other[1];
-	}
-
-	string matrix2::MatrixRow::ToString() const noexcept {
-		return "{" + std::to_string(data[0]) + ", " + std::to_string(data[1]) + "}";
-	}
-
-	string matrix2::ToString() const noexcept {
-		return "{" + data[0].ToString() + ", " + data[1].ToString() + "}";
+		return _data[0] != other[0] || _data[1] != other[1] || _data[2] != other[2] || _data[3] != other[3];
 	}
 }
