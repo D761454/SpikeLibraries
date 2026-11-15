@@ -100,7 +100,7 @@ namespace sml {
 		quaternion& operator=(const quaternion& other) = default;
 		quaternion& operator=(quaternion&& other) = default;
 
-		inline f32 operator[](u32 i) const {
+		inline f32 operator[](i32 i) const {
 			switch (i) {
 			case 0: return x;
 			case 1: return y;
@@ -110,7 +110,7 @@ namespace sml {
 			}
 		}
 
-		inline f32& operator[](u32 i) {
+		inline f32& operator[](i32 i) {
 			switch (i) {
 			case 0: return x;
 			case 1: return y;
@@ -162,7 +162,7 @@ namespace sml {
 		/// </summary>
 		/// <param name="angle">output rotation angle in degrees</param>
 		/// <param name="axis">output rotation axis</param>
-		void ToAngleAxis(float& angle, vector3& axis) const noexcept;
+		void ToAngleAxis(f32& angle, vector3& axis) const noexcept;
 
 		/// <summary>
 		/// Returns the angle in degrees between two rotations.

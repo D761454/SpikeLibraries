@@ -70,7 +70,7 @@ namespace sml {
 		vector4& operator=(const vector4& other) = default;
 		vector4& operator=(vector4&& other) = default;
 
-		inline f32 operator[](u32 i) const {
+		inline f32 operator[](i32 i) const {
 			switch (i) {
 			case 0: return x;
 			case 1: return y;
@@ -80,7 +80,7 @@ namespace sml {
 			}
 		}
 
-		inline f32& operator[](u32 i) {
+		inline f32& operator[](i32 i) {
 			switch (i) {
 			case 0: return x;
 			case 1: return y;

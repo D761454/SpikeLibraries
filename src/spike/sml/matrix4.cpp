@@ -36,10 +36,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/sml/matrix4.h"
 
 #include <cassert>
-#include <string>
 
 #include "spike/def_aliases.h"
-#include "spike/stl_aliases.h"
 
 #include "spike/sml/vector3.h"
 #include "spike/sml/vector4.h"
@@ -57,29 +55,29 @@ namespace sml {
 
 	matrix4 matrix4::zero = matrix4();
 
-	sml::vector4 matrix4::GetColumn(const u32 index) const {
+	sml::vector4 matrix4::GetColumn(const i32 index) const {
 		assert(index < 4 && "Index Out of Range! Column in range 0-3.");
-		const u32 base = index * 4;
+		const i32 base = index * 4;
 
 		return { _data[base], _data[base+1], _data[base+2], _data[base+3] };
 	}
 
-	sml::vector4 matrix4::GetRow(const u32 index) const {
+	sml::vector4 matrix4::GetRow(const i32 index) const {
 		assert(index < 4 && "Index Out of Range! Column in range 0-3.");
 
 		return { _data[index], _data[index + 4], _data[index + 8], _data[index + 12] };
 	}
 
-	void matrix4::SetColumn(const u32 index, const sml::vector4& column) {
+	void matrix4::SetColumn(const i32 index, const sml::vector4& column) {
 		assert(index < 4 && "Index Out of Range! Column in range 0-3.");
-		const u32 base = index * 4;
+		const i32 base = index * 4;
 		_data[base] = column.x;
 		_data[base + 1] = column.y;
 		_data[base + 2] = column.z;
 		_data[base + 3] = column.w;
 	}
 
-	void matrix4::SetRow(const u32 index, const sml::vector4& row) {
+	void matrix4::SetRow(const i32 index, const sml::vector4& row) {
 		assert(index < 4 && "Index Out of Range! Column in range 0-3.");
 
 		_data[index] = row.x;
@@ -95,170 +93,49 @@ namespace sml {
 	f32 matrix4::Determinant() const noexcept {
 		// Determinant and Inverse use the standard 4x4 cofactor / adjugate method (robust double-precision internal)
 		// Use the same intermediate cofactors as used in Inverse
-		f64 m[16];
-		for (u32 r = 0; r < 4; ++r) {
-			for (u32 c = 0; c < 4; ++c) {
-				m[r * 4 + c] = _data[c * 4 + r];
-			}
-		}
+		
+		f64 m00 = _data[0], m10 = _data[1], m20 = _data[2], m30 = _data[3];
+		f64 m01 = _data[4], m11 = _data[5], m21 = _data[6], m31 = _data[7];
+		f64 m02 = _data[8], m12 = _data[9], m22 = _data[10], m32 = _data[11];
+		f64 m03 = _data[12], m13 = _data[13], m23 = _data[14], m33 = _data[15];
 
-		f64 inv[16];
-		inv[0] = m[5] * m[10] * m[15] -
-			m[5] * m[11] * m[14] -
-			m[9] * m[6] * m[15] +
-			m[9] * m[7] * m[14] +
-			m[13] * m[6] * m[11] -
-			m[13] * m[7] * m[10];
+		f64 inv0 = m11 * m22 * m33 - m11 * m23 * m32 - m21 * m12 * m33 + m21 * m13 * m32 + m31 * m12 * m23 - m31 * m13 * m22;
+		f64 inv1 = -m10 * m22 * m33 + m10 * m23 * m32 + m20 * m12 * m33 - m20 * m13 * m32 - m30 * m12 * m23 + m30 * m13 * m22;
+		f64 inv2 = m10 * m21 * m33 - m10 * m23 * m31 - m20 * m11 * m33 + m20 * m13 * m31 + m30 * m11 * m23 - m30 * m13 * m21;
+		f64 inv3 = -m10 * m21 * m32 + m10 * m22 * m31 + m20 * m11 * m32 - m20 * m12 * m31 - m30 * m11 * m22 + m30 * m12 * m21;
 
-		inv[4] = -m[4] * m[10] * m[15] +
-			m[4] * m[11] * m[14] +
-			m[8] * m[6] * m[15] -
-			m[8] * m[7] * m[14] -
-			m[12] * m[6] * m[11] +
-			m[12] * m[7] * m[10];
-
-		inv[8] = m[4] * m[9] * m[15] -
-			m[4] * m[11] * m[13] -
-			m[8] * m[5] * m[15] +
-			m[8] * m[7] * m[13] +
-			m[12] * m[5] * m[11] -
-			m[12] * m[7] * m[9];
-
-		inv[12] = -m[4] * m[9] * m[14] +
-			m[4] * m[10] * m[13] +
-			m[8] * m[5] * m[14] -
-			m[8] * m[6] * m[13] -
-			m[12] * m[5] * m[10] +
-			m[12] * m[6] * m[9];
-
-		f64 det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+		f64 det = m00 * inv0 + m01 * inv1 + m02 * inv2 + m03 * inv3;
 		return (f32)det;
 	}
 
 	matrix4 matrix4::Inverse() const noexcept {
-		// Build row-major from column-major storage
-		f64 m[16];
-		for (u32 r = 0; r < 4; ++r) {
-			for (u32 c = 0; c < 4; ++c) {
-				m[r * 4 + c] = _data[c * 4 + r];
-			}
-		}
+		f64 m00 = _data[0], m10 = _data[1], m20 = _data[2], m30 = _data[3];
+		f64 m01 = _data[4], m11 = _data[5], m21 = _data[6], m31 = _data[7];
+		f64 m02 = _data[8], m12 = _data[9], m22 = _data[10], m32 = _data[11];
+		f64 m03 = _data[12], m13 = _data[13], m23 = _data[14], m33 = _data[15];
 
 		f64 inv[16];
+		inv[0] = m11 * m22 * m33 - m11 * m23 * m32 - m21 * m12 * m33 + m21 * m13 * m32 + m31 * m12 * m23 - m31 * m13 * m22;
+		inv[4] = -m10 * m22 * m33 + m10 * m23 * m32 + m20 * m12 * m33 - m20 * m13 * m32 - m30 * m12 * m23 + m30 * m13 * m22;
+		inv[8] = m10 * m21 * m33 - m10 * m23 * m31 - m20 * m11 * m33 + m20 * m13 * m31 + m30 * m11 * m23 - m30 * m13 * m21;
+		inv[12] = -m10 * m21 * m32 + m10 * m22 * m31 + m20 * m11 * m32 - m20 * m12 * m31 - m30 * m11 * m22 + m30 * m12 * m21;
 
-		inv[0] = m[5] * m[10] * m[15] -
-			m[5] * m[11] * m[14] -
-			m[9] * m[6] * m[15] +
-			m[9] * m[7] * m[14] +
-			m[13] * m[6] * m[11] -
-			m[13] * m[7] * m[10];
+		inv[1] = -m01 * m22 * m33 + m01 * m23 * m32 + m21 * m02 * m33 - m21 * m03 * m32 - m31 * m02 * m23 + m31 * m03 * m22;
+		inv[5] = m00 * m22 * m33 - m00 * m23 * m32 - m20 * m02 * m33 + m20 * m03 * m32 + m30 * m02 * m23 - m30 * m03 * m22;
+		inv[9] = -m00 * m21 * m33 + m00 * m23 * m31 + m20 * m01 * m33 - m20 * m03 * m31 - m30 * m01 * m23 + m30 * m03 * m21;
+		inv[13] = m00 * m21 * m32 - m00 * m22 * m31 - m20 * m01 * m32 + m20 * m02 * m31 + m30 * m01 * m22 - m30 * m02 * m21;
 
-		inv[4] = -m[4] * m[10] * m[15] +
-			m[4] * m[11] * m[14] +
-			m[8] * m[6] * m[15] -
-			m[8] * m[7] * m[14] -
-			m[12] * m[6] * m[11] +
-			m[12] * m[7] * m[10];
+		inv[2] = m01 * m12 * m33 - m01 * m13 * m32 - m11 * m02 * m33 + m11 * m03 * m32 + m31 * m02 * m13 - m31 * m03 * m12;
+		inv[6] = -m00 * m12 * m33 + m00 * m13 * m32 + m10 * m02 * m33 - m10 * m03 * m32 - m30 * m02 * m13 + m30 * m03 * m12;
+		inv[10] = m00 * m11 * m33 - m00 * m13 * m31 - m10 * m01 * m33 + m10 * m03 * m31 + m30 * m01 * m13 - m30 * m03 * m11;
+		inv[14] = -m00 * m11 * m32 + m00 * m12 * m31 + m10 * m01 * m32 - m10 * m02 * m31 - m30 * m01 * m12 + m30 * m02 * m11;
 
-		inv[8] = m[4] * m[9] * m[15] -
-			m[4] * m[11] * m[13] -
-			m[8] * m[5] * m[15] +
-			m[8] * m[7] * m[13] +
-			m[12] * m[5] * m[11] -
-			m[12] * m[7] * m[9];
+		inv[3] = -m01 * m12 * m23 + m01 * m13 * m22 + m11 * m02 * m23 - m11 * m03 * m22 - m21 * m02 * m13 + m21 * m03 * m12;
+		inv[7] = m00 * m12 * m23 - m00 * m13 * m22 - m10 * m02 * m23 + m10 * m03 * m22 + m20 * m02 * m13 - m20 * m03 * m12;
+		inv[11] = -m00 * m11 * m23 + m00 * m13 * m21 + m10 * m01 * m23 - m10 * m03 * m21 - m20 * m01 * m13 + m20 * m03 * m11;
+		inv[15] = m00 * m11 * m22 - m00 * m12 * m21 - m10 * m01 * m22 + m10 * m02 * m21 + m20 * m01 * m12 - m20 * m02 * m11;
 
-		inv[12] = -m[4] * m[9] * m[14] +
-			m[4] * m[10] * m[13] +
-			m[8] * m[5] * m[14] -
-			m[8] * m[6] * m[13] -
-			m[12] * m[5] * m[10] +
-			m[12] * m[6] * m[9];
-
-		inv[1] = -m[1] * m[10] * m[15] +
-			m[1] * m[11] * m[14] +
-			m[9] * m[2] * m[15] -
-			m[9] * m[3] * m[14] -
-			m[13] * m[2] * m[11] +
-			m[13] * m[3] * m[10];
-
-		inv[5] = m[0] * m[10] * m[15] -
-			m[0] * m[11] * m[14] -
-			m[8] * m[2] * m[15] +
-			m[8] * m[3] * m[14] +
-			m[12] * m[2] * m[11] -
-			m[12] * m[3] * m[10];
-
-		inv[9] = -m[0] * m[9] * m[15] +
-			m[0] * m[11] * m[13] +
-			m[8] * m[1] * m[15] -
-			m[8] * m[3] * m[13] -
-			m[12] * m[1] * m[11] +
-			m[12] * m[3] * m[9];
-
-		inv[13] = m[0] * m[9] * m[14] -
-			m[0] * m[10] * m[13] -
-			m[8] * m[1] * m[14] +
-			m[8] * m[2] * m[13] +
-			m[12] * m[1] * m[10] -
-			m[12] * m[2] * m[9];
-
-		inv[2] = m[1] * m[6] * m[15] -
-			m[1] * m[7] * m[14] -
-			m[5] * m[2] * m[15] +
-			m[5] * m[3] * m[14] +
-			m[13] * m[2] * m[7] -
-			m[13] * m[3] * m[6];
-
-		inv[6] = -m[0] * m[6] * m[15] +
-			m[0] * m[7] * m[14] +
-			m[4] * m[2] * m[15] -
-			m[4] * m[3] * m[14] -
-			m[12] * m[2] * m[7] +
-			m[12] * m[3] * m[6];
-
-		inv[10] = m[0] * m[5] * m[15] -
-			m[0] * m[7] * m[13] -
-			m[4] * m[1] * m[15] +
-			m[4] * m[3] * m[13] +
-			m[12] * m[1] * m[7] -
-			m[12] * m[3] * m[5];
-
-		inv[14] = -m[0] * m[5] * m[14] +
-			m[0] * m[6] * m[13] +
-			m[4] * m[1] * m[14] -
-			m[4] * m[2] * m[13] -
-			m[12] * m[1] * m[6] +
-			m[12] * m[2] * m[5];
-
-		inv[3] = -m[1] * m[6] * m[11] +
-			m[1] * m[7] * m[10] +
-			m[5] * m[2] * m[11] -
-			m[5] * m[3] * m[10] -
-			m[9] * m[2] * m[7] +
-			m[9] * m[3] * m[6];
-
-		inv[7] = m[0] * m[6] * m[11] -
-			m[0] * m[7] * m[10] -
-			m[4] * m[2] * m[11] +
-			m[4] * m[3] * m[10] +
-			m[8] * m[2] * m[7] -
-			m[8] * m[3] * m[6];
-
-		inv[11] = -m[0] * m[5] * m[11] +
-			m[0] * m[7] * m[9] +
-			m[4] * m[1] * m[11] -
-			m[4] * m[3] * m[9] -
-			m[8] * m[1] * m[7] +
-			m[8] * m[3] * m[5];
-
-		inv[15] = m[0] * m[5] * m[10] -
-			m[0] * m[6] * m[9] -
-			m[4] * m[1] * m[10] +
-			m[4] * m[2] * m[9] +
-			m[8] * m[1] * m[6] -
-			m[8] * m[2] * m[5];
-
-		f64 det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+		f64 det = m00 * inv[0] + m01 * inv[4] + m02 * inv[8] + m03 * inv[12];
 
 		if (sml::abs(det) < 1e-8) {
 			return matrix4::zero;
@@ -266,11 +143,8 @@ namespace sml {
 
 		f64 invDet = 1.0 / det;
 		matrix4 out;
-		// inv currently holds the adjugate in row-major order, convert back into column-major storage.
-		for (i32 r = 0; r < 4; ++r) {
-			for (i32 c = 0; c < 4; ++c) {
-				out[c * 4 + r] = (f32)(inv[r * 4 + c] * invDet);
-			}
+		for (i32 i = 0; i < 16; ++i) {
+			out[i] = (f32)(inv[i] * invDet);
 		}
 		return out;
 	}
@@ -330,8 +204,8 @@ namespace sml {
 
 	matrix4 matrix4::Transpose() const noexcept {
 		matrix4 out;
-		for (u32 r = 0; r < 4; ++r) {
-			for (u32 c = 0; c < 4; ++c) {
+		for (i32 r = 0; r < 4; ++r) {
+			for (i32 c = 0; c < 4; ++c) {
 				out[c * 4 + r] = _data[r * 4 + c];
 			}
 		}
@@ -527,37 +401,37 @@ namespace sml {
 
 	matrix4 matrix4::operator+(const matrix4& other) const {
 		return matrix4({
-			_data[0] + other[0], _data[4] + other[4], _data[8] + other[8], _data[12] + other[12],
-			_data[1] + other[1], _data[5] + other[5], _data[9] + other[9], _data[13] + other[13],
-			_data[2] + other[2], _data[6] + other[6], _data[10] + other[10], _data[14] + other[14],
-			_data[3] + other[3], _data[7] + other[7], _data[11] + other[11], _data[15] + other[15]
+			_data[0] + other[0], _data[1] + other[1], _data[2] + other[2], _data[3] + other[3],
+			_data[4] + other[4], _data[5] + other[5], _data[6] + other[6], _data[7] + other[7],
+			_data[8] + other[8], _data[9] + other[9], _data[10] + other[10], _data[11] + other[11],
+			_data[12] + other[12], _data[13] + other[13], _data[14] + other[14], _data[15] + other[15]
 		});
 	}
 
 	matrix4 matrix4::operator-(const matrix4& other) const {
 		return matrix4({
-			_data[0] - other[0], _data[4] - other[4], _data[8] - other[8], _data[12] - other[12],
-			_data[1] - other[1], _data[5] - other[5], _data[9] - other[9], _data[13] - other[13],
-			_data[2] - other[2], _data[6] - other[6], _data[10] - other[10], _data[14] - other[14],
-			_data[3] - other[3], _data[7] - other[7], _data[11] - other[11], _data[15] - other[15]
+			_data[0] - other[0], _data[1] - other[1], _data[2] - other[2], _data[3] - other[3],
+			_data[4] - other[4], _data[5] - other[5], _data[6] - other[6], _data[7] - other[7],
+			_data[8] - other[8], _data[9] - other[9], _data[10] - other[10], _data[11] - other[11],
+			_data[12] - other[12], _data[13] - other[13], _data[14] - other[14], _data[15] - other[15]
 		});
 	}
 
 	matrix4 matrix4::operator*(const f32& scalar) const {
 		return matrix4({
-			_data[0] * scalar, _data[4] * scalar, _data[8] * scalar, _data[12] * scalar,
-			_data[1] * scalar, _data[5] * scalar, _data[9] * scalar, _data[13] * scalar,
-			_data[2] * scalar, _data[6] * scalar, _data[10] * scalar, _data[14] * scalar,
-			_data[3] * scalar, _data[7] * scalar, _data[11] * scalar, _data[15] * scalar
+			_data[0] * scalar, _data[1] * scalar, _data[2] * scalar, _data[3] * scalar,
+			_data[4] * scalar, _data[5] * scalar, _data[6] * scalar, _data[7] * scalar,
+			_data[8] * scalar, _data[9] * scalar, _data[10] * scalar, _data[11] * scalar,
+			_data[12] * scalar, _data[13] * scalar, _data[14] * scalar, _data[15] * scalar
 		});
 	}
 
 	matrix4 matrix4::operator*(const matrix4& other) const {
 		matrix4 out;
-		for (u32 c = 0; c < 4; ++c) {
-			for (u32 r = 0; r < 4; ++r) {
+		for (i32 c = 0; c < 4; ++c) {
+			for (i32 r = 0; r < 4; ++r) {
 				f32 sum = 0.0f;
-				for (u32 k = 0; k < 4; ++k) {
+				for (i32 k = 0; k < 4; ++k) {
 					sum += _data[k * 4 + r] * other[c * 4 + k];
 				}
 				out[c * 4 + r] = sum;
