@@ -81,7 +81,7 @@ namespace sml {
 		/// </summary>
 		/// <param name="index">element index in the range 0..15</param>
 		/// <returns>reference to selected matrix element</returns>
-		inline f32& operator[](const u32 index) {
+		inline f32& operator[](const i32 index) {
 			assert(index < 16 && "Index Out of Range! matrix4 data in range 0-15.");
 
 			return _data[index];
@@ -93,7 +93,7 @@ namespace sml {
 		/// </summary>
 		/// <param name="index">element index in the range 0..15</param>
 		/// <returns>selected matrix element</returns>
-		inline const f32 operator[](const u32 index) const {
+		inline const f32 operator[](const i32 index) const {
 			assert(index < 16 && "Index Out of Range! matrix4 data in range 0-15.");
 
 			return _data[index];
@@ -301,16 +301,16 @@ namespace sml {
 		/// </summary>
 		/// <param name="index">column index in the range 0..3</param>
 		/// <returns>selected matrix column</returns>
-		sml::vector4 GetColumn(const u32 index) const;
+		sml::vector4 GetColumn(const i32 index) const;
 		/// <summary>
 		/// Returns the row assembled from the columns at index (0..3).
 		/// </summary>
 		/// <param name="index">row index in the range 0..3</param>
 		/// <returns>selected matrix row</returns>
-		sml::vector4 GetRow(const u32 index) const;
+		sml::vector4 GetRow(const i32 index) const;
 
-		void SetColumn(const u32 index, const sml::vector4& column);
-		void SetRow(const u32 index, const sml::vector4& row);
+		void SetColumn(const i32 index, const sml::vector4& column);
+		void SetRow(const i32 index, const sml::vector4& row);
 
 		matrix4 operator+(const matrix4& other) const;
 		matrix4 operator-(const matrix4& other) const;

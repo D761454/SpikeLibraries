@@ -36,123 +36,34 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/sml/matrix3.h"
 
 #include <cassert>
-#include <string>
 
 #include "spike/def_aliases.h"
-#include "spike/stl_aliases.h"
 
 #include "spike/sml/vector3.h"
 
 namespace sml {
-	matrix3::MatrixRow matrix3::MatrixRow::zero = MatrixRow();
-
-	matrix3 matrix3::identity = matrix3(
-		{ 1.0f, 0.0f, 0.0f },
-		{ 0.0f, 1.0f, 0.0f },
-		{ 0.0f, 0.0f, 1.0f }
-	);
+	matrix3 matrix3::identity = matrix3({
+		1.0, 0.0, 0.f,
+		0.0, 1.0, 0.f,
+		0.0, 0.0, 1.f
+	});
 
 	matrix3 matrix3::zero = matrix3();
 
-	matrix3::MatrixRow matrix3::GetColumn(const u16 index) const {
+	sml::vector3 matrix3::GetColumn(const u32 index) const {
+		assert(index < 3 && "Index Out of Range! Column in range 0-2.");
+		const u32 base = index * 3;
+
+		return { _data[base], _data[base + 1], _data[base + 2] };
+	}
+
+	sml::vector3 matrix3::GetRow(const u32 index) const {
 		assert(index < 3 && "Index Out of Range! Column in range 0-2.");
 
-		return { data[0][index], data[1][index], data[2][index] };
+		return { _data[index], _data[index + 3], _data[index + 6] };
 	}
 
-	matrix3::MatrixRow matrix3::GetRow(const u16 index) const {
-		assert(index < 3 && "Index Out of Range! Column in range 0-2.");
 
-		return { data[index] };
-	}
 
-	matrix3::MatrixRow matrix3::MatrixRow::operator+(const MatrixRow& other) const {
-		return { data[0] + other[0], data[1] + other[1], data[2] + other[2] };
-	}
 
-	matrix3::MatrixRow matrix3::MatrixRow::operator-(const MatrixRow& other) const {
-		return { data[0] - other[0], data[1] - other[1], data[2] - other[2] };
-	}
-
-	matrix3::MatrixRow matrix3::MatrixRow::operator*(const f32& scalar) const {
-		return { data[0] * scalar, data[1] * scalar, data[2] * scalar };
-	}
-
-	f32 matrix3::MatrixRow::operator*(const MatrixRow& other) const {
-		return (data[0] * other[0]) + (data[1] * other[1]) + (data[2] * other[2]);
-	}
-
-	matrix3::MatrixRow& matrix3::MatrixRow::operator=(const MatrixRow& other) {
-		data[0] = other[0];
-		data[1] = other[1];
-		data[2] = other[2];
-		return *this;
-	}
-
-	bool matrix3::MatrixRow::operator==(const MatrixRow& other) const {
-		return data[0] == other[0] &&
-			data[1] == other[1] &&
-			data[2] == other[2];
-	}
-
-	bool matrix3::MatrixRow::operator!=(const MatrixRow& other) const {
-		return data[0] != other[0] ||
-			data[1] != other[1] ||
-			data[2] != other[2];
-	}
-
-	matrix3 matrix3::operator+(const matrix3& other) const {
-		return { data[0] + other[0], data[1] + other[1], data[2] + other[2] };
-	}
-
-	matrix3 matrix3::operator-(const matrix3& other) const {
-		return { data[0] - other[0], data[1] - other[1], data[2] - other[2] };
-	}
-
-	matrix3 matrix3::operator*(const f32& scalar) const {
-		return { data[0] * scalar, data[1] * scalar, data[2] * scalar };
-	}
-
-	matrix3 matrix3::operator*(const matrix3& other) const {
-		return {
-			{ data[0] * other.GetColumn(0), data[0] * other.GetColumn(1), data[0] * other.GetColumn(2) },
-			{ data[1] * other.GetColumn(0), data[1] * other.GetColumn(1), data[1] * other.GetColumn(2) },
-			{ data[2] * other.GetColumn(0), data[2] * other.GetColumn(1), data[2] * other.GetColumn(2) }
-		};
-	}
-
-	vector3 matrix3::operator*(const vector3& other) const {
-		return {
-			(data[0][0] * other.x) + (data[0][1] * other.y) + (data[0][2] * other.z),
-			(data[1][0] * other.x) + (data[1][1] * other.y) + (data[1][2] * other.z),
-			(data[2][0] * other.x) + (data[2][1] * other.y) + (data[2][2] * other.z)
-		};
-	}
-
-	matrix3& matrix3::operator=(const matrix3& other) {
-		data[0] = other[0];
-		data[1] = other[1];
-		data[2] = other[2];
-		return *this;
-	}
-
-	bool matrix3::operator==(const matrix3& other) const {
-		return data[0] == other[0] &&
-			data[1] == other[1] &&
-			data[2] == other[2];
-	}
-
-	bool matrix3::operator!=(const matrix3& other) const {
-		return data[0] != other[0] ||
-			data[1] != other[1] ||
-			data[2] != other[2];
-	}
-
-	string matrix3::MatrixRow::ToString() const noexcept {
-		return "{" + std::to_string(data[0]) + ", " + std::to_string(data[1]) + ", " + std::to_string(data[2]) + "}";
-	}
-
-	string matrix3::ToString() const noexcept {
-		return "{" + data[0].ToString() + ", " + data[1].ToString() + ", " + data[2].ToString() + "}";
-	}
 }

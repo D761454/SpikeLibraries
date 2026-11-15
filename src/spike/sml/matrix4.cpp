@@ -36,10 +36,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/sml/matrix4.h"
 
 #include <cassert>
-#include <string>
 
 #include "spike/def_aliases.h"
-#include "spike/stl_aliases.h"
 
 #include "spike/sml/vector3.h"
 #include "spike/sml/vector4.h"
@@ -57,29 +55,29 @@ namespace sml {
 
 	matrix4 matrix4::zero = matrix4();
 
-	sml::vector4 matrix4::GetColumn(const u32 index) const {
+	sml::vector4 matrix4::GetColumn(const i32 index) const {
 		assert(index < 4 && "Index Out of Range! Column in range 0-3.");
-		const u32 base = index * 4;
+		const i32 base = index * 4;
 
 		return { _data[base], _data[base+1], _data[base+2], _data[base+3] };
 	}
 
-	sml::vector4 matrix4::GetRow(const u32 index) const {
+	sml::vector4 matrix4::GetRow(const i32 index) const {
 		assert(index < 4 && "Index Out of Range! Column in range 0-3.");
 
 		return { _data[index], _data[index + 4], _data[index + 8], _data[index + 12] };
 	}
 
-	void matrix4::SetColumn(const u32 index, const sml::vector4& column) {
+	void matrix4::SetColumn(const i32 index, const sml::vector4& column) {
 		assert(index < 4 && "Index Out of Range! Column in range 0-3.");
-		const u32 base = index * 4;
+		const i32 base = index * 4;
 		_data[base] = column.x;
 		_data[base + 1] = column.y;
 		_data[base + 2] = column.z;
 		_data[base + 3] = column.w;
 	}
 
-	void matrix4::SetRow(const u32 index, const sml::vector4& row) {
+	void matrix4::SetRow(const i32 index, const sml::vector4& row) {
 		assert(index < 4 && "Index Out of Range! Column in range 0-3.");
 
 		_data[index] = row.x;

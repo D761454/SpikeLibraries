@@ -77,7 +77,7 @@ namespace sml {
 		/// </summary>
 		/// <param name="index">element index in the range 0..3</param>
 		/// <returns>reference to selected matrix element</returns>
-		inline f32& operator[](const u32 index) {
+		inline f32& operator[](const i32 index) {
 			assert(index < 4 && "Index Out of Range! matrix2 data in range 0-3.");
 
 			return _data[index];
@@ -89,7 +89,7 @@ namespace sml {
 		/// </summary>
 		/// <param name="index">element index in the range 0..3</param>
 		/// <returns>selected matrix element</returns>
-		inline const f32 operator[](const u32 index) const {
+		inline const f32 operator[](const i32 index) const {
 			assert(index < 4 && "Index Out of Range! matrix2 data in range 0-3.");
 
 			return _data[index];
@@ -124,13 +124,13 @@ namespace sml {
 		/// </summary>
 		/// <param name="index">column index in the range 0..1</param>
 		/// <returns>selected matrix column</returns>
-		sml::vector2 GetColumn(const u32 index) const;
+		sml::vector2 GetColumn(const i32 index) const;
 		/// <summary>
 		/// Returns the row assembled from the columns at index (0..1).
 		/// </summary>
 		/// <param name="index">row index in the range 0..1</param>
 		/// <returns>selected matrix row</returns>
-		sml::vector2 GetRow(const u32 index) const;
+		sml::vector2 GetRow(const i32 index) const;
 
 		matrix2 operator+(const matrix2& other) const;
 		matrix2 operator-(const matrix2& other) const;
