@@ -139,21 +139,6 @@ namespace iocomp {
 		static u64 Decompress(const void* src, const u64& srcSize, void* dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod);
 
 		/// <summary>
-		/// Decompresses a compressed chunk of data to a byte array
-		/// </summary>
-		/// <param name="src">pointer to the compressed data</param>
-		/// <param name="srcSize">size of the compressed data (in bytes)</param>
-		/// <param name="dst">output vector holding the decompressed bytes</param>
-		/// <param name="expectedSize">expected size of the decompressed data (in bytes)</param>
-		/// <param name="expectedCrc32">expected crc32 for the decompressed data, used for corruption detection</param>
-		/// <param name="compressionMethod">compression method used to decompress the data, should be the same used to compress the data</param>
-		/// <returns>size of the decompressed data</returns>
-		static u64 Decompress(const void* src, const u64& srcSize, niVector<u8>& dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
-			dst.resize(expectedSize);
-			return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
-		}
-
-		/// <summary>
 		/// Decompresses a compressed chunk of data to an array of objects of type T, such as compressed vectors of structs
 		/// </summary>
 		/// <typeparam name="T">type of object stored in the output vector</typeparam>
@@ -168,6 +153,12 @@ namespace iocomp {
 		static u64 Decompress(const void* src, const u64& srcSize, niVector<T>& dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
 			usize realSize = expectedSize / sizeof(T);
 			dst.resize(realSize);
+			return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
+		}
+
+		template<>
+		static u64 Decompress(const void* src, const u64& srcSize, niVector<u8>& dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
+			dst.resize(expectedSize);
 			return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
 		}
 
@@ -312,7 +303,52 @@ namespace iocomp {
 			return true;
 		}
 
-		// need to add nivector decomps / comp to file
+		/// <summary>
+		/// Used to decompress a chunk of data from file
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="ifs">file stream to the file</param>
+		/// <param name="dst">object vector used to store the decompressed output</param>
+		/// <param name="seekBackToheader">whether to seek back to the file position just after the header or to remain after the compressed blob</param>
+		/// <returns>if the read and decompression were successful</returns>
+		template<typename T>
+		static bool DecompressFromFile(std::ifstream& ifs, niVector<T>& dst, bool seekBackToheader = false) {
+			u64 remsize = 0;
+			auto curr = ifs.tellg();
+			if (curr == -1) return false;
+			ifs.seekg(0, std::ios::beg);
+			auto start = ifs.tellg();
+			if (start == -1) return false;
+			ifs.seekg(0, std::ios::end);
+			auto end = ifs.tellg();
+			if (end == -1) return false;
+			remsize = end - start;
+			ifs.seekg(curr, std::ios::beg);
+
+			CompressedDataHeader cdh;
+			if (!podio::read_pod(ifs, cdh) || ifs.eof()) return false;
+			auto afterheader = ifs.tellg();
+			if (afterheader == -1) return false;
+			if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return false;
+			ifs.seekg(cdh.dataOffset);
+			if (!ifs.good() || ifs.eof() || cdh.uncompressedSize > capacity) return false;
+
+			niVector<u8> compressed;
+			if (cdh.compressedSize > std::numeric_limits<std::streamsize>::max() || cdh.compressedSize > compressed.max_size()) return false;
+			compressed.resize(cdh.compressedSize);
+			ifs.read(reinterpret_cast<char*>(compressed.data()), cdh.compressedSize);
+			if (ifs.gcount() != cdh.compressedSize) return false;
+			if (Decompress(compressed.data(), cdh.compressedSize, dst, cdh.uncompressedSize, cdh.crc32, cdh.compressionMethod) != cdh.uncompressedSize) {
+				if (seekBackToheader) {
+					ifs.seekg(afterheader, std::ios::beg);
+				}
+				return false;
+			}
+			if (seekBackToheader) {
+				ifs.seekg(afterheader, std::ios::beg);
+			}
+			return true;
+		}
 
 		/// <summary>
 		/// The method allows the user to seek ahead within a file when compressed data headers and compressed data blobs are located next to one another in sequence
