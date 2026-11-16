@@ -156,12 +156,6 @@ namespace iocomp {
 			return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
 		}
 
-		template<>
-		static u64 Decompress(const void* src, const u64& srcSize, niVector<u8>& dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
-			dst.resize(expectedSize);
-			return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
-		}
-
 		/// <summary>
 		/// Used to compress a chunk of data and serialize it to file, where the appended data is [header][compressed blob]
 		/// </summary>
@@ -374,6 +368,12 @@ namespace iocomp {
 			return true;
 		}
 	};
+
+	template<>
+	u64 IOComp::Decompress(const void* src, const u64& srcSize, niVector<u8>& dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
+		dst.resize(expectedSize);
+		return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
+	}
 }
 
 #endif
