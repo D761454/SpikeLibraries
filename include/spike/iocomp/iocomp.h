@@ -331,7 +331,7 @@ namespace iocomp {
 			if (afterheader == -1) return false;
 			if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return false;
 			ifs.seekg(cdh.dataOffset);
-			if (!ifs.good() || ifs.eof() || cdh.uncompressedSize > capacity) return false;
+			if (!ifs.good() || ifs.eof()) return false;
 
 			niVector<u8> compressed;
 			if (cdh.compressedSize > std::numeric_limits<std::streamsize>::max() || cdh.compressedSize > compressed.max_size()) return false;
