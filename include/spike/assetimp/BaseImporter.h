@@ -48,6 +48,10 @@ namespace errlib {
 namespace assimp {
 	struct Collection;
 
+	/// <summary>
+	/// Base class to be used by all specific importers, containing the virtual methods invoked by the 
+	/// primary importer on file parsing
+	/// </summary>
 	class BaseImporter {
 	public:
 		BaseImporter() noexcept;
@@ -55,11 +59,25 @@ namespace assimp {
 
 		inline void SetFlags(u32 flags) { ppFlags = flags; }
 
-		/*check if magic value or tokens are present in file - for now will just return if file extn in extns*/
-		/*virtual bool CanParse(const string& file) const = 0;*/
+		/// <summary>
+		/// checks the file extension against the extensions list within the importer, determining if the importer is designed to parse the file
+		/// </summary>
+		/// <param name="file">file to check against</param>
+		/// <returns>if the file can be parsed by this importer</returns>
 		bool CanParse(const string& file) const;
+
+		/// <summary>
+		/// Called to import assets from a file, returnign the result as an asset collection
+		/// </summary>
+		/// <param name="file">path to file to read</param>
+		/// <returns>asset collection holding all imported assets</returns>
 		Collection* ReadFile(const string& file);
 
+		/// <summary>
+		/// checks if this importer can parse a file with the provided extension
+		/// </summary>
+		/// <param name="extn"></param>
+		/// <returns></returns>
 		inline bool SupportsExtension(const string& extn) const {
 			return extensions.contains(extn);
 		}

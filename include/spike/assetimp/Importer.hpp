@@ -36,7 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __ASSET_IMP_IMPORTER_HPP
 #define __ASSET_IMP_IMPORTER_HPP
 
-#include <set>
 #include <vector>
 
 #include "spike/def_aliases.h"
@@ -47,7 +46,6 @@ namespace errlib {
 }
 
 namespace assimp {
-	/* common interface for all importers */
 	class BaseImporter;
 
 	/*return type for an imported asset file*/
@@ -71,11 +69,30 @@ namespace assimp {
 
 		inline void SetFlags(u32 flags) { pp = flags; }
 
+		/// <summary>
+		/// reads in an asset file using the provided flags, parsing the asset(s) to create an asset colelction for use
+		/// </summary>
+		/// <param name="path">file path to the asset file</param>
+		/// <param name="flags">processing flags that modify the importers behaviour</param>
+		/// <returns>a pointer to the asset collection if import was successful, nullptr if not</returns>
 		const Collection* ReadFile(const string& path, u32 flags = 0);
 
-		const Collection* GetScene();
-		void FreeScene();
+		/// <summary>
+		/// retrieve the last imported asset collection
+		/// </summary>
+		/// <returns>pointer to the held asset collection</returns>
+		const Collection* GetCollection();
 
+		/// <summary>
+		/// deletes the last imported asset collection
+		/// </summary>
+		void FreeCollection();
+
+		/// <summary>
+		/// Used to check if a file with the provided extension can be parsed by any of the available importers
+		/// </summary>
+		/// <param name="extn">extension to check</param>
+		/// <returns>if an importer is registered that can import files with the extension</returns>
 		bool IsExtensionSupported(const string& extn) const;
 
 		inline const usize GetImporterCount() const { return importers.size(); }

@@ -39,6 +39,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/def_aliases.h"
 
 namespace assimp {
+	/// <summary>
+	/// processing flags used on import, modifying what data is read, generated or modifying the data post parsing
+	/// </summary>
 	enum PostProcessingFlags_ : u32 {
 		PostProcessingFlags_none = 0,
 		PostProcessingFlags_triangulateFaces = 1 << 0,

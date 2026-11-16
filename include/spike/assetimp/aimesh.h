@@ -154,6 +154,14 @@ namespace assimp {
 		}
 	};
 
+	/// <summary>
+	/// used to generate a submeshes AABB from its vertices
+	/// </summary>
+	/// <typeparam name="Vertex"></typeparam>
+	/// <typeparam name="Index"></typeparam>
+	/// <param name="subMesh">submesh to generate for</param>
+	/// <param name="vertices">vertex array used by the submesh</param>
+	/// <param name="indices">index array used by the submesh</param>
 	template<typename Vertex, typename Index>
 	inline void calculate_submesh_bounds(SubMesh& subMesh, const std::vector<Vertex>& vertices, const std::vector<Index>& indices) {
 		const usize start = subMesh.indexOffset;
