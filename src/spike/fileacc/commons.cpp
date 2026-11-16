@@ -42,19 +42,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/podio.hpp"
 #include "spike/stl_aliases.h"
 
-bool fileacc::check_file(const string& path, const u32 expectedMagic, const u32 expectedVer) noexcept {
-	if (path.empty()) return false;
+i32 fileacc::check_file(const string& path, const u32 expectedMagic, const u32 expectedVer) noexcept {
+	if (path.empty()) return -3;
 	std::ifstream ifs(path, std::ios::binary);
-	if (!ifs) return false;
+	if (!ifs) return -3;
 	FileCheck hdr;
 	podio::read_pod(ifs, hdr);
 	return valid_file(hdr, expectedMagic, expectedVer);
 }
 
-bool fileacc::check_file(const string& path, const FileCheck& expectedHeader) noexcept {
-	if (path.empty()) return false;
+i32 fileacc::check_file(const string& path, const FileCheck& expectedHeader) noexcept {
+	if (path.empty()) return -3;
 	std::ifstream ifs(path, std::ios::binary);
-	if (!ifs) return false;
+	if (!ifs) return -3;
 	FileCheck hdr;
 	podio::read_pod(ifs, hdr);
 	return valid_file(hdr, expectedHeader);

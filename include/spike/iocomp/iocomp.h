@@ -312,6 +312,8 @@ namespace iocomp {
 			return true;
 		}
 
+		// need to add nivector decomps / comp to file
+
 		/// <summary>
 		/// The method allows the user to seek ahead within a file when compressed data headers and compressed data blobs are located next to one another in sequence
 		/// </summary>
