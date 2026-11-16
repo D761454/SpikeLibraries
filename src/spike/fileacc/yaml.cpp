@@ -208,27 +208,7 @@ namespace {
 	}
 }
 
-std::optional<fileacc::YAMLData> fileacc::YAMLFileIO::LoadFromFile(const string& filePath) {
-	try {
-		if (!std::filesystem::exists(std::filesystem::path(filePath))) {
-			Debug::LogError("YAMLFileIO::LoadFromFile - file not found: {}", filePath);
-			return std::nullopt;
-		}
-
-		YAML::Node root = YAML::LoadFile(filePath);
-		return NodeToYAMLData(root);
-	}
-	catch (const std::exception& ex) {
-		Debug::LogError("YAMLFileIO::LoadFromFile - exception loading {}: {}", filePath, ex.what());
-		return std::nullopt;
-	}
-	catch (...) {
-		Debug::LogError("YAMLFileIO::LoadFromFile - unknown exception loading {}", filePath);
-		return std::nullopt;
-	}
-}
-
-errlib::Error fileacc::YAMLFileIO::SaveToFile(const string& filePath, const YAMLData& data) {
+errlib::Error fileacc::save_yaml(const string& filePath, const YAMLData& data) {
 	try {
 		YAML::Node root = YAMLDataToNode(data);
 
@@ -257,6 +237,26 @@ errlib::Error fileacc::YAMLFileIO::SaveToFile(const string& filePath, const YAML
 	catch (...) {
 		Debug::LogError("YAMLFileIO::SaveToFile - unknown exception writing {}", filePath);
 		return errlib::Error::FromCode(errlib::ErrorCode_unknown, filePath);
+	}
+}
+
+std::optional<fileacc::YAMLData> fileacc::load_yaml(const string& filePath) {
+	try {
+		if (!std::filesystem::exists(std::filesystem::path(filePath))) {
+			Debug::LogError("YAMLFileIO::LoadFromFile - file not found: {}", filePath);
+			return std::nullopt;
+		}
+
+		YAML::Node root = YAML::LoadFile(filePath);
+		return NodeToYAMLData(root);
+	}
+	catch (const std::exception& ex) {
+		Debug::LogError("YAMLFileIO::LoadFromFile - exception loading {}: {}", filePath, ex.what());
+		return std::nullopt;
+	}
+	catch (...) {
+		Debug::LogError("YAMLFileIO::LoadFromFile - unknown exception loading {}", filePath);
+		return std::nullopt;
 	}
 }
 

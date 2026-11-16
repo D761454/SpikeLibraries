@@ -49,9 +49,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/error.hpp"
 #include "spike/stl_aliases.h"
 
-namespace YAML { class Node; } // may not need?
-
 namespace fileacc {
+	/// <summary>
+	/// A Yaml class capable of holding a variety of data, allowing for serialization to YAML files
+	/// </summary>
 	class YAMLData {
 		using Sequence = std::vector<YAMLData>;
 		using Map = std::unordered_map<string, YAMLData>;
@@ -177,17 +178,20 @@ namespace fileacc {
 		}
 	};
 
-	class YAMLFileIO {
-	public:
-		/*
-		Load a YAML file and convert it into YAMLData.
-		Returns YAMLData on success, std::nullopt on failure.
-		*/
-		static std::optional<YAMLData> LoadFromFile(const string& filePath);
+	/// <summary>
+	/// Saves YAML data to a file at the desired path
+	/// </summary>
+	/// <param name="filePath">file path to save the data to</param>
+	/// <param name="data">root element to serialize</param>
+	/// <returns>if the save was successful</returns>
+	errlib::Error save_yaml(const string& filePath, const YAMLData& data);
 
-		/* Save YAMLData to file */
-		static errlib::Error SaveToFile(const string& filePath, const YAMLData& data);
-	};
+	/// <summary>
+	/// Loads YAML data from file
+	/// </summary>
+	/// <param name="filePath">file path to read from</param>
+	/// <returns>YAML data if the read was successful, nullopt if not</returns>
+	std::optional<YAMLData> load_yaml(const string& filePath);
 }
 
 #endif
