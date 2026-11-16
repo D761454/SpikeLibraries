@@ -37,7 +37,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __SPIKE_FILE_ACCESSOR_COMMONS
 
 #include "spike/def_aliases.h"
-#include "spike/podio.hpp"
 #include "spike/stl_aliases.h"
 #include "spike/warning.h"
 
@@ -51,48 +50,59 @@ namespace fileacc {
 		u32 magic;
 		/* determines fileacc version used for file creation */
 		u32 version;
+
+		FileCheck() noexcept : magic(0), version(0) {}
+		FileCheck(const u32 magic, const u32 version) noexcept : magic(magic), version(version) {}
 	};
 
-	/* preferred method for header creation, zeroes all data in range, preventing leaking uninitialized data */
-	inline FileCheck make_file_check(const u32 magic, const u32 version) noexcept {
-		FileCheck hdr;
-		podio::zero_init(hdr);
-		hdr.magic = magic;
-		hdr.version = version;
-		return hdr;
-	}
-
-	/*
-	returns:
-	0 = good
-	-1 = invalid magic
-	-2 = invalid version
-	*/
+	/// <summary>
+	/// Checks and compares the file header with the expected values to determine if the file is an expected type
+	/// </summary>
+	/// <param name="header">file header read from the file</param>
+	/// <param name="expectedMagic">magic value that should be held within header</param>
+	/// <param name="expectedVer">version header that should be held in the header</param>
+	/// <returns>if the header values match the expected values: 0 = good, -1 = magic error, -2 = version error</returns>
 	inline i32 valid_file(FileCheck& header, const u32 expectedMagic, const u32 expectedVer) noexcept {
 		if (header.magic != expectedMagic) return -1;
 		if (header.version != expectedVer) return -2;
 		return 0;
 	}
 
-	/*
-	returns:
-	0 = good
-	-1 = invalid magic
-	-2 = invalid version
-	*/
+	/// <summary>
+	/// Checks and compares the file header with the expected values to determine if the file is an expected type
+	/// </summary>
+	/// <param name="header">file header read from the file</param>
+	/// <param name="expectedHeader">expected file header</param>
+	/// <returns>if the header values match the expected values: 0 = good, -1 = magic error, -2 = version error</returns>
 	inline i32 valid_file(FileCheck& header, const FileCheck& expectedHeader) noexcept {
 		if (header.magic != expectedHeader.magic) return -1;
 		if (header.version != expectedHeader.version) return -2;
 		return 0;
 	}
 
-	bool check_file(const string& path, const u32 expectedMagic, const u32 expectedVer) noexcept;
+	/// <summary>
+	/// Checks if a file exists and, if so, that the header data matches the expected data
+	/// </summary>
+	/// <param name="path">path to the file to check</param>
+	/// <param name="expectedMagic">magic value that should be held within header</param>
+	/// <param name="expectedVer">version header that should be held in the header</param>
+	/// <returns>if the file exists and the headers match: 0 = good, -1 = magic error, -2 = version error, -3 = file error</returns>
+	i32 check_file(const string& path, const u32 expectedMagic, const u32 expectedVer) noexcept;
 
-	bool check_file(const string& path, const FileCheck& expectedHeader) noexcept;
+	/// <summary>
+	/// Checks if a file exists and, if so, that the header data matches the expected data
+	/// </summary>
+	/// <param name="path">path to the file to check</param>
+	/// <param name="expectedHeader">expected file header</param>
+	/// <returns>if the file exists and the headers match: 0 = good, -1 = magic error, -2 = version error, -3 = file error</returns>
+	i32 check_file(const string& path, const FileCheck& expectedHeader) noexcept;
 
-	DISABLE_WARNING_POP
-
-	/* return a hash value from a string of size len */
+	/// <summary>
+	/// Generates a hash from a buffer of size len
+	/// </summary>
+	/// <param name="data">pointer to the buffer to hash</param>
+	/// <param name="len">length of the buffer</param>
+	/// <returns>hash value corresponding to the buffer</returns>
 	inline u64 fnv1a64(const char* data, usize len) {
 		const u64 fnvOffset = 14695981039346656037ULL;
 		const u64 fnvPrime = 1099511628211ULL;
@@ -104,6 +114,8 @@ namespace fileacc {
 		}
 		return hash;
 	}
+
+	DISABLE_WARNING_POP
 }
 
 #endif

@@ -41,8 +41,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace assimp {
 	class BaseImporter;
 
+	/// <summary>
+	/// fills a vector of base importer pointers with derived importers, made for specific file types
+	/// </summary>
+	/// <param name="out">vector of base importer pointers to fill</param>
 	void get_importer_instances(std::vector<BaseImporter*>& out);
 
+	/// <summary>
+	/// deletes all importers contained within a base pointer vector
+	/// </summary>
+	/// <param name="del">vector of importers to delete</param>
 	void delete_importer_instances(std::vector<BaseImporter*>& del);
 }
 

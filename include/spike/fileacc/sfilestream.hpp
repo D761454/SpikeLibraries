@@ -81,28 +81,56 @@ namespace fileacc {
 		ifs.read(reinterpret_cast<char*>(obj), static_cast<std::streamsize>(size));
 	}
 
-	inline void write_string(std::string& str, std::ofstream& ofs) {
+	/// <summary>
+	/// Writes a string to file, writing its size as a uint16_t, and then its data
+	/// </summary>
+	/// /// <param name="ofs">file stream to the file</param>
+	/// <param name="str">string to write to file</param>
+	inline void write_string(std::ofstream& ofs, std::string& str) {
 		uint16_t len = std::min(static_cast<uint16_t>(str.size()), std::numeric_limits<uint16_t>::max());
 		ofs.write(reinterpret_cast<const char*>(&len), sizeof(len));
 		ofs.write(str.data(), len);
 	}
 
-	inline void parse_string(std::string& str, std::istream& ifs) {
+	/// <summary>
+	/// Parses a string from file, reading its length and then its data
+	/// </summary>
+	/// <param name="ifs">file stream to the file</param>
+	/// <param name="str">string read from the file</param>
+	inline void parse_string(std::istream& ifs, std::string& str) {
 		uint16_t len = 0;
 		ifs.read(reinterpret_cast<char*>(&len), sizeof(len));
 		str.resize(len);
 		ifs.read(str.data(), len);
 	}
 
+	/// <summary>
+	/// Calulates the total size required by a single object of size 'value' to be placed in memory with 'boundary' alignment
+	/// while ensuring subsequent objects are also placed on an appropriate boundary
+	/// </summary>
+	/// <param name="value">size of object to place</param>
+	/// <param name="boundary">desired alignment boundary to align with</param>
+	/// <returns>the total size needed per object of size 'value'</returns>
 	inline uint64_t align_to_boundary(uint64_t value, uint64_t boundary) noexcept {
 		return (value + boundary - 1) & ~(boundary - 1);
 	}
 
+	/// <summary>
+	/// Calulates the required padding (in bytes) required to align a position value with a desired boundary
+	/// </summary>
+	/// <param name="currentPosition">value to align</param>
+	/// <param name="boundary">desired alignment boundary to align with</param>
+	/// <returns>the bytes required to pad to reach the boundary</returns>
 	inline uint64_t padding_needed(uint64_t currentPosition, uint64_t boundary) noexcept {
 		uint64_t aligned = align_to_boundary(currentPosition, boundary);
 		return static_cast<uint64_t>(aligned - currentPosition);
 	}
 
+	/// <summary>
+	/// Inserts empty data into the file to ensure the next write call is aligned with a desired boundary
+	/// </summary>
+	/// <param name="ofs">file stream currently in use</param>
+	/// <param name="alignment">desired boundary to align with</param>
 	inline void pad_to_boundary(std::ostream& ofs, uint64_t alignment = 64) {
 		uint64_t currentPos = ofs.tellp();
 		uint64_t namePadding = padding_needed(currentPos, alignment);
@@ -112,6 +140,11 @@ namespace fileacc {
 		}
 	}
 
+	/// <summary>
+	/// Aligns the current file position to an alignment boundary
+	/// </summary>
+	/// <param name="ifs">file stream currently in use</param>
+	/// <param name="alignment">desired boundary to align with</param>
 	inline void align_self(std::istream& ifs, uint64_t alignment = 64) {
 		ifs.seekg(align_to_boundary(ifs.tellg(), alignment), std::ios::beg);
 	}

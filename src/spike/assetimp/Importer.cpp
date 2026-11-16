@@ -80,7 +80,7 @@ errlib::Error assimp::Importer::UnregisterLoader(BaseImporter* l) {
 const assimp::Collection* assimp::Importer::ReadFile(const string& path, u32 ppSteps) {
 	if (path.empty()) return nullptr;
 
-	FreeScene();
+	FreeCollection();
 
 	for (auto& bi : importers) {
 		if (!bi->CanParse(path)) continue;
@@ -93,11 +93,11 @@ const assimp::Collection* assimp::Importer::ReadFile(const string& path, u32 ppS
 	return nullptr;
 }
 
-const assimp::Collection* assimp::Importer::GetScene() {
+const assimp::Collection* assimp::Importer::GetCollection() {
 	return scene;
 }
 
-void assimp::Importer::FreeScene() {
+void assimp::Importer::FreeCollection() {
 	if (scene) delete scene;
 	scene = nullptr;
 }
