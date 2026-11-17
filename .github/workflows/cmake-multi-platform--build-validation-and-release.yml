@@ -138,10 +138,12 @@ jobs:
       run: |
         mkdir -p dist/bin
         mkdir -p dist/include
+        mkdir -p dist/third_party_licenses
         
         # Copy compiled binaries from build/bin/<CONFIG> and headers
         cp -r ${{ steps.strings.outputs.build-output-dir }}/bin/${{ matrix.build_type }}/* dist/bin/
         cp -r include/* dist/include/
+        cp -r docs/third_party_licenses/* dist/third_party_licenses/
         
         # Copy root metadata files if they exist
         if [ -f "LICENSE" ]; then cp LICENSE dist/; fi
@@ -160,9 +162,11 @@ jobs:
         
         New-Item -ItemType Directory -Force -Path "dist/bin" | Out-Null
         New-Item -ItemType Directory -Force -Path "dist/include" | Out-Null
+        New-Item -ItemType Directory -Force -Path "dist/third_party_licenses" | Out-Null
         
         Copy-Item -Path "$binDir\*" -Destination "dist/bin" -Recurse -Force
         Copy-Item -Path "include\*" -Destination "dist/include" -Recurse -Force
+        Copy-Item -Path "docs\third_party_licenses\*" -Destination "dist/third_party_licenses" -Recurse -Force
         
         # Copy root metadata files if they exist
         if (Test-Path "LICENSE") { Copy-Item "LICENSE" -Destination "dist\" }

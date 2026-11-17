@@ -17,7 +17,8 @@ The initial release of the Spike Libraries contains:
 - maths library for vector, quaternion, matrix and extended maths for 3D applications
 - memory management for optimised memory allocation
 - debug logging for simple runtime logging
-- file parser helper for YAML read/write, including helpers for binary string read/write and compression/decompression (likely to be split up or renamed)
+- file parser helper for YAML read/write, including various structs and methods for file related tasks, including helpers for string read/write to/from file
+- compression wrapper, allowing for compression and decompression of data buffers, structs, etc either into buffers / byte arrays or to/from file
 - asset importer for simplified game asset imports, including shaders (under a specific format), textures, and meshes (obj, gltf/glb and fbx)
 
 ## Binaries Info
