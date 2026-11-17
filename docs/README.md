@@ -17,7 +17,7 @@ Equally, on using the SpikeLibraries, please make sure to include both the exter
 licenses within your project(s). Equally, if you use the fbx sdks, make sure to include the exact Autodesk attribution & 
 warranty disclaimer found within the LICENSE.rtf file within your fbx sdk install directory.
 
-All of this is contained within the THIRD_PARTY_NOTICES file, providing all third party licenses alongside SpikeLibraries 
+All of this is contained within the [THIRD_PARTY_NOTICES](https://github.com/D761454/SpikeLibraries/blob/main/THIRD_PARTY_NOTICES) file, providing all third party licenses alongside SpikeLibraries 
 license, making correct attribution when using SpikeLibraries as trivial as possible.
 
 ## Summary
