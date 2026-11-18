@@ -349,6 +349,78 @@ namespace iocomp {
 		}
 
 		/// <summary>
+		/// Used to decompress a chunk of data from file, given the compressed data header for the relevant blob
+		/// </summary>
+		/// <param name="ifs">file stream to the file</param>
+		/// <param name="dataHeader">header containing all required information to decompress the associated blob</param>
+		/// <param name="dst">pointer to the buffer to store the decompressed data</param>
+		/// <returns>if the read and decompression were successful</returns>
+		static bool DecompressFromFile(std::ifstream& ifs, const CompressedDataHeader& dataHeader, void* dst) {
+			u64 remsize = 0;
+			auto curr = ifs.tellg();
+			if (curr == -1) return false;
+			ifs.seekg(0, std::ios::beg);
+			auto start = ifs.tellg();
+			if (start == -1) return false;
+			ifs.seekg(0, std::ios::end);
+			auto end = ifs.tellg();
+			if (end == -1) return false;
+			remsize = end - start;
+			ifs.seekg(curr, std::ios::beg);
+
+			if (dataHeader.dataOffset > remsize || dataHeader.compressedSize > remsize - dataHeader.dataOffset) return false;
+			ifs.seekg(dataHeader.dataOffset);
+			if (!ifs.good() || ifs.eof()) return false;
+
+			niVector<u8> compressed;
+			if (dataHeader.compressedSize > std::numeric_limits<std::streamsize>::max() || dataHeader.compressedSize > compressed.max_size()) return false;
+			compressed.resize(dataHeader.compressedSize);
+			ifs.read(reinterpret_cast<char*>(compressed.data()), dataHeader.compressedSize);
+			if (ifs.gcount() != dataHeader.compressedSize) return false;
+			if (Decompress(compressed.data(), dataHeader.compressedSize, dst, dataHeader.uncompressedSize, dataHeader.crc32, dataHeader.compressionMethod) != dataHeader.uncompressedSize) {
+				return false;
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// Used to decompress a chunk of data from file, given the compressed data header for the relevant blob
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="ifs">file stream to the file</param>
+		/// <param name="dataHeader">header containing all required information to decompress the associated blob</param>
+		/// <param name="dst">object vector used to store the decompressed output</param>
+		/// <returns>if the read and decompression were successful</returns>
+		template<typename T>
+		static bool DecompressFromFile(std::ifstream& ifs, const CompressedDataHeader& dataHeader, niVector<T>& dst) {
+			u64 remsize = 0;
+			auto curr = ifs.tellg();
+			if (curr == -1) return false;
+			ifs.seekg(0, std::ios::beg);
+			auto start = ifs.tellg();
+			if (start == -1) return false;
+			ifs.seekg(0, std::ios::end);
+			auto end = ifs.tellg();
+			if (end == -1) return false;
+			remsize = end - start;
+			ifs.seekg(curr, std::ios::beg);
+
+			if (dataHeader.dataOffset > remsize || dataHeader.compressedSize > remsize - dataHeader.dataOffset) return false;
+			ifs.seekg(dataHeader.dataOffset);
+			if (!ifs.good() || ifs.eof()) return false;
+
+			niVector<u8> compressed;
+			if (dataHeader.compressedSize > std::numeric_limits<std::streamsize>::max() || dataHeader.compressedSize > compressed.max_size()) return false;
+			compressed.resize(dataHeader.compressedSize);
+			ifs.read(reinterpret_cast<char*>(compressed.data()), dataHeader.compressedSize);
+			if (ifs.gcount() != dataHeader.compressedSize) return false;
+			if (Decompress(compressed.data(), dataHeader.compressedSize, dst, dataHeader.uncompressedSize, dataHeader.crc32, dataHeader.compressionMethod) != dataHeader.uncompressedSize) {
+				return false;
+			}
+			return true;
+		}
+
+		/// <summary>
 		/// The method allows the user to seek ahead within a file when compressed data headers and compressed data blobs are located next to one another in sequence
 		/// </summary>
 		/// <param name="ifs">file stream to the file</param>
