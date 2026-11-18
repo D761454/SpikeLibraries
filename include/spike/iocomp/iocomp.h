@@ -88,9 +88,13 @@ namespace iocomp {
 		struct ContextZSTD;
 		static ContextZSTD _zstdCtx;
 
+	public:
+		/// <summary>
+		/// Used to check if zstd is available for use
+		/// </summary>
+		/// <returns>if zstd was able to be successfully initialised</returns>
 		static bool ZSTD();
 
-	public:
 		/// <summary>
 		/// Calculates a crc32 value from a data buffer
 		/// </summary>
