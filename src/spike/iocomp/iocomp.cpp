@@ -97,7 +97,6 @@ bool iocomp::IOComp::ZSTD() {
 	return _zstdCtx.ok();
 }
 
-
 u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, niVector<u8>& dst, const CompressionMethod_& compressionMethod) {
 	switch (compressionMethod) {
 	case CompressionMethod_zlib: {
