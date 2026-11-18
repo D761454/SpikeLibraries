@@ -36,6 +36,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __SPIKE_FILE_ACCESSOR_COMMONS
 #define __SPIKE_FILE_ACCESSOR_COMMONS
 
+#include <set>
+
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 #include "spike/warning.h"
@@ -69,14 +71,15 @@ namespace fileacc {
 	}
 
 	/// <summary>
-	/// Checks and compares the file header with the expected values to determine if the file is an expected type
+	/// Checks and compares the file header with the expected values to determine if the file is one of the expected types
 	/// </summary>
 	/// <param name="header">file header read from the file</param>
-	/// <param name="expectedHeader">expected file header</param>
+	/// <param name="expectedMagicSet">a set of valid file magics that the header should use</param>
+	/// <param name="expectedVer">version header that should be held in the header</param>
 	/// <returns>if the header values match the expected values: 0 = good, -1 = magic error, -2 = version error</returns>
-	inline i32 valid_file(FileCheck& header, const FileCheck& expectedHeader) noexcept {
-		if (header.magic != expectedHeader.magic) return -1;
-		if (header.version != expectedHeader.version) return -2;
+	inline i32 valid_file(FileCheck& header, std::set<u32> expectedMagicSet, const u32 expectedVer) noexcept {
+		if (!expectedMagicSet.contains(header.magic)) return -1;
+		if (header.version != expectedVer) return -2;
 		return 0;
 	}
 
@@ -93,9 +96,10 @@ namespace fileacc {
 	/// Checks if a file exists and, if so, that the header data matches the expected data
 	/// </summary>
 	/// <param name="path">path to the file to check</param>
-	/// <param name="expectedHeader">expected file header</param>
+	/// <param name="expectedMagicSet">a set of valid file magics that the header should use</param>
+	/// <param name="expectedVer">version header that should be held in the header</param>
 	/// <returns>if the file exists and the headers match: 0 = good, -1 = magic error, -2 = version error, -3 = file error</returns>
-	i32 check_file(const string& path, const FileCheck& expectedHeader) noexcept;
+	i32 check_file(const string& path, std::set<u32> expectedMagicSet, const u32 expectedVer) noexcept;
 
 	/// <summary>
 	/// Generates a hash from a buffer of size len
