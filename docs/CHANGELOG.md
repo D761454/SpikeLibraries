@@ -4,22 +4,16 @@ Reading this change-log is the recommended way to keep up to date with each libr
 
 Please refer to the [Wiki](https://github.com/D761454/SpikeLibraries/wiki) for details on using each library within your projects.
 
-## Initial Release State
+## Spike Libraries v1.1.0
 
-The initial release of the Spike Libraries contains:
+This is a small update containing some safety tweaks to prevent users from unknowingly leaking memory alongside providing
+a new data type for use with state based systems.
 
-- Type define headers
-- flag_set type for space optimised flags
-- Timer functions for profiling or time-step calculations
-- POD write/read helpers for efficient file read/write
-- nivector type for fast resize without default memory initialization
-- error type for handling
-- maths library for vector, quaternion, matrix and extended maths for 3D applications
-- memory management for optimised memory allocation
-- debug logging for simple runtime logging
-- file parser helper for YAML read/write, including various structs and methods for file related tasks, including helpers for string read/write to/from file
-- compression wrapper, allowing for compression and decompression of data buffers, structs, etc either into buffers / byte arrays or to/from file
-- asset importer for simplified game asset imports, including shaders (under a specific format), textures, and meshes (obj, gltf/glb and fbx)
+Firstly, the nodiscard attribute has been added across header-only and full libraries where discarding a returned variable may
+result in errors or memory leaks, drawing developers attention when doing so.
+
+Secondly, the toggle set data type has been added, allowing users to set up to 64 named flags within the toggle set, which may 
+be accessed via index or key, the primary functionality is that on enabling a key/index, all other keys are set to false. 
 
 ## Binaries Info
 
@@ -29,6 +23,4 @@ If you need the fbx importer, you can download the [fbx sdks](https://aps.autode
 FBXSDK_ROOT environment variable pointing to the sdks directory. Doing so will allow cmake to locate the sdks and generate the 
 asset importer project with the working fbx importer.
 
-Note that GitHub are now clamping release notes sometimes really badly, click on a header/title to read full notes.
-
-**Full Changelog**: https://github.com/D761454/SpikeLibraries/commits/v1.0.0
+**Full Changelog**: https://github.com/D761454/SpikeLibraries/commits/v1.1.0
