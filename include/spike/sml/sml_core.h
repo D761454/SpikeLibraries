@@ -49,6 +49,9 @@ File Summary:
 
 #include <algorithm>
 #include <initializer_list>
+#include <cmath>
+#include <cstdlib>
+#include <type_traits>
 
 #include "spike/def_aliases.h"
 
@@ -281,7 +284,6 @@ namespace sml {
 	/// <returns>clamped value within [min, max] range</returns>
 	template<typename T, typename T2, typename T3, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T2>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T3>>* = nullptr>
 	inline T clamp(T value, T2 min, T3 max) noexcept {
-#pragma warning(suppress: 4018)
 		return value < min ? min : (value > max ? max : value);
 	}
 
