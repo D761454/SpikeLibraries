@@ -139,13 +139,13 @@ namespace memsys {
 
 		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
-		usize headerAdjustment = GetAdjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader));
+		usize headerAdjustment = get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader));
 		byte* headerAddress = baseAddress + headerAdjustment;
 
 		byte* offsetStorageAddress = headerAddress + headerSize;
 
 		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
-		usize objectAdjustment = GetAdjustment(reinterpret_cast<uptr>(objectAddress), alignment);
+		usize objectAdjustment = get_adjustment(reinterpret_cast<uptr>(objectAddress), alignment);
 		objectAddress += objectAdjustment;
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
@@ -177,13 +177,13 @@ namespace memsys {
 
 		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
-		usize headerAdjustment = GetAdjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader));
+		usize headerAdjustment = get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader));
 		byte* headerAddress = baseAddress + headerAdjustment;
 
 		byte* offsetStorageAddress = headerAddress + headerSize;
 
 		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
-		usize objectAdjustment = GetAdjustment(reinterpret_cast<uptr>(objectAddress), objectAlignment);
+		usize objectAdjustment = get_adjustment(reinterpret_cast<uptr>(objectAddress), objectAlignment);
 		objectAddress += objectAdjustment;
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
@@ -217,7 +217,7 @@ namespace memsys {
 	void StackAllocator::Free(void* ptr) {
 		assert(ptr && "StackAllocator: Free: Cannot Free a nullptr!");
 
-		if (!IsPointerOwned(ptr, _start, _end)) {
+		if (!is_pointer_owned(ptr, _start, _end)) {
 			assert(false && "StackAllocator: Free: pointer is not owned!");
 			return;
 		}

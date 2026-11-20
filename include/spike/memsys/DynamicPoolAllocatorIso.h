@@ -205,7 +205,7 @@ namespace memsys {
             if (!pool) continue;
             if (!pool->allocator) continue;
 
-            if (IsPointerOwned(obj, pool->allocator->GetStart(), pool->allocator->GetEnd())) {
+            if (is_pointer_owned(obj, pool->allocator->GetStart(), pool->allocator->GetEnd())) {
                 auto it = std::find(pool->allocatedObjects.begin(), pool->allocatedObjects.end(), obj);
                 if (it == pool->allocatedObjects.end()) {
                     Debug::LogError("DynamicPoolAllocator: Attempted to free stale pointer or double-free detected.");

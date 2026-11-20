@@ -69,7 +69,7 @@ namespace memsys {
         static_assert(Capacity > 0);
 
     private:
-        static constexpr usize kChunkStride = AlignUp(sizeof(T), alignof(T));
+        static constexpr usize kChunkStride = align_up(sizeof(T), alignof(T));
 
         union Chunk {
             Chunk* next;
@@ -162,7 +162,7 @@ namespace memsys {
     void PoolAllocatorIso<T, Capacity>::Destroy(T* ptr) {
         assert(ptr != nullptr && "PoolAllocatorIso: Free: pointer is nullptr, cannot free!");
 
-        if (!IsPointerOwned(ptr, _start, _end)) {
+        if (!is_pointer_owned(ptr, _start, _end)) {
             assert(false && "PoolAllocatorIso: Free: pointer is not owned!");
             return;
         }
