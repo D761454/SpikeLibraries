@@ -117,6 +117,9 @@ namespace memsys {
 		LinearAllocator(LinearAllocator&&) = delete;
 	};
 
+	using BumpAllocator = LinearAllocator;
+	using ArenaAllocator = LinearAllocator;
+
 #pragma region Implementation
 
 	void* LinearAllocator::Allocate(usize size, usize alignment) {
