@@ -36,6 +36,74 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __ASSET_IMP_SHADER_H
 #define __ASSET_IMP_SHADER_H
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Holds an imported shader file/program, currently geared towards 
+	glsl using an explicit file structure defined below:
+
+----------------------------------------------------------------------
+
+example_shader.glsl
+-----------
+
+#version 450 core
+
+// ============================================================================
+// SHADER_STAGES
+// This file contains multiple shader stages compiled into a single program.
+// Each stage is delimited by stage markers below.
+// STAGE LIST:
+//      VERTEX
+//      FRAGMENT
+//      GEOMETRY
+//      COMPUTE
+//      TESS_CONTROL
+//      TESS_EVAL
+//      MESH
+//      TASK
+// ============================================================================
+
+// ============================================================================
+// STAGE: VERTEX
+// ============================================================================
+#ifdef VERTEX_STAGE
+layout(location = 0) in vec3 _vertexPosition;
+layout(location = 1) in vec3 _vertexNormal;
+layout(location = 2) in vec2 _vertexTexCoord;
+
+uniform mat4 _transform;
+uniform mat4 _view;
+uniform mat4 _projection;
+
+out vec2 _fragmentTexCoord;
+
+void main() {
+	gl_Position = _projection * _view * _transform * vec4(_vertexPosition, 1.0);
+	_fragmentTexCoord = _vertexTexCoord;
+}
+#endif
+
+// ============================================================================
+// STAGE: FRAGMENT
+// ============================================================================
+#ifdef FRAGMENT_STAGE
+in vec2 _fragmentTexCoord;
+
+uniform sampler2D _texture0;
+uniform vec4 _colour0;
+
+out vec4 _fragmentColour;
+
+void main() {
+	_fragmentColour = texture(_texture0, _fragmentTexCoord) * _colour0;
+}
+#endif
+
+----------------------------------------------------------------------
+*/
+
 #include <vector>
 
 #include "spike/def_aliases.h"
@@ -58,7 +126,6 @@ namespace assimp {
 
 	struct ShaderStage {
 		ShaderType_ type;
-		//string source;
 	};
 
 	struct ShaderProgram {

@@ -58,25 +58,6 @@ assimp::Importer::~Importer() {
 	scene = nullptr;
 }
 
-errlib::Error assimp::Importer::RegisterLoader(BaseImporter* l) {
-	if (!l) return errlib::Error(errlib::ErrorCode_invalidArgument, "Attempting to register importer with nullptr");
-
-	importers.push_back(l);
-	return errlib::Error{};
-}
-
-errlib::Error assimp::Importer::UnregisterLoader(BaseImporter* l) {
-	if (!l) return errlib::Error{};
-
-	std::vector<BaseImporter*>::iterator it = std::find(importers.begin(), importers.end(), l);
-	if (it != importers.end()) {
-		importers.erase(it);
-		return errlib::Error{};
-	}
-
-	return errlib::Error(errlib::ErrorCode_invalidArgument, "Unable to remove importer!");
-}
-
 const assimp::Collection* assimp::Importer::ReadFile(const string& path, u32 ppSteps) {
 	if (path.empty()) return nullptr;
 

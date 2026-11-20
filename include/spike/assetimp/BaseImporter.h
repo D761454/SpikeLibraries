@@ -36,6 +36,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __ASSET_IMP_BASE_IMPORTER_HPP
 #define __ASSET_IMP_BASE_IMPORTER_HPP
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Base importer class - base class used by custom importers, 
+	containing the functions required for a custom importer to be used
+	by the primary importer for parsing a file.
+
+----------------------------------------------------------------------
+*/
+
 #include <set>
 
 #include "spike/def_aliases.h"

@@ -36,6 +36,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __ASSET_IMP_IMPORTER_REGISTRY_HPP
 #define __ASSET_IMP_IMPORTER_REGISTRY_HPP
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Holds a fill and delete method used within the ctor/dctor of the 
+	importer class to register and delete custom importers.
+
+----------------------------------------------------------------------
+*/
+
 #include <vector>
 
 namespace assimp {

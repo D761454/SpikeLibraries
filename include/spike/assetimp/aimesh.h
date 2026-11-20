@@ -36,6 +36,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __ASSET_IMP_MESH_H
 #define __ASSET_IMP_MESH_H
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Basic mesh class used to hold all imported meshes data, split into 
+	sub meshes and a global vertex / index buffer as done by most 3D 
+	software.
+
+----------------------------------------------------------------------
+*/
+
 #include <algorithm>
 #include <type_traits>
 #include <vector>
@@ -89,7 +100,7 @@ namespace assimp {
 		~SubMesh() {}
 	};
 
-	struct Model {
+	struct Mesh {
 		string name;
 
 		/*each sub mesh used to define a model, holding index offset and count for use with the vertex buffers*/
@@ -105,8 +116,8 @@ namespace assimp {
 
 		u8 materialCount = 0;
 
-		Model() noexcept = default;
-		~Model() {}
+		Mesh() noexcept = default;
+		~Mesh() {}
 	};
 
 	struct VertexHash {

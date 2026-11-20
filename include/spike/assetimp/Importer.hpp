@@ -36,6 +36,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __ASSET_IMP_IMPORTER_HPP
 #define __ASSET_IMP_IMPORTER_HPP
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Primary API to interface with assetimp, allowing a user to pass a 
+	file to import, to then receive a collection of assets imported 
+	from said file.
+
+----------------------------------------------------------------------
+*/
+
 #include <vector>
 
 #include "spike/def_aliases.h"
@@ -63,9 +74,6 @@ namespace assimp {
 		Importer& operator=(const Importer&) = delete;
 
 		~Importer();
-
-		errlib::Error RegisterLoader(BaseImporter* l);
-		errlib::Error UnregisterLoader(BaseImporter* l);
 
 		inline void SetFlags(u32 flags) { pp = flags; }
 

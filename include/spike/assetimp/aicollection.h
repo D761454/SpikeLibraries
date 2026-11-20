@@ -36,6 +36,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __ASSET_IMP_COLLECTION_HPP
 #define __ASSET_IMP_COLLECTION_HPP
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Defined the collection class, used to hold all imported assets 
+	from a file.
+
+----------------------------------------------------------------------
+*/
+
 #include <vector>
 
 #include "spike/stl_aliases.h"
@@ -46,7 +56,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace assimp {
 	struct Collection {
-		std::vector<Model> models;
+		std::vector<Mesh> models;
 		std::vector<Texture> textures;
 		std::vector<ShaderProgram> shaders;
 
