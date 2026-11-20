@@ -75,7 +75,7 @@ namespace stime {
 		/// <typeparam name="TF">time format to convert the result to</typeparam>
 		/// <returns>time since last start call in TF notation</returns>
 		template<time_format TF>
-		static uint64_t Stop() noexcept {
+		[[nodiscard]] static uint64_t Stop() noexcept {
 			const auto end_t = clock::now();
 			const auto elapsed = end_t - start_t;
 			return std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
@@ -87,7 +87,7 @@ namespace stime {
 		/// <typeparam name="TF">time format to convert the result to</typeparam>
 		/// <returns>time since last start call in TF notation</returns>
 		template<time_format TF>
-		static double Stopf() noexcept {
+		[[nodiscard]] static double Stopf() noexcept {
 			const auto end_t = clock::now();
 			const auto elapsed = end_t - start_t;
 			return static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count());

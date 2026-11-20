@@ -108,7 +108,7 @@ namespace memsys {
         /// <param name="...args">constructor arguments to be passed for the created object of type T</param>
         /// <returns>pointer to the created object, or nullptr if the object could not be created</returns>
         template<class... Args>
-        T* Create(Args&&... args);
+        [[nodiscard]] T* Create(Args&&... args);
 
         /// <summary>
         /// Used to destroy an object, if the object is found within any of the memory pools

@@ -82,7 +82,7 @@ public:
 	/// Get the entire flag value held by the flag_set
 	/// </summary>
 	/// <returns>value held by the flag_set</returns>
-	inline T GetRaw() const noexcept { return _data; }
+	[[nodiscard]] inline T GetRaw() const noexcept { return _data; }
 
 	/// <summary>
 	/// Sets the entire flag value held by the flag_set
@@ -111,7 +111,7 @@ public:
 	/// </summary>
 	/// <param name="index">chunk index (0 to SPLITS-1)</param>
 	/// <returns>value extracted from this chunk</returns>
-	inline T Get(uint8_t index) const noexcept {
+	[[nodiscard]] inline T Get(uint8_t index) const noexcept {
 		if constexpr (SPLITS > 1) {
 #ifdef _DEBUG
 			if (index >= SPLITS) return 0;
@@ -129,7 +129,7 @@ public:
 	/// <returns>value extracted from this chunk, cast to U</returns>
 	template<typename U>
 		requires std::is_integral_v<U>
-	inline U Get(uint8_t index) const noexcept {
+	[[nodiscard]] inline U Get(uint8_t index) const noexcept {
 		return static_cast<U>(Get(index));
 	}
 
@@ -227,10 +227,10 @@ public:
 
 	explicit operator T() const noexcept { return _data; }
 
-	static constexpr uint8_t GetChunkCount() noexcept { return SPLITS; }
-	static constexpr uint8_t GetChunkSize() noexcept { return CHUNK_SIZE; }
-	static constexpr uint8_t GetBitCount() noexcept { return BIT_COUNT; }
-	static constexpr T GetChunkMask() noexcept { return CHUNK_MASK; }
+	[[nodiscard]] static constexpr uint8_t GetChunkCount() noexcept { return SPLITS; }
+	[[nodiscard]] static constexpr uint8_t GetChunkSize() noexcept { return CHUNK_SIZE; }
+	[[nodiscard]] static constexpr uint8_t GetBitCount() noexcept { return BIT_COUNT; }
+	[[nodiscard]] static constexpr T GetChunkMask() noexcept { return CHUNK_MASK; }
 };
 
 template<uint8_t N> requires (N > 0 && N <= 8)

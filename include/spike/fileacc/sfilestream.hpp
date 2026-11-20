@@ -82,19 +82,19 @@ namespace fileacc {
 	}
 
 	template<typename T>
-	inline bool read(std::istream& ifs, T& obj) {
+	[[nodiscard]] inline bool read(std::istream& ifs, T& obj) {
 		ifs.read(reinterpret_cast<char*>(&obj), static_cast<std::streamsize>(sizeof(obj)));
 		return ifs.good();
 	}
 
 	template<typename T, IntegralType U>
-	inline bool read(std::istream& ifs, T& obj, U size) {
+	[[nodiscard]] inline bool read(std::istream& ifs, T& obj, U size) {
 		ifs.read(reinterpret_cast<char*>(&obj), static_cast<std::streamsize>(size));
 		return ifs.good();
 	}
 
 	template<typename T, IntegralType U>
-	inline bool read(std::istream& ifs, T* obj, U size) {
+	[[nodiscard]] inline bool read(std::istream& ifs, T* obj, U size) {
 		ifs.read(reinterpret_cast<char*>(obj), static_cast<std::streamsize>(size));
 		return ifs.good();
 	}

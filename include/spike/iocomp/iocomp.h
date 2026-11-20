@@ -188,7 +188,7 @@ namespace iocomp {
 	/// <param name="srcSize">size of the data to compress (in bytes)</param>
 	/// <param name="compressionMethod">compression method to use on the data</param>
 	/// <returns>if the write was successful</returns>
-	static bool compress_to_file(std::ostream& ofs, const void* source, const usize& srcSize, CompressionMethod_& compressionMethod) {
+	[[nodiscard]] static bool compress_to_file(std::ostream& ofs, const void* source, const usize& srcSize, CompressionMethod_& compressionMethod) {
 		if (compressionMethod == CompressionMethod_zstd) if (!IOComp::ZSTD()) compressionMethod = CompressionMethod_zlib;
 
 		niVector<u8> compressed;
@@ -211,7 +211,7 @@ namespace iocomp {
 	/// <param name="compressionMethod">compression method to use on the data</param>
 	/// <returns>if the write was successful</returns>
 	template<typename T>
-	static bool compress_to_file(std::ostream& ofs, const T* source, CompressionMethod_& compressionMethod) {
+	[[nodiscard]] static bool compress_to_file(std::ostream& ofs, const T* source, CompressionMethod_& compressionMethod) {
 		static_assert(podio::is_pod_writable_v<T>, "CompressToFile->write_pod requires trivially copyable, standard-layout type");
 		if (compressionMethod == CompressionMethod_zstd) if (!IOComp::ZSTD()) compressionMethod = CompressionMethod_zlib;
 
@@ -234,7 +234,7 @@ namespace iocomp {
 	/// <param name="seekBackToheader">whether to seek back to the file position just after the header or to remain after the compressed blob</param>
 	/// <returns>object of type T if successful, else nullptr</returns>
 	template<typename T>
-	static T* decompress_from_file(std::ifstream& ifs, bool seekBackToheader = false) {
+	[[nodiscard]] static T* decompress_from_file(std::ifstream& ifs, bool seekBackToheader = false) {
 		static_assert(podio::is_pod_writable_v<T>, "DecompressFromFile->read_pod requires trivially copyable, standard-layout type");
 		u64 remsize = 0;
 		auto curr = ifs.tellg();
@@ -283,7 +283,7 @@ namespace iocomp {
 	/// <param name="capacity">size of the destination buffer</param>
 	/// <param name="seekBackToheader">whether to seek back to the file position just after the header or to remain after the compressed blob</param>
 	/// <returns>if the read and decompression were successful</returns>
-	static bool decompress_from_file(std::ifstream& ifs, void* dst, const u64 capacity, bool seekBackToheader = false) {
+	[[nodiscard]] static bool decompress_from_file(std::ifstream& ifs, void* dst, const u64 capacity, bool seekBackToheader = false) {
 		u64 remsize = 0;
 		auto curr = ifs.tellg();
 		if (curr == -1) return false;
@@ -330,7 +330,7 @@ namespace iocomp {
 	/// <param name="seekBackToheader">whether to seek back to the file position just after the header or to remain after the compressed blob</param>
 	/// <returns>if the read and decompression were successful</returns>
 	template<typename T>
-	static bool decompress_from_file(std::ifstream& ifs, niVector<T>& dst, bool seekBackToheader = false) {
+	[[nodiscard]] static bool decompress_from_file(std::ifstream& ifs, niVector<T>& dst, bool seekBackToheader = false) {
 		u64 remsize = 0;
 		auto curr = ifs.tellg();
 		if (curr == -1) return false;
@@ -375,7 +375,7 @@ namespace iocomp {
 	/// <param name="dataHeader">header containing all required information to decompress the associated blob</param>
 	/// <param name="dst">pointer to the buffer to store the decompressed data</param>
 	/// <returns>if the read and decompression were successful</returns>
-	static bool decompress_from_file(std::ifstream& ifs, const CompressedDataHeader& dataHeader, void* dst) {
+	[[nodiscard]] static bool decompress_from_file(std::ifstream& ifs, const CompressedDataHeader& dataHeader, void* dst) {
 		u64 remsize = 0;
 		auto curr = ifs.tellg();
 		if (curr == -1) return false;
@@ -412,7 +412,7 @@ namespace iocomp {
 	/// <param name="dst">object vector used to store the decompressed output</param>
 	/// <returns>if the read and decompression were successful</returns>
 	template<typename T>
-	static bool decompress_from_file(std::ifstream& ifs, const CompressedDataHeader& dataHeader, niVector<T>& dst) {
+	[[nodiscard]] static bool decompress_from_file(std::ifstream& ifs, const CompressedDataHeader& dataHeader, niVector<T>& dst) {
 		u64 remsize = 0;
 		auto curr = ifs.tellg();
 		if (curr == -1) return false;

@@ -48,7 +48,7 @@ i32 fileacc::check_file(const string& path, const u32 expectedMagic, const u32 e
 	std::ifstream ifs(path, std::ios::binary);
 	if (!ifs) return -3;
 	FileCheck hdr;
-	podio::read_pod(ifs, hdr);
+	if (!podio::read_pod(ifs, hdr)) return -3;
 	return valid_file(hdr, expectedMagic, expectedVer);
 }
 
@@ -57,6 +57,6 @@ i32 fileacc::check_file(const string& path, std::set<u32> expectedMagicSet, cons
 	std::ifstream ifs(path, std::ios::binary);
 	if (!ifs) return -3;
 	FileCheck hdr;
-	podio::read_pod(ifs, hdr);
+	if (!podio::read_pod(ifs, hdr)) return -3;
 	return valid_file(hdr, expectedMagicSet, expectedVer);
 }

@@ -99,7 +99,7 @@ namespace memsys {
 		/// <param name="size">size of memory chunk to allocate</param>
 		/// <param name="alignment">alignment of object within memory chunk</param>
 		/// <returns>pointer to the memory chunk or nullptr if it could not be allocated</returns>
-		void* Allocate(usize size, usize alignment = alignof(std::max_align_t));
+		[[nodiscard]] void* Allocate(usize size, usize alignment = alignof(std::max_align_t));
 
 		/// <summary>
 		/// Allocate a memory chunk of sizeof T, ensuring alignment of T is satisfied
@@ -107,7 +107,7 @@ namespace memsys {
 		/// <typeparam name="T"></typeparam>
 		/// <returns>pointer to the allocated object or nulltpr if it could not be allocated</returns>
 		template<typename T, typename... Args>
-		T* Allocate(Args&&... args);
+		[[nodiscard]] T* Allocate(Args&&... args);
 
 		/// <summary>
 		/// Removes the allocated memory for the chunk at ptr, decrementing the allocation count and memory usage. 
