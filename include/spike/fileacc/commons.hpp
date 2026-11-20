@@ -36,6 +36,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __SPIKE_FILE_ACCESSOR_COMMONS
 #define __SPIKE_FILE_ACCESSOR_COMMONS
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Contains basic methods for file header validation / checks for use 
+	within custom file systems, asset managers etc.
+
+----------------------------------------------------------------------
+*/
+
 #include <set>
 
 #include "spike/def_aliases.h"

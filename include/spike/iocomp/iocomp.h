@@ -36,6 +36,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __SPIKE_IOCOMP_IOCOMP_H
 #define __SPIKE_IOCOMP_IOCOMP_H
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Holds the methoda and auxilary data required to allow users to 
+	compress and decompress data to/from buffers and files.
+
+----------------------------------------------------------------------
+*/
+
 #include <ostream>
 #include <fstream>
 #include <limits>

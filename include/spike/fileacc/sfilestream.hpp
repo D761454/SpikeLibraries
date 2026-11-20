@@ -36,6 +36,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __SPIKE_FILE_ACCESSOR_STREAM
 #define __SPIKE_FILE_ACCESSOR_STREAM
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Holds wrappers for read/write operations to improve code 
+	readability. This file also contains helper functions for file 
+	alignemnt, allowing users to ensure data in files, such as 
+	compressed buffers, are aligned appropriately on specific byte 
+	boundaries.
+
+----------------------------------------------------------------------
+*/
+
 #include <cstdint>
 #include <limits>
 #include <vector>
@@ -47,61 +60,61 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <type_traits>
 
 namespace fileacc {
-	// Compile-time validation for integer types
 	template<typename T>
 	concept IntegralType = std::is_integral_v<T> && !std::is_same_v<T, bool>;
 
 	template<typename T>
-	inline void write(std::ostream& ofs, const T& obj) {
+	inline bool write(std::ostream& ofs, const T& obj) {
 		ofs.write(reinterpret_cast<const char*>(&obj), static_cast<std::streamsize>(sizeof(obj)));
+		return ofs.good();
 	}
 
 	template<typename T, IntegralType U>
-	inline void write(std::ostream& ofs, const T& obj, U size) {
+	inline bool write(std::ostream& ofs, const T& obj, U size) {
 		ofs.write(reinterpret_cast<const char*>(&obj), static_cast<std::streamsize>(size));
+		return ofs.good();
 	}
 
 	template<typename T, IntegralType U>
-	inline void write(std::ostream& ofs, const T* obj, U size) {
+	inline bool write(std::ostream& ofs, const T* obj, U size) {
 		ofs.write(reinterpret_cast<const char*>(obj), static_cast<std::streamsize>(size));
+		return ofs.good();
 	}
 
 	template<typename T>
-	inline void read(std::istream& ifs, T& obj) {
+	inline bool read(std::istream& ifs, T& obj) {
 		ifs.read(reinterpret_cast<char*>(&obj), static_cast<std::streamsize>(sizeof(obj)));
+		return ifs.good();
 	}
 
 	template<typename T, IntegralType U>
-	inline void read(std::istream& ifs, T& obj, U size) {
+	inline bool read(std::istream& ifs, T& obj, U size) {
 		ifs.read(reinterpret_cast<char*>(&obj), static_cast<std::streamsize>(size));
+		return ifs.good();
 	}
 
 	template<typename T, IntegralType U>
-	inline void read(std::istream& ifs, T* obj, U size) {
+	inline bool read(std::istream& ifs, T* obj, U size) {
 		ifs.read(reinterpret_cast<char*>(obj), static_cast<std::streamsize>(size));
+		return ifs.good();
 	}
 
-	/// <summary>
-	/// Writes a string to file, writing its size as a uint16_t, and then its data
-	/// </summary>
-	/// /// <param name="ofs">file stream to the file</param>
-	/// <param name="str">string to write to file</param>
-	inline void write_string(std::ofstream& ofs, std::string& str) {
-		uint16_t len = std::min(static_cast<uint16_t>(str.size()), std::numeric_limits<uint16_t>::max());
+	template<>
+	inline bool write(std::ostream& ofs, const std::string& obj) {
+		uint32_t len = std::min(static_cast<uint32_t>(obj.size()), std::numeric_limits<uint32_t>::max());
 		ofs.write(reinterpret_cast<const char*>(&len), sizeof(len));
-		ofs.write(str.data(), len);
+		ofs.write(obj.data(), static_cast<std::streamsize>(len));
+		return ofs.good();
 	}
 
-	/// <summary>
-	/// Parses a string from file, reading its length and then its data
-	/// </summary>
-	/// <param name="ifs">file stream to the file</param>
-	/// <param name="str">string read from the file</param>
-	inline void parse_string(std::istream& ifs, std::string& str) {
-		uint16_t len = 0;
+	template<>
+	inline bool read(std::istream& ifs, std::string& obj) {
+		uint32_t len = 0;
 		ifs.read(reinterpret_cast<char*>(&len), sizeof(len));
-		str.resize(len);
-		ifs.read(str.data(), len);
+		if (!ifs.good()) return false;
+		obj.resize(len);
+		ifs.read(obj.data(), len);
+		return ifs.good();
 	}
 
 	/// <summary>
