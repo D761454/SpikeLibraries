@@ -90,7 +90,7 @@ namespace memsys {
 		/// <param name="size">memory size requested</param>
 		/// <param name="id">user id to associate with the allocated chunk</param>
 		/// <returns>pointer to memory if there is space available, otherwise nullptr</returns>
-		void* AllocateChunk(const usize size, const char* id = nullptr);
+		[[nodiscard]] void* AllocateChunk(const usize size, const char* id = nullptr);
 
 		/// <summary>
 		/// Frees a previously allocated memory chunk.

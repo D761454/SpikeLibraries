@@ -66,7 +66,7 @@ namespace memsys {
 		/// <param name="size">amount of memory requested / size of the memory chunk returned</param>
 		/// <param name="id">id to associate with the allocated memory chunk</param>
 		/// <returns>pointer to the base of the allocated memory chunk, if no space available, returns nullptr</returns>
-		void* RequestMemoryChunk(const usize size, const char* id = nullptr) const;
+		[[nodiscard]] void* RequestMemoryChunk(const usize size, const char* id = nullptr) const;
 
 		/// <summary>
 		/// frees a memory chunk from the memory manager, allowing the chunk to be reused on future allocations
