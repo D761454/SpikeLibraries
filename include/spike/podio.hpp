@@ -92,7 +92,7 @@ namespace podio {
 	/// <param name="out">Object to read data into</param>
 	/// <returns>if the read was good or it is end of file</returns>
 	template <typename T>
-	inline bool read_pod(std::istream& is, T& out) {
+	[[nodiscard]] inline bool read_pod(std::istream& is, T& out) {
 		static_assert(is_pod_writable_v<T>, "read_pod requires trivially copyable, standard-layout type");
 		is.read(reinterpret_cast<char*>(&out), sizeof(T));
 		return is.good();

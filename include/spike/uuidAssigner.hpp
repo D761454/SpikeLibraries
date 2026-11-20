@@ -59,7 +59,7 @@ namespace uuids {
 	/// generates a non null, non invalid uuid
 	/// </summary>
 	/// <returns>valid uuid</returns>
-	inline uuid generate_id() noexcept {
+	[[nodiscard]] inline uuid generate_id() noexcept {
 		uuid id;
 		do {
 			id = uuid_system_generator{}();
