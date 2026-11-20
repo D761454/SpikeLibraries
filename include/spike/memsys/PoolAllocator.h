@@ -50,10 +50,12 @@ File Summary:
 
 #include <memory>
 #include <utility>
-#include <cassert>
 #include <array>
 
 #include "spike/def_aliases.h"
+#ifdef _SPIKE_DEBUG
+#include "spike/debugl/debug.hpp"
+#endif
 
 #include "spike/memsys/Allocator.h"
 
@@ -86,8 +88,8 @@ namespace memsys {
         const void* _memoryBase = nullptr;
         const usize _memorySize = 0;
 
-        const uptr _start;
-        const uptr _end;
+        uptr _start;
+        uptr _end;
 
 #if _DEBUG
         std::array<std::pair<bool, Chunk*>, Capacity> _checker{};
@@ -96,13 +98,26 @@ namespace memsys {
     public:
         PoolAllocator(const void* memoryBase, const usize memorySize) : 
             _memoryBase(memoryBase),
-            _memorySize(memorySize),
-            _start(reinterpret_cast<uptr>(memoryBase)),
-            _end(reinterpret_cast<uptr>(memoryBase) + memorySize) {
+            _memorySize(memorySize) {
 
-            assert(memoryBase != nullptr && "PoolAllocator: Memory base is nullptr!");
-            assert(memorySize == Capacity * kChunkStride &&
-                "PoolAllocator: Memory size must be equal to Capacity * aligned sizeof(T)!");
+            if (!memoryBase) {
+#ifdef _SPIKE_DEBUG
+                Debug::LogWarning("Pool Allocator: Memory base is nullptr!");
+                _start = 0;
+                _end = 0;
+                return;
+#endif
+            }
+
+            if (memorySize != Capacity * kChunkStride) {
+#ifdef _SPIKE_DEBUG
+                Debug::LogWarning("PoolAllocator: Memory size must be equal to Capacity * aligned sizeof(T)!");
+#endif
+                return;
+            }
+
+            _start = reinterpret_cast<uptr>(memoryBase);
+            _end = reinterpret_cast<uptr>(memoryBase) + memorySize;
 
             _free = reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase));
             Chunk* cur = _free;
@@ -136,7 +151,8 @@ namespace memsys {
         /// <summary>
         /// Calls the destructor of T and adds the chunk to the free list.
         /// </summary>
-        void Destroy(T* ptr);
+        /// <returns>if the destroy was successful</returns>
+        bool Destroy(T* ptr);
 
         /// <summary>
         /// Resets the free list and allocator bookkeeping.
@@ -201,12 +217,19 @@ namespace memsys {
     }
 
     template<class T, usize Capacity>
-    void PoolAllocator<T, Capacity>::Destroy(T* ptr) {
-        assert(ptr != nullptr && "PoolAllocator: Free: pointer is nullptr, cannot free!");
+    bool PoolAllocator<T, Capacity>::Destroy(T* ptr) {
+        if (!ptr) {
+#ifdef _SPIKE_DEBUG
+            Debug::LogWarning("PoolAllocator: DestroyObject called with nullptr.");
+#endif
+            return true; // not technically an error
+        }
 
         if (!is_pointer_owned(ptr, _start, _end)) {
-            assert(false && "PoolAllocator: Free: pointer is not owned!");
-            return;
+#ifdef _SPIKE_DEBUG
+            Debug::LogWarning("PoolAllocator: DestroyObject: pointer is not owned by this pool.");
+#endif
+            return false;
         }
 
         std::destroy_at(ptr);
@@ -226,6 +249,7 @@ namespace memsys {
 
         --_allocationCount;
         _allocatedMemory = (_allocatedMemory >= kChunkStride) ? (_allocatedMemory - kChunkStride) : 0;
+        return true;
     }
 
     template<class T, usize Capacity>
@@ -255,3 +279,18 @@ namespace memsys {
 }
 
 #endif
+
+
+/*
+
+for library isolation:
+
+make preproc def not _ first
+
+avoid spike dependencies in headers, must move impl into cpp files
+
+- target_compile_definitions(spike_memsys PUBLIC SPIKE_MEMSYS_WITH_DEBUGL=1)
+
+only in cpp, not public headers
+also use PRIVATE if only cpp files need it
+*/

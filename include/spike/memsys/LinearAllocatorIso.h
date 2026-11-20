@@ -53,10 +53,12 @@ File Summary:
 #endif
 #include <memory>
 #include <utility>
-#include <cassert>
 #include <cstddef>
 
 #include "spike/def_aliases.h"
+#ifdef _SPIKE_DEBUG
+#include "spike/debugl/debug.hpp"
+#endif
 
 #include "spike/memsys/Allocator.h"
 
@@ -77,7 +79,11 @@ namespace memsys {
 
 	public:
 		LinearAllocatorIso(const usize memorySize) : _memoryBase(malloc(memorySize)), _memorySize(memorySize), _allocationCount(0), _allocatedMemory(0) {
-			assert(_memoryBase != nullptr && "LinearAllocatorIso: Memory base is nullptr!");
+			if (memorySize == 0) {
+#ifdef _SPIKE_DEBUG
+				Debug::LogWarning("LinearAllocatorIso: Memory size is 0!");
+#endif
+			}
 		}
 
 		~LinearAllocatorIso() { 
@@ -104,13 +110,6 @@ namespace memsys {
 		[[nodiscard]] T* Allocate(Args&&... args);
 
 		/// <summary>
-		/// LinearAllocator: Free: Cannot Free Memory Individually!
-		/// </summary>
-		void Free(void* ptr) {
-			assert(0 && "LinearAllocator: Free: Cannot Free Memory Individually!");
-		}
-
-		/// <summary>
 		/// Resets the allocators memory usage and allocation count pointers to 0
 		/// </summary>
 		void Reset() noexcept {
@@ -133,7 +132,12 @@ namespace memsys {
 #pragma region Implementation
 
 	void* LinearAllocatorIso::Allocate(usize size, usize alignment) {
-		assert(size > 0 && "LinearAllocator: Memory allocation must have a size > 0!");
+		if (!_memoryBase) {
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("LinearAllocatorIso: Allocate: Memory base is nullptr!");
+#endif
+			return nullptr;
+		}
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
@@ -152,6 +156,13 @@ namespace memsys {
 
 	template<typename T, typename... Args>
 	T* LinearAllocatorIso::Allocate(Args&&... args) {
+		if (!_memoryBase) {
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("LinearAllocatorIso: Allocate: Memory base is nullptr!");
+#endif
+			return nullptr;
+		}
+
 		i32 size = sizeof(T);
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;

@@ -55,10 +55,11 @@ File Summary:
 #include <list>
 #include <algorithm>
 #include <utility>
-#include <cassert>
 
 #include "spike/def_aliases.h"
+#ifdef _SPIKE_DEBUG
 #include "spike/debugl/debug.hpp"
+#endif
 
 #include "spike/memsys/Allocator.h"
 #include "spike/memsys/PoolAllocatorIso.h"
@@ -114,7 +115,8 @@ namespace memsys {
         /// Used to destroy an object, if the object is found within any of the memory pools
         /// </summary>
         /// <param name="obj">pointer to the object to delete</param>
-        void Destroy(T* obj);
+        /// <returns>if destruction was successful</returns>
+        bool Destroy(T* obj);
 
         /// <summary>
         /// returns a vector of pointers to all created objects within each memory pool
@@ -138,8 +140,9 @@ namespace memsys {
 
             PoolAlloc* pa = pool->allocator;
             if (!pa) {
+#ifdef _SPIKE_DEBUG
                 Debug::LogWarning("FATAL: DPA: PoolAllocatorIso is nullptr, cannot free memory chunk!");
-                assert(0 && "FATAL: DPA: PoolAllocatorIso is nullptr, cannot free memory chunk!");
+#endif
                 continue;
             }
 
@@ -168,8 +171,9 @@ namespace memsys {
                 T* obj = pool->allocator->Create(std::forward<Args>(args)...);
 
                 if (!obj) {
+#ifdef _SPIKE_DEBUG
                     Debug::LogError("DynamicPoolAllocatorIso: Failed to allocate memory for new object!");
-                    assert(obj != nullptr && "DynamicPoolAllocatorIso: Failed to allocate memory for new object!");
+#endif
                     return nullptr;
                 }
 
@@ -185,8 +189,9 @@ namespace memsys {
         T* obj = newPool->allocator->Create(std::forward<Args>(args)...);
 
         if (!obj) {
+#ifdef _SPIKE_DEBUG
             Debug::LogError("DynamicPoolAllocatorIso: Failed to allocate memory for new object!");
-            assert(obj != nullptr && "DynamicPoolAllocatorIso: Failed to allocate memory for new object!");
+#endif
             return nullptr;
         }
 
@@ -195,10 +200,12 @@ namespace memsys {
     }
 
     template<class T, usize Capacity>
-    void DynamicPoolAllocatorIso<T, Capacity>::Destroy(T* obj) {
+    bool DynamicPoolAllocatorIso<T, Capacity>::Destroy(T* obj) {
         if (!obj) {
+#ifdef _SPIKE_DEBUG
             Debug::LogWarning("DynamicPoolAllocatorIso: DestroyObject called with nullptr.");
-            return;
+#endif
+            return true;
         }
 
         for (Pool* pool : pools) {
@@ -208,17 +215,21 @@ namespace memsys {
             if (is_pointer_owned(obj, pool->allocator->GetStart(), pool->allocator->GetEnd())) {
                 auto it = std::find(pool->allocatedObjects.begin(), pool->allocatedObjects.end(), obj);
                 if (it == pool->allocatedObjects.end()) {
+#ifdef _SPIKE_DEBUG
                     Debug::LogError("DynamicPoolAllocator: Attempted to free stale pointer or double-free detected.");
-                    return;
+#endif
+                    return false;
                 }
 
                 pool->allocatedObjects.erase(it);
                 pool->allocator->Destroy(obj);
-                return;
+                return true;
             }
         }
-
+#ifdef _SPIKE_DEBUG
         Debug::LogError("DynamicPoolAllocatorIso: Failed to find pool for object to destroy. Pointer is likely stale or corrupted.");
+#endif
+        return false;
     }
 
     template<class T, usize Capacity>

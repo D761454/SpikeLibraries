@@ -40,11 +40,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #elif defined(__APPLE__)
 #include <stdlib.h>
 #endif
-#include <cassert>
 #include <utility>
 
 #include "spike/def_aliases.h"
+#ifdef _SPIKE_DEBUG
 #include "spike/debugl/debug.hpp"
+#endif
 
 #include "spike/memsys/StackAllocator.h"
 
@@ -52,10 +53,17 @@ namespace memsys {
 	MemoryManager::MemoryManager() {
 		_globalMemoryBase = malloc(kTotalSize);
 
-		assert(_globalMemoryBase != nullptr && "Failed to allocate global memory for MemoryManager!");
+		if (!_globalMemoryBase) {
+			Debug::LogWarning("Failed to allocate global memory for MemoryManager!");
+			_allocator = nullptr;
+			return;
+		}
 
 		_allocator = new StackAllocator(_globalMemoryBase, kTotalSize);
-		assert(_allocator != nullptr && "Failed to create primary allocator for MemoryManager!");
+
+		if (!_allocator) {
+			Debug::LogWarning("Failed to create primary allocator for MemoryManager!");
+		}
 
 		_allocatedChunks.clear();
 		_freeChunks.clear();
@@ -81,7 +89,7 @@ namespace memsys {
 		return chunk;
 	}
 
-	void MemoryManager::FreeChunk(void* ptr) {
+	void MemoryManager::FreeChunk(void* ptr) { // may need to add ownership check here
 		if (!ptr) return;
 		if (ptr == _allocatedChunks.back().second) {
 			_allocator->Free(ptr);
@@ -109,13 +117,16 @@ namespace memsys {
 	}
 
 	void MemoryManager::LogMemoryUsage() const {
+#ifdef _SPIKE_DEBUG
 		if (_allocator) {
 			Debug::Log("Current Memory Usage: {} / {}", _allocator->GetAllocatedMemory(), _allocator->GetMemorySize());
 		}
 		else Debug::LogError("WARNING! No primary allocator for memory manager!");
+#endif
 	}
 
 	void MemoryManager::IntegrityCheck() const {
+#ifdef _SPIKE_DEBUG
 		if (_allocatedChunks.size() > 0) {
 			Debug::LogError("!!! MEMORY LEAK !!!");
 
@@ -134,6 +145,7 @@ namespace memsys {
 				}
 			}
 		}
+#endif
 	}
 
 	const usize MemoryManager::GetTotalAllocatedMemory() const noexcept {
