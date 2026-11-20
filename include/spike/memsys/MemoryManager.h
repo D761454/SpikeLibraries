@@ -36,6 +36,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __MEMORY_SYSTEM_MEMORY_MANAGER_H
 #define __MEMORY_SYSTEM_MEMORY_MANAGER_H
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	MemoryManager class - used to pre allocate a large block of 
+	managed memory on program start / first use, removing the overhead 
+	on memory allocation. This is only recommended for use when 
+	exceeding the memory limit is unlikely. 
+
+	Note: I may modify the manager to use a dynamic stack allocator, 
+	with an additional warning logged at the end of the program to 
+	dictate a new value for the total size to prevent dynamic stack 
+	creation.
+
+----------------------------------------------------------------------
+*/
+
 #include <list>
 #include <utility>
 #include <vector>
