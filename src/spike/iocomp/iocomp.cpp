@@ -48,11 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/stl_aliases.h"
 #include "spike/debugl/debug.hpp"
 
-u32 iocomp::IOComp::CalcCRC32(const u8* data, usize len) {
-	return static_cast<u32>(crc32(0UL, reinterpret_cast<const Bytef*>(data), static_cast<uInt>(len)));
-}
-
-const string iocomp::IOComp::CompMethodToString(const CompressionMethod_& cm) {
+const string iocomp::to_string(const CompressionMethod_& cm) {
 	switch (cm) {
 	case CompressionMethod_none:  return "0: NONE";
 	case CompressionMethod_zlib:  return "1: ZLIB";
@@ -60,6 +56,10 @@ const string iocomp::IOComp::CompMethodToString(const CompressionMethod_& cm) {
 	case CompressionMethod_zstd:  return "3: ZSTD";
 	default: return "UNKNOWN";
 	}
+}
+
+const u32 iocomp::crc32(const u8* data, usize len) {
+	return static_cast<u32>(::crc32(0UL, reinterpret_cast<const Bytef*>(data), static_cast<uInt>(len)));
 }
 
 struct iocomp::IOComp::ContextZSTD {
@@ -175,8 +175,8 @@ u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, c
 		if (res != Z_OK || static_cast<usize>(destLen) != expectedSize) {
 			return 0;
 		}
-		u32 crc32 = CalcCRC32(reinterpret_cast<const u8*>(dst), static_cast<usize>(destLen));
-		if (crc32 != expectedCrc32) {
+		const u32 crc = crc32(reinterpret_cast<const u8*>(dst), static_cast<usize>(destLen));
+		if (crc != expectedCrc32) {
 			Debug::LogError("Decompression error using zlib! CRC32 mismatch!");
 			return 0;
 		}
@@ -195,8 +195,8 @@ u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, c
 			Debug::LogError("Zstd Decompression Failed: {}", err);
 			return false;
 		}
-		u32 crc32 = CalcCRC32(reinterpret_cast<const u8*>(dst), accRawSize);
-		if (crc32 != expectedCrc32) {
+		const u32 crc = crc32(reinterpret_cast<const u8*>(dst), accRawSize);
+		if (crc != expectedCrc32) {
 			Debug::LogError("Decompression error using zstd! CRC32 mismatch!");
 			return 0;
 		}
@@ -206,8 +206,8 @@ u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, c
 	case CompressionMethod_none:
 	default: {
 		if (srcSize != expectedSize) return 0;
-		u32 crc32 = CalcCRC32(reinterpret_cast<const u8*>(src), static_cast<usize>(srcSize));
-		if (crc32 != expectedCrc32) {
+		const u32 crc = crc32(reinterpret_cast<const u8*>(src), static_cast<usize>(srcSize));
+		if (crc != expectedCrc32) {
 			Debug::LogError("Decompression error using lz4 or none! CRC32 mismatch!");
 			return 0;
 		}
