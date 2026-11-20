@@ -40,8 +40,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 
 File Summary:
-	MemoryUser class - base class allowing for a custom class inheriting
-	from this to request and free memory from the global memory manager.
+	MemoryUser class - base class allowing for a custom class 
+	inheriting from this to request and free memory from the global 
+	memory manager.
+
+	Depending on usecases, it may be more beneficial to use the "Iso"
+	allocators which handle their memory themselves, removing the risk 
+	of allocating more memory than the global manager has available. 
 
 ----------------------------------------------------------------------
 */
@@ -49,20 +54,12 @@ File Summary:
 #include "spike/def_aliases.h"
 
 namespace memsys {
-	class MemoryManager;
-
 	/// <summary>
 	/// Inheriting from this class allows the inheritor to request and free memory from the
-	/// global memory pool.
+	/// global memory manager.
 	/// </summary>
 	class MemoryUser {
-	private:
-		MemoryManager* _memoryManager = nullptr;
-
 	public:
-		MemoryUser();
-		virtual ~MemoryUser() {}
-
 		/// <summary>
 		/// Used to acquire a chunk of memory of size from the memory manager, the chunk is labeled under the passed id for error checking
 		/// </summary>

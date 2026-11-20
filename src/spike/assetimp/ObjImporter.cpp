@@ -158,7 +158,7 @@ static errlib::Error raw_import(const string& file,
 	std::vector<sml::vector2>& uvBuffer,
 	std::vector<sml::vector4>& tangentBuffer,
 	std::vector<Poly>& faceBuffer,
-	assimp::Model& model)
+	assimp::Mesh& model)
 {
 	std::ifstream fileStream;
 	fileStream.exceptions(std::ifstream::badbit);
@@ -298,7 +298,7 @@ void generate_buffer(
 	std::vector<sml::vector2>& uvBuffer,
 	std::vector<sml::vector4>& tangentBuffer,
 	std::vector<Poly>& faceBuffer,
-	assimp::Model& model, std::vector<T>& vertexBuffer, std::vector<U>& indexBuffer)
+	assimp::Mesh& model, std::vector<T>& vertexBuffer, std::vector<U>& indexBuffer)
 {
 	umap<ObjTuple, U> tupleToIndex;
 
@@ -329,7 +329,7 @@ void generate_buffer(
 }
 
 template<typename T>
-inline void generate_tangents(assimp::Model& model, std::vector<T>& idxBuff) {
+inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 	std::vector<sml::vector3> tan1, tan2;
 	tan1.resize(model.vertices48.size()); tan2.resize(model.vertices48.size());
 
@@ -403,7 +403,7 @@ errlib::Error assimp::ObjImporter::InternReadFile(const string& file, Collection
 	std::vector<sml::vector4> tmpTang;
 	std::vector<Poly> faces;
 
-	Model model;
+	Mesh model;
 
 	if (errlib::Error e = raw_import(file, tmpPos, tmpNorm, tmpUV, tmpTang, faces, model); !e.ok()) {
 		return e;

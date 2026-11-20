@@ -117,6 +117,9 @@ namespace memsys {
 		LinearAllocator(LinearAllocator&&) = delete;
 	};
 
+	using BumpAllocator = LinearAllocator;
+	using ArenaAllocator = LinearAllocator;
+
 #pragma region Implementation
 
 	void* LinearAllocator::Allocate(usize size, usize alignment) {
@@ -124,7 +127,7 @@ namespace memsys {
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
-		usize adjustment = GetAdjustment(reinterpret_cast<uptr>(currentAddress), alignment);
+		usize adjustment = get_adjustment(reinterpret_cast<uptr>(currentAddress), alignment);
 		size += adjustment;
 
 		if (_allocatedMemory + size > _memorySize) return nullptr;
@@ -143,7 +146,7 @@ namespace memsys {
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
-		usize adjustment = GetAdjustment(reinterpret_cast<uptr>(currentAddress), alignof(T));
+		usize adjustment = get_adjustment(reinterpret_cast<uptr>(currentAddress), alignof(T));
 		size += adjustment;
 
 		if (_allocatedMemory + size > _memorySize) return nullptr;

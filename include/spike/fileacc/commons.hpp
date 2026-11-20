@@ -36,6 +36,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __SPIKE_FILE_ACCESSOR_COMMONS
 #define __SPIKE_FILE_ACCESSOR_COMMONS
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Contains basic methods for file header validation / checks for use 
+	within custom file systems, asset managers etc.
+
+----------------------------------------------------------------------
+*/
+
 #include <set>
 
 #include "spike/def_aliases.h"
@@ -100,24 +110,6 @@ namespace fileacc {
 	/// <param name="expectedVer">version header that should be held in the header</param>
 	/// <returns>if the file exists and the headers match: 0 = good, -1 = magic error, -2 = version error, -3 = file error</returns>
 	i32 check_file(const string& path, std::set<u32> expectedMagicSet, const u32 expectedVer) noexcept;
-
-	/// <summary>
-	/// Generates a hash from a buffer of size len
-	/// </summary>
-	/// <param name="data">pointer to the buffer to hash</param>
-	/// <param name="len">length of the buffer</param>
-	/// <returns>hash value corresponding to the buffer</returns>
-	inline u64 fnv1a64(const char* data, usize len) {
-		const u64 fnvOffset = 14695981039346656037ULL;
-		const u64 fnvPrime = 1099511628211ULL;
-		u64 hash = fnvOffset;
-		const u8* ptr = reinterpret_cast<const u8*>(data);
-		for (usize i = 0; i < len; i++) {
-			hash ^= static_cast<u64>(ptr[i]);
-			hash *= fnvPrime;
-		}
-		return hash;
-	}
 
 	DISABLE_WARNING_POP
 }

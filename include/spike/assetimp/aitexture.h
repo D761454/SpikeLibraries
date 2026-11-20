@@ -36,6 +36,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __ASSET_IMP_TEXTURE_H
 #define __ASSET_IMP_TEXTURE_H
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Basic texture struct to hold basic texture info from an imported 
+	sdr or hdr image.
+
+----------------------------------------------------------------------
+*/
+
 #include <memory>
 #include <utility>
 
@@ -43,31 +53,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/stl_aliases.h"
 
 namespace assimp {
-	enum CompressionFormats_ : u8 {
-		/*4 bits/pixel - no alpha or 1bit alpha*/
-		CompressionFormats_BC1 = 0,
-		/*4 bits/pixel - no alpha or 1bit alpha*/
-		CompressionFormats_DXT1 = CompressionFormats_BC1,
-		/*8 bits/pixel - smooth alpha*/
-		CompressionFormats_BC3 = 1,
-		/*8 bits/pixel - smooth alpha*/
-		CompressionFormats_DXT5 = CompressionFormats_BC3,
-		/*single channel compression*/
-		CompressionFormats_BC4 = 2,
-		/*dual channel, store x and y, recalculate z in pixel shader*/
-		CompressionFormats_BC5 = 3,
-		/*HDR block compression*/
-		CompressionFormats_BC6H = 4,
-		/*high quality rgb/rgba, less artifacts than BC1/3*/
-		CompressionFormats_BC7 = 5,
-		/*Legacy baseline standard for OpenGL ES 3.0+ / Android*/
-		CompressionFormats_ETC2 = 6,
-		/*Legacy baseline standard for OpenGL ES 3.0+ / Android*/
-		CompressionFormats_EAC = CompressionFormats_ETC2,
-
-		CompressionFormats_auto = 255
-	};
-
 	template<typename T>
 	struct STBImageDeleter {
 		void operator()(T* ptr) const {
@@ -85,7 +70,6 @@ namespace assimp {
 		i32 depth;
 		i32 channels;
 		i32 mipLevels;
-		/*PixelFormat format;*/
 		bool sRGB;
 		bool flippedY;
 		StbImagePtr<u8> pixelDataSDR;
@@ -107,10 +91,6 @@ namespace assimp {
 
 		~Texture() {}
 	};
-
-	// basis_universal: convert to BC1-BC7 at runtime.
-	// stb_image.h: lightweight library to handle png, jpg, tga, bmp, hdr
-	// tinyexr for ext files
 }
 
 #endif

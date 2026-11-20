@@ -193,7 +193,7 @@ static void read_texture_coordinate(FbxMesh* inMesh, i32 ctrlPtIdx, i32 uvIndex,
 	}
 }
 
-static void process_ctrl_points(FbxMesh* mesh, assimp::Model& model) {
+static void process_ctrl_points(FbxMesh* mesh, assimp::Mesh& model) {
 	// removed poly stuff as mesh pre tri'd
 
 	//std::vector<Poly> faces;
@@ -307,7 +307,7 @@ errlib::Error assimp::FbxImporter::InternReadFile(const string& file, Collection
 		if (!mesh) continue;
 
 		const i32 idx = findNode(mesh->GetNode());
-		Model& model = scene->models[idx];
+		Mesh& model = scene->models[idx];
 
 		SubMesh sm;
 		sm.indexOffset = static_cast<u32>(model.indexBuffer32.size());

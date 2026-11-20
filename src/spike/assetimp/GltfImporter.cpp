@@ -522,7 +522,7 @@ namespace {
 }
 
 template<typename T>
-inline void generate_tangents(assimp::Model& model, std::vector<T>& idxBuff) {
+inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 	std::vector<sml::vector3> tan1, tan2;
 	tan1.resize(model.vertices48.size()); tan2.resize(model.vertices48.size());
 
@@ -590,7 +590,7 @@ inline void flip_winding_order(std::vector<T>& indexBuffer) {
 }
 
 static void construct_mesh(const GLTFData& gltf, const u32 idx, const string& path, assimp::Collection* scene, const u32 ppSteps) {
-	assimp::Model model = assimp::Model();
+	assimp::Mesh model = assimp::Mesh();
 
 	const GLTFData::Mesh& meshData = gltf.meshes[idx];
 	model.name = meshData.name;

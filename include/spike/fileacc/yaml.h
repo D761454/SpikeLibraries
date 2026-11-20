@@ -36,6 +36,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __SPIKE_FILE_ACCESSOR_YAML_FILE_IO
 #define __SPIKE_FILE_ACCESSOR_YAML_FILE_IO
 
+/*
+----------------------------------------------------------------------
+
+File Summary:
+	Helpful wrapper around YAML cpp that may be extended to hold 
+	various user defined types.
+
+	This is a more niche usecase, whereby I have used this to provide 
+	a nicer syntax personally.
+
+----------------------------------------------------------------------
+*/
+
 #include <optional>
 #include <variant>
 #include <stdexcept>

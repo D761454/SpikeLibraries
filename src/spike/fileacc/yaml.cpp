@@ -90,14 +90,14 @@ namespace YAML {
 }
 
 namespace {
-	YAML::Node YAMLDataToNode(const fileacc::YAMLData& d) {
+	YAML::Node yaml_data_to_node(const fileacc::YAMLData& d) {
 		YAML::Node node;
 
 		if (d.IsMap()) {
 			node = YAML::Node(YAML::NodeType::Map);
 			const auto& m = d.AsMap();
 			for (const auto& kv : m) {
-				node[kv.first] = YAMLDataToNode(kv.second);
+				node[kv.first] = yaml_data_to_node(kv.second);
 			}
 			return node;
 		}
@@ -110,7 +110,7 @@ namespace {
 			node = YAML::Node(YAML::NodeType::Sequence);
 			const auto& seq = d.AsSequence();
 			for (const auto& item : seq) {
-				node.push_back(YAMLDataToNode(item));
+				node.push_back(yaml_data_to_node(item));
 			}
 			return node;
 		}
@@ -137,7 +137,7 @@ namespace {
 		return YAML::Node(string{});
 	}
 
-	fileacc::YAMLData ParseScalarStringToYAMLData(const string& s) {
+	fileacc::YAMLData parse_scalar_string_to_yaml_data(const string& s) {
 		if (auto maybe = uuids::uuid::from_string(s)) {
 			return fileacc::YAMLData(*maybe);
 		}
@@ -176,7 +176,7 @@ namespace {
 		return fileacc::YAMLData(s);
 	}
 
-	fileacc::YAMLData NodeToYAMLData(const YAML::Node& node) {
+	fileacc::YAMLData node_to_yaml_data(const YAML::Node& node) {
 		if (!node) return fileacc::YAMLData(string{});
 
 		if (node.IsMap()) {
@@ -185,7 +185,7 @@ namespace {
 			auto& m = out.AsMap();
 			for (const auto& kv : node) {
 				const string key = kv.first.as<string>();
-				m.emplace(key, NodeToYAMLData(kv.second));
+				m.emplace(key, node_to_yaml_data(kv.second));
 			}
 			return out;
 		}
@@ -194,14 +194,14 @@ namespace {
 			fileacc::YAMLData out;
 			auto& seq = out.AsSequence();
 			for (const auto& item : node) {
-				seq.push_back(NodeToYAMLData(item));
+				seq.push_back(node_to_yaml_data(item));
 			}
 			return out;
 		}
 
 		if (node.IsScalar()) {
 			string s = node.as<string>();
-			return ParseScalarStringToYAMLData(s);
+			return parse_scalar_string_to_yaml_data(s);
 		}
 
 		return fileacc::YAMLData(string{});
@@ -210,7 +210,7 @@ namespace {
 
 errlib::Error fileacc::save_yaml(const string& filePath, const YAMLData& data) {
 	try {
-		YAML::Node root = YAMLDataToNode(data);
+		YAML::Node root = yaml_data_to_node(data);
 
 		YAML::Emitter emitter;
 		emitter << root;
@@ -248,7 +248,7 @@ std::optional<fileacc::YAMLData> fileacc::load_yaml(const string& filePath) {
 		}
 
 		YAML::Node root = YAML::LoadFile(filePath);
-		return NodeToYAMLData(root);
+		return node_to_yaml_data(root);
 	}
 	catch (const std::exception& ex) {
 		Debug::LogError("YAMLFileIO::LoadFromFile - exception loading {}: {}", filePath, ex.what());
