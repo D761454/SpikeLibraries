@@ -50,10 +50,12 @@ File Summary:
 
 #include <memory>
 #include <utility>
-#include <cassert>
 #include <array>
 
 #include "spike/def_aliases.h"
+#ifdef _SPIKE_DEBUG
+#include "spike/debugl/debug.hpp"
+#endif
 
 #include "spike/memsys/Allocator.h"
 
@@ -113,7 +115,8 @@ namespace memsys {
         /// <summary>
         /// Calls the destructor of T and adds the chunk to the free list.
         /// </summary>
-        void Destroy(T* ptr);
+        /// <returns>if the destroy was successful</returns>
+        bool Destroy(T* ptr);
 
         /// <summary>
         /// Resets the free list and allocator bookkeeping.
@@ -159,12 +162,19 @@ namespace memsys {
     }
 
     template<class T, usize Capacity>
-    void PoolAllocatorIso<T, Capacity>::Destroy(T* ptr) {
-        assert(ptr != nullptr && "PoolAllocatorIso: Free: pointer is nullptr, cannot free!");
+    bool PoolAllocatorIso<T, Capacity>::Destroy(T* ptr) {
+        if (!ptr) {
+#ifdef _SPIKE_DEBUG
+            Debug::LogWarning("PoolAllocatorIso: DestroyObject called with nullptr.");
+#endif
+            return true; // not technically an error
+        }
 
         if (!is_pointer_owned(ptr, _start, _end)) {
-            assert(false && "PoolAllocatorIso: Free: pointer is not owned!");
-            return;
+#ifdef _SPIKE_DEBUG
+            Debug::LogWarning("PoolAllocatorIso: DestroyObject: pointer is not owned by this pool.");
+#endif
+            return false;
         }
 
         std::destroy_at(ptr);

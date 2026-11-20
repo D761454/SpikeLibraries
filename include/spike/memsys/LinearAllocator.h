@@ -48,10 +48,12 @@ File Summary:
 
 #include <memory>
 #include <utility>
-#include <cassert>
 #include <cstddef>
 
 #include "spike/def_aliases.h"
+#ifdef _SPIKE_DEBUG
+#include "spike/debugl/debug.hpp"
+#endif
 
 #include "spike/memsys/Allocator.h"
 
@@ -72,7 +74,11 @@ namespace memsys {
 
 	public:
 		LinearAllocator(const void* memoryBase, const usize memorySize) : _memoryBase(memoryBase), _memorySize(memorySize), _allocationCount(0), _allocatedMemory(0) {
-			assert(memoryBase != nullptr && "LinearAllocator: Memory base is nullptr!");
+			if (!memoryBase) {
+#ifdef _SPIKE_DEBUG
+				Debug::LogWarning("LinearAllocator: Memory base is nullptr!");
+#endif
+			}
 		}
 
 		~LinearAllocator() { this->Reset(); }
@@ -92,13 +98,6 @@ namespace memsys {
 		/// <returns>pointer to the allocated object or nulltpr if it could not be allocated</returns>
 		template<typename T, typename... Args>
 		[[nodiscard]] T* Allocate(Args&&... args);
-
-		/// <summary>
-		/// LinearAllocator: Free: Cannot Free Memory Individually!
-		/// </summary>
-		void Free(void* ptr) {
-			assert(0 && "LinearAllocator: Free: Cannot Free Memory Individually!");
-		}
 
 		/// <summary>
 		/// Resets the allocators memory usage and allocation count pointers to 0
@@ -123,7 +122,12 @@ namespace memsys {
 #pragma region Implementation
 
 	void* LinearAllocator::Allocate(usize size, usize alignment) {
-		assert(size > 0 && "LinearAllocator: Memory allocation must have a size > 0!");
+		if (!_memoryBase) {
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("LinearAllocator: Allocate: Memory base is nullptr!");
+#endif
+			return nullptr;
+		}
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
@@ -142,6 +146,13 @@ namespace memsys {
 
 	template<typename T, typename... Args>
 	T* LinearAllocator::Allocate(Args&&... args) {
+		if (!_memoryBase) {
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("LinearAllocator: Allocate: Memory base is nullptr!");
+#endif
+			return nullptr;
+		}
+
 		i32 size = sizeof(T);
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;

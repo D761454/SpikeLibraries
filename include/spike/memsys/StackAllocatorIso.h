@@ -54,13 +54,13 @@ File Summary:
 #endif
 #include <memory>
 #include <utility>
-#include <cassert>
 #include <vector>
 #include <cstddef>
-#include <algorithm>
 
 #include "spike/def_aliases.h"
+#ifdef _SPIKE_DEBUG
 #include "spike/debugl/debug.hpp"
+#endif
 
 #include "spike/memsys/Allocator.h"
 
@@ -78,8 +78,8 @@ namespace memsys {
 		const void* _memoryBase;
 		const usize _memorySize;
 
-		const uptr _start;
-		const uptr _end;
+		uptr _start;
+		uptr _end;
 
 		std::vector<MemoryHeader*> _stack;
 		std::vector<MemoryHeader*> _toFree;
@@ -93,7 +93,17 @@ namespace memsys {
 			_start(reinterpret_cast<uptr>(_memoryBase) + (sizeof(MemoryHeader) + sizeof(uptr))),
 			_end(reinterpret_cast<uptr>(_memoryBase) + memorySize)
 		{
-			assert(_memoryBase != nullptr && "StackAllocatorIso: Memory base is nullptr!");
+			if (!_memoryBase) {
+#ifdef _SPIKE_DEBUG
+				Debug::LogWarning("StackAllocatorIso: Memory base is nullptr!");
+#endif
+				_start = 0;
+				_end = 0;
+				return;
+			}
+
+			_start = reinterpret_cast<uptr>(_memoryBase) + (sizeof(MemoryHeader) + sizeof(uptr));
+			_end = reinterpret_cast<uptr>(_memoryBase) + memorySize;
 		}
 
 		~StackAllocatorIso() { 
@@ -123,7 +133,7 @@ namespace memsys {
 		/// If the chunk if not at the back of the stack, it is added to a free list for handling on a subsequent free call.
 		/// </summary>
 		/// <param name="ptr">pointer to the memory chunk to be freed</param>
-		void Free(void* ptr);
+		bool Free(void* ptr);
 
 		/// <summary>
 		/// Sets the memory usage and allocation count to 0, clearing the stack and toFree lists.
@@ -142,7 +152,19 @@ namespace memsys {
 #pragma region Implementation
 
 	void* StackAllocatorIso::Allocate(usize size, usize alignment) {
-		assert(size > 0 && "StackAllocator: Memory allocation must have a size > 0!");
+		if (!_memoryBase) {
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("StackAllocatorIso: Allocate: Memory base is nullptr!");
+#endif
+			return nullptr;
+		}
+		if (size <= 0) {
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("StackAllocatorIso: Allocate: allocation must have a size > 0!");
+#endif
+			return nullptr;
+		}
+
 		const usize headerSize = sizeof(MemoryHeader);
 		const usize offsetStorageSize = sizeof(uptr);
 
@@ -160,7 +182,9 @@ namespace memsys {
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
 
 		if (_allocatedMemory + totalSize > _memorySize) {
+#ifdef _SPIKE_DEBUG
 			Debug::LogError("Cannot Allocate to stack allocator, no free space to fit object of size: ", size);
+#endif
 			return nullptr;
 		}
 
@@ -179,6 +203,13 @@ namespace memsys {
 
 	template<typename T, typename... Args>
 	T* StackAllocatorIso::Allocate(Args&&... args) {
+		if (!_memoryBase) {
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("StackAllocatorIso: Allocate: Memory base is nullptr!");
+#endif
+			return nullptr;
+		}
+
 		const usize objectSize = sizeof(T);
 		const usize headerSize = sizeof(MemoryHeader);
 		const usize objectAlignment = alignof(T);
@@ -198,7 +229,9 @@ namespace memsys {
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
 
 		if (_allocatedMemory + totalSize > _memorySize) {
+#ifdef _SPIKE_DEBUG
 			Debug::LogError("Cannot Allocate to stack allocator, no free space to fit object of size: ", objectSize);
+#endif
 			return nullptr;
 		}
 
@@ -223,12 +256,19 @@ namespace memsys {
 		}
 	}
 
-	void StackAllocatorIso::Free(void* ptr) {
-		assert(ptr && "StackAllocator: Free: Cannot Free a nullptr!");
+	bool StackAllocatorIso::Free(void* ptr) {
+		if (!ptr) {
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("StackAllocatorIso: Free: Cannot Free a nullptr!");
+#endif
+			return true; // not technically an error
+		}
 
 		if (!is_pointer_owned(ptr, _start, _end)) {
-			assert(false && "StackAllocator: Free: pointer is not owned!");
-			return;
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("StackAllocatorIso: Free: pointer is not owned!");
+#endif
+			return false;
 		}
 
 		const usize offsetStorageSize = sizeof(uptr);
@@ -236,7 +276,12 @@ namespace memsys {
 		MemoryHeader* mH = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(ptr) - offsetToHeader);
 
 #if _DEBUG
-		assert(mH->checkVal == kCheckVal && "StackAllocator: Free: Memory corruption detected! CheckVal does not match expected value.");
+		if (mH->checkVal != kCheckVal) {
+#ifdef _SPIKE_DEBUG
+			Debug::LogWarning("StackAllocatorIso: Free: Memory corruption detected! CheckVal does not match expected value.");
+#endif
+			return false;
+		}
 #endif
 
 		if (mH == _stack.back()) {
@@ -247,11 +292,8 @@ namespace memsys {
 		}
 		else {
 			_toFree.push_back(mH);
-			return;
+			return true;
 		}
-
-		// this method allows freeing of suballocations without wiping 
-		// live allocations if the suballocation to be deleted came before
 
 		bool loop = true;
 		while (loop) {
@@ -267,6 +309,8 @@ namespace memsys {
 				loop = false;
 			}
 		}
+
+		return true;
 	}
 
 	void StackAllocatorIso::Reset() noexcept {
