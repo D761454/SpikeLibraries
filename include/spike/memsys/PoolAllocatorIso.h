@@ -53,9 +53,6 @@ File Summary:
 #include <array>
 
 #include "spike/def_aliases.h"
-#ifdef _SPIKE_DEBUG
-#include "spike/debugl/debug.hpp"
-#endif
 
 #include "spike/memsys/Allocator.h"
 
@@ -164,16 +161,10 @@ namespace memsys {
     template<class T, usize Capacity>
     bool PoolAllocatorIso<T, Capacity>::Destroy(T* ptr) {
         if (!ptr) {
-#ifdef _SPIKE_DEBUG
-            Debug::LogWarning("PoolAllocatorIso: DestroyObject called with nullptr.");
-#endif
             return true; // not technically an error
         }
 
         if (!is_pointer_owned(ptr, _start, _end)) {
-#ifdef _SPIKE_DEBUG
-            Debug::LogWarning("PoolAllocatorIso: DestroyObject: pointer is not owned by this pool.");
-#endif
             return false;
         }
 

@@ -53,9 +53,6 @@ File Summary:
 #include <array>
 
 #include "spike/def_aliases.h"
-#ifdef _SPIKE_DEBUG
-#include "spike/debugl/debug.hpp"
-#endif
 
 #include "spike/memsys/Allocator.h"
 
@@ -101,18 +98,12 @@ namespace memsys {
             _memorySize(memorySize) {
 
             if (!memoryBase) {
-#ifdef _SPIKE_DEBUG
-                Debug::LogWarning("Pool Allocator: Memory base is nullptr!");
                 _start = 0;
                 _end = 0;
                 return;
-#endif
             }
 
             if (memorySize != Capacity * kChunkStride) {
-#ifdef _SPIKE_DEBUG
-                Debug::LogWarning("PoolAllocator: Memory size must be equal to Capacity * aligned sizeof(T)!");
-#endif
                 return;
             }
 
@@ -219,16 +210,10 @@ namespace memsys {
     template<class T, usize Capacity>
     bool PoolAllocator<T, Capacity>::Destroy(T* ptr) {
         if (!ptr) {
-#ifdef _SPIKE_DEBUG
-            Debug::LogWarning("PoolAllocator: DestroyObject called with nullptr.");
-#endif
             return true; // not technically an error
         }
 
         if (!is_pointer_owned(ptr, _start, _end)) {
-#ifdef _SPIKE_DEBUG
-            Debug::LogWarning("PoolAllocator: DestroyObject: pointer is not owned by this pool.");
-#endif
             return false;
         }
 

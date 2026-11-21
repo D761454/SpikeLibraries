@@ -51,9 +51,6 @@ File Summary:
 #include <cstddef>
 
 #include "spike/def_aliases.h"
-#ifdef _SPIKE_DEBUG
-#include "spike/debugl/debug.hpp"
-#endif
 
 #include "spike/memsys/Allocator.h"
 
@@ -75,9 +72,7 @@ namespace memsys {
 	public:
 		LinearAllocator(const void* memoryBase, const usize memorySize) : _memoryBase(memoryBase), _memorySize(memorySize), _allocationCount(0), _allocatedMemory(0) {
 			if (!memoryBase) {
-#ifdef _SPIKE_DEBUG
-				Debug::LogWarning("LinearAllocator: Memory base is nullptr!");
-#endif
+
 			}
 		}
 
@@ -123,9 +118,6 @@ namespace memsys {
 
 	void* LinearAllocator::Allocate(usize size, usize alignment) {
 		if (!_memoryBase) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogWarning("LinearAllocator: Allocate: Memory base is nullptr!");
-#endif
 			return nullptr;
 		}
 
@@ -147,9 +139,6 @@ namespace memsys {
 	template<typename T, typename... Args>
 	T* LinearAllocator::Allocate(Args&&... args) {
 		if (!_memoryBase) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogWarning("LinearAllocator: Allocate: Memory base is nullptr!");
-#endif
 			return nullptr;
 		}
 

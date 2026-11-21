@@ -57,9 +57,6 @@ File Summary:
 #include <utility>
 
 #include "spike/def_aliases.h"
-#ifdef _SPIKE_DEBUG
-#include "spike/debugl/debug.hpp"
-#endif
 
 #include "spike/memsys/Allocator.h"
 #include "spike/memsys/PoolAllocatorIso.h"
@@ -140,9 +137,6 @@ namespace memsys {
 
             PoolAlloc* pa = pool->allocator;
             if (!pa) {
-#ifdef _SPIKE_DEBUG
-                Debug::LogWarning("FATAL: DPA: PoolAllocatorIso is nullptr, cannot free memory chunk!");
-#endif
                 continue;
             }
 
@@ -171,9 +165,6 @@ namespace memsys {
                 T* obj = pool->allocator->Create(std::forward<Args>(args)...);
 
                 if (!obj) {
-#ifdef _SPIKE_DEBUG
-                    Debug::LogError("DynamicPoolAllocatorIso: Failed to allocate memory for new object!");
-#endif
                     return nullptr;
                 }
 
@@ -189,9 +180,6 @@ namespace memsys {
         T* obj = newPool->allocator->Create(std::forward<Args>(args)...);
 
         if (!obj) {
-#ifdef _SPIKE_DEBUG
-            Debug::LogError("DynamicPoolAllocatorIso: Failed to allocate memory for new object!");
-#endif
             return nullptr;
         }
 
@@ -202,9 +190,6 @@ namespace memsys {
     template<class T, usize Capacity>
     bool DynamicPoolAllocatorIso<T, Capacity>::Destroy(T* obj) {
         if (!obj) {
-#ifdef _SPIKE_DEBUG
-            Debug::LogWarning("DynamicPoolAllocatorIso: DestroyObject called with nullptr.");
-#endif
             return true;
         }
 
@@ -215,9 +200,6 @@ namespace memsys {
             if (is_pointer_owned(obj, pool->allocator->GetStart(), pool->allocator->GetEnd())) {
                 auto it = std::find(pool->allocatedObjects.begin(), pool->allocatedObjects.end(), obj);
                 if (it == pool->allocatedObjects.end()) {
-#ifdef _SPIKE_DEBUG
-                    Debug::LogError("DynamicPoolAllocator: Attempted to free stale pointer or double-free detected.");
-#endif
                     return false;
                 }
 
@@ -226,9 +208,6 @@ namespace memsys {
                 return true;
             }
         }
-#ifdef _SPIKE_DEBUG
-        Debug::LogError("DynamicPoolAllocatorIso: Failed to find pool for object to destroy. Pointer is likely stale or corrupted.");
-#endif
         return false;
     }
 

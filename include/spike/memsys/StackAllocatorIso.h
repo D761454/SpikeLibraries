@@ -58,9 +58,6 @@ File Summary:
 #include <cstddef>
 
 #include "spike/def_aliases.h"
-#ifdef _SPIKE_DEBUG
-#include "spike/debugl/debug.hpp"
-#endif
 
 #include "spike/memsys/Allocator.h"
 
@@ -94,9 +91,6 @@ namespace memsys {
 			_end(reinterpret_cast<uptr>(_memoryBase) + memorySize)
 		{
 			if (!_memoryBase) {
-#ifdef _SPIKE_DEBUG
-				Debug::LogWarning("StackAllocatorIso: Memory base is nullptr!");
-#endif
 				_start = 0;
 				_end = 0;
 				return;
@@ -153,15 +147,9 @@ namespace memsys {
 
 	void* StackAllocatorIso::Allocate(usize size, usize alignment) {
 		if (!_memoryBase) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogWarning("StackAllocatorIso: Allocate: Memory base is nullptr!");
-#endif
 			return nullptr;
 		}
 		if (size <= 0) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogWarning("StackAllocatorIso: Allocate: allocation must have a size > 0!");
-#endif
 			return nullptr;
 		}
 
@@ -182,9 +170,6 @@ namespace memsys {
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
 
 		if (_allocatedMemory + totalSize > _memorySize) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogError("Cannot Allocate to stack allocator, no free space to fit object of size: ", size);
-#endif
 			return nullptr;
 		}
 
@@ -204,9 +189,6 @@ namespace memsys {
 	template<typename T, typename... Args>
 	T* StackAllocatorIso::Allocate(Args&&... args) {
 		if (!_memoryBase) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogWarning("StackAllocatorIso: Allocate: Memory base is nullptr!");
-#endif
 			return nullptr;
 		}
 
@@ -229,9 +211,6 @@ namespace memsys {
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
 
 		if (_allocatedMemory + totalSize > _memorySize) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogError("Cannot Allocate to stack allocator, no free space to fit object of size: ", objectSize);
-#endif
 			return nullptr;
 		}
 
@@ -258,16 +237,10 @@ namespace memsys {
 
 	bool StackAllocatorIso::Free(void* ptr) {
 		if (!ptr) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogWarning("StackAllocatorIso: Free: Cannot Free a nullptr!");
-#endif
 			return true; // not technically an error
 		}
 
 		if (!is_pointer_owned(ptr, _start, _end)) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogWarning("StackAllocatorIso: Free: pointer is not owned!");
-#endif
 			return false;
 		}
 
@@ -277,9 +250,6 @@ namespace memsys {
 
 #if _DEBUG
 		if (mH->checkVal != kCheckVal) {
-#ifdef _SPIKE_DEBUG
-			Debug::LogWarning("StackAllocatorIso: Free: Memory corruption detected! CheckVal does not match expected value.");
-#endif
 			return false;
 		}
 #endif
