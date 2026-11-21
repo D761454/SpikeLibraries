@@ -62,15 +62,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <cstdlib>
 
 #include "spike/nivector.h"
 #include "spike/warning.h"
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
-#include "spike/sml/sml_core.h"
-#include "spike/sml/vector2.h"
-#include "spike/sml/vector3.h"
-#include "spike/sml/vector4.h"
 #include "spike/error.hpp"
 #include "spike/debugl/debug.hpp"
 
@@ -83,6 +80,9 @@ DISABLE_WARNING_POP
 
 #include "spike/assetimp/PostProcessing.h"
 #include "spike/assetimp/aicollection.h"
+#include "spike/assetimp/aivector2.h"
+#include "spike/assetimp/aivector3.h"
+#include "spike/assetimp/aivector4.h"
 #include "spike/assetimp/aimesh.h"
 #include "spike/assetimp/BaseImporter.h"
 
@@ -499,11 +499,11 @@ static inline const niVector<u8>* get_buffer_data(const GLTFData& gltf, const GL
 }
 
 namespace {
-	inline f32 dot(const sml::vector3& lhs, const sml::vector3& rhs) {
+	inline f32 dot(const assimp::vector3& lhs, const assimp::vector3& rhs) {
 		return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
 	}
 
-	inline sml::vector3 cross(const sml::vector3& lhs, const sml::vector3& rhs) {
+	inline assimp::vector3 cross(const assimp::vector3& lhs, const assimp::vector3& rhs) {
 		return {
 			lhs.y * rhs.z - lhs.z * rhs.y,
 			lhs.z * rhs.x - lhs.x * rhs.z,
@@ -511,7 +511,7 @@ namespace {
 		};
 	}
 
-	inline sml::vector3 normalize(const sml::vector3& v) {
+	inline assimp::vector3 normalize(const assimp::vector3& v) {
 		f32 lenSq = dot(v, v);
 		if (lenSq > 1e-8f) {
 			f32 invLen = 1.0f / std::sqrt(lenSq);
@@ -523,10 +523,10 @@ namespace {
 
 template<typename T>
 inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
-	std::vector<sml::vector3> tan1, tan2;
+	std::vector<assimp::vector3> tan1, tan2;
 	tan1.resize(model.vertices48.size()); tan2.resize(model.vertices48.size());
 
-	for (u32 i = 0; i < static_cast<u32>(idxBuff.size()); i += 3) {
+	for (usize i = 0; i < idxBuff.size(); i += 3) {
 		T i1 = idxBuff[i];
 		T i2 = idxBuff[i + 1];
 		T i3 = idxBuff[i + 2];
@@ -550,13 +550,13 @@ inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 		f32 r = (s1 * t2 - s2 * t1);
 		r = (std::abs(r) < 1e-8f) ? 1.0f : (1.0f / r);
 
-		sml::vector3 sdir = { // tangent dir
+		assimp::vector3 sdir = { // tangent dir
 			(t2 * x1 - t1 * x2) * r,
 			(t2 * y1 - t1 * y2) * r,
 			(t2 * z1 - t1 * z2) * r
 		};
 
-		sml::vector3 tdir = { // bitangent dir
+		assimp::vector3 tdir = { // bitangent dir
 			(s1 * x2 - s2 * x1) * r,
 			(s1 * y2 - s2 * y1) * r,
 			(s1 * z2 - s2 * z1) * r
@@ -571,20 +571,20 @@ inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 		tan2[i3] += tdir;
 	}
 
-	for (u32 i = 0; i < static_cast<u32>(idxBuff.size()); ++i) {
-		const sml::vector3& norm = model.vertices48[i].normal;
-		const sml::vector3& t = tan1[i];
-		const sml::vector3& b = tan2[i];
+	for (usize i = 0; i < idxBuff.size(); ++i) {
+		const assimp::vector3& norm = model.vertices48[i].normal;
+		const assimp::vector3& t = tan1[i];
+		const assimp::vector3& b = tan2[i];
 
-		sml::vector3 tanXYZ = normalize(t - norm * dot(norm, t)); // Gram-Schmidt orthogonalize
+		assimp::vector3 tanXYZ = normalize(t - norm * dot(norm, t)); // Gram-Schmidt orthogonalize
 		f32 h = (dot(cross(norm, t), b) < 0.f) ? -1.f : 1.f;
-		model.vertices48[i].tangent.Set(tanXYZ.x, tanXYZ.y, tanXYZ.z, h);
+		model.vertices48[i].tangent = { tanXYZ.x, tanXYZ.y, tanXYZ.z, h };
 	}
 }
 
 template<typename T>
 inline void flip_winding_order(std::vector<T>& indexBuffer) {
-	for (u32 i = 0; i < static_cast<u32>(indexBuffer.size()); i += 3) {
+	for (usize i = 0; i < indexBuffer.size(); i += 3) {
 		std::swap(indexBuffer[i + 1], indexBuffer[i + 2]);
 	}
 }
@@ -639,12 +639,12 @@ static void construct_mesh(const GLTFData& gltf, const u32 idx, const string& pa
 
 			for (u32 j = 0; j < vertexCount; j++) {
 				model.vertices48.emplace_back(
-					sml::vector3(posBuffer[j * 3], posBuffer[j * 3 + 1], posBuffer[j * 3 + 2]),
-					norBuffer ? sml::vector3(norBuffer[j * 3], norBuffer[j * 3 + 1], norBuffer[j * 3 + 2]) : sml::vector3(),
-					tcoBuffer ? sml::vector2(tcoBuffer[j * 2], ppSteps & assimp::PostProcessingFlags_flipUVs ? tcoBuffer[j * 2 + 1] * -1 : tcoBuffer[j * 2 + 1]) : sml::vector2()
+					assimp::vector3(posBuffer[j * 3], posBuffer[j * 3 + 1], posBuffer[j * 3 + 2]),
+					norBuffer ? assimp::vector3(norBuffer[j * 3], norBuffer[j * 3 + 1], norBuffer[j * 3 + 2]) : assimp::vector3(),
+					tcoBuffer ? assimp::vector2(tcoBuffer[j * 2], ppSteps & assimp::PostProcessingFlags_flipUVs ? tcoBuffer[j * 2 + 1] * -1 : tcoBuffer[j * 2 + 1]) : assimp::vector2()
 				);
 
-				if (tanBuffer && !(ppSteps & assimp::PostProcessingFlags_flipUVs)) model.vertices48[arrSize + j].tangent = sml::vector4{ tanBuffer[j * 3], tanBuffer[j * 3 + 1], tanBuffer[j * 3 + 2], tanBuffer[j * 3 + 3] };
+				if (tanBuffer && !(ppSteps & assimp::PostProcessingFlags_flipUVs)) model.vertices48[arrSize + j].tangent = assimp::vector4{ tanBuffer[j * 3], tanBuffer[j * 3 + 1], tanBuffer[j * 3 + 2], tanBuffer[j * 3 + 3] };
 			}
 
 			if (!tanBuffer || ppSteps & assimp::PostProcessingFlags_flipUVs) {
@@ -670,9 +670,9 @@ static void construct_mesh(const GLTFData& gltf, const u32 idx, const string& pa
 
 			for (u32 j = 0; j < vertexCount; j++) {
 				model.vertices32.emplace_back(
-					sml::vector3(posBuffer[j * 3], posBuffer[j * 3 + 1], posBuffer[j * 3 + 2]),
-					norBuffer ? sml::vector3(norBuffer[j * 3], norBuffer[j * 3 + 1], norBuffer[j * 3 + 2]) : sml::vector3(),
-					tcoBuffer ? sml::vector2(tcoBuffer[j * 2], ppSteps & assimp::PostProcessingFlags_flipUVs ? tcoBuffer[j * 2 + 1] * -1 : tcoBuffer[j * 2 + 1]) : sml::vector2()
+					assimp::vector3(posBuffer[j * 3], posBuffer[j * 3 + 1], posBuffer[j * 3 + 2]),
+					norBuffer ? assimp::vector3(norBuffer[j * 3], norBuffer[j * 3 + 1], norBuffer[j * 3 + 2]) : assimp::vector3(),
+					tcoBuffer ? assimp::vector2(tcoBuffer[j * 2], ppSteps & assimp::PostProcessingFlags_flipUVs ? tcoBuffer[j * 2 + 1] * -1 : tcoBuffer[j * 2 + 1]) : assimp::vector2()
 				);
 			}
 
@@ -709,7 +709,7 @@ static void construct_mesh(const GLTFData& gltf, const u32 idx, const string& pa
 		else flip_winding_order(model.indexBuffer16);
 	}
 
-	model.materialCount = sml::max(1, static_cast<u32>(matz.size()));
+	model.materialCount = std::max(1, static_cast<i32>(matz.size()));
 
 	scene->models.push_back(std::move(model));
 }

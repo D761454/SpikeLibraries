@@ -43,9 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 
 #include "spike/def_aliases.h"
-#ifdef _SPIKE_DEBUG
 #include "spike/debugl/debug.hpp"
-#endif
 
 #include "spike/memsys/StackAllocator.h"
 
@@ -117,16 +115,13 @@ namespace memsys {
 	}
 
 	void MemoryManager::LogMemoryUsage() const {
-#ifdef _SPIKE_DEBUG
 		if (_allocator) {
 			Debug::Log("Current Memory Usage: {} / {}", _allocator->GetAllocatedMemory(), _allocator->GetMemorySize());
 		}
 		else Debug::LogError("WARNING! No primary allocator for memory manager!");
-#endif
 	}
 
 	void MemoryManager::IntegrityCheck() const {
-#ifdef _SPIKE_DEBUG
 		if (_allocatedChunks.size() > 0) {
 			Debug::LogError("!!! MEMORY LEAK !!!");
 
@@ -145,7 +140,6 @@ namespace memsys {
 				}
 			}
 		}
-#endif
 	}
 
 	const usize MemoryManager::GetTotalAllocatedMemory() const noexcept {
