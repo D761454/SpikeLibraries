@@ -12,11 +12,6 @@ option(SPIKE_LIBRARIES_BUILD_ASSET_IMPORTER "Build the Asset Importer library" O
 option(SPIKE_LIBRARIES_BUILD_FILE_ACCESSOR "Build the File System library" ON)
 option(SPIKE_LIBRARIES_BUILD_IO_COMP "Build the Compression library" ON)
 
-option(SPIKE_LIBRARIES_BUILD_MEMORY_SYSTEM_ISOLATED "Build the Memory System library with no spike dependencies" OFF)
-option(SPIKE_LIBRARIES_BUILD_ASSET_IMPORTER_ISOLATED "Build the Asset Importer library with no spike dependencies" OFF)
-option(SPIKE_LIBRARIES_BUILD_FILE_ACCESSOR_ISOLATED "Build the File System library with no spike dependencies" OFF)
-option(SPIKE_LIBRARIES_BUILD_IO_COMP_ISOLATED "Build the Compression library with no spike dependencies" OFF)
-
 if(NOT DEFINED ENV{FBXSDK_ROOT})
     message(WARNING "FBXSDK_ROOT environment variable not set!\n"
 		"Please download the Autodesk FBX SDK and set FBXSDK_ROOT to point to its root directory.")
