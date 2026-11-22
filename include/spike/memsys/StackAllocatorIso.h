@@ -293,10 +293,7 @@ namespace memsys {
 		MemoryHeader* mH = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(ptr) - offsetToHeader);
 
 #if _DEBUG
-		if (mH->checkVal != kCheckVal) {
-			assert(false && "Check value in memory header for object within the stack allocator is corrupted!");
-			return false;
-		}
+		assert(mH->checkVal == kCheckVal && "Check value in memory header for object within the stack allocator is corrupted!");
 #endif
 
 		if (mH == _stack.back()) {
@@ -444,10 +441,7 @@ namespace memsys {
 		MemoryHeader* mH = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(ptr) - offsetToHeader);
 
 #if _DEBUG
-		if (mH->checkVal != kCheckVal) {
-			assert(false && "Check value in memory header for object within the stack allocator is corrupted!");
-			return errlib::Error(errlib::ErrorCode_memoryCorruption, "StackAllocatorIso.CheckedFree: checkVal for memory header is not correct!, potential memory corruption detected!");
-		}
+		assert(mH->checkVal == kCheckVal && "Check value in memory header for object within the stack allocator is corrupted!");
 #endif
 
 		if (mH == _stack.back()) {

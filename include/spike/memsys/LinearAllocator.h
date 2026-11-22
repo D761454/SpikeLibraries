@@ -75,6 +75,8 @@ namespace memsys {
 		LinearAllocator(const void* memoryBase, const usize memorySize) : _memoryBase(memoryBase), _memorySize(memorySize), _allocationCount(0), _allocatedMemory(0) {
 			if (!memoryBase)
 				Report("LinearAllocator: memory base is nullptr!");
+			if (memorySize == 0)
+				Report("LinearAllocator: memory size is 0!");
 		}
 
 		~LinearAllocator() { this->Reset(); }
