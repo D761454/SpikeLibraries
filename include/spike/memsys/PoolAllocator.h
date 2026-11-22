@@ -194,11 +194,12 @@ namespace memsys {
         bool freed = false;
         Chunk* freeC = _free;
 
-        while (freeC) {
+        do {
             assert(freeC != chunk && "chunk is already free during destroy, double free or stale pointer!");
             if (freeC == chunk) freed = true;
-        }
-        if (freed) return;
+            freeC = freeC->next;
+        }  while (freeC && !freed);
+        if (freed) return false;
 
         bool aligned = false;
         for (usize i = 1; i < Capacity; ++i) {
@@ -213,7 +214,6 @@ namespace memsys {
 
         --_allocationCount;
         _allocatedMemory = (_allocatedMemory >= kChunkStride) ? (_allocatedMemory - kChunkStride) : 0;
-        _allocatedObjects.erase(chunk);
         return true;
     }
 

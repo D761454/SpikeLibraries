@@ -171,11 +171,12 @@ namespace memsys {
         bool freed = false;
         Chunk* freeC = _free;
 
-        while (freeC) {
+        do {
             assert(freeC != chunk && "chunk is already free during destroy, double free or stale pointer!");
             if (freeC == chunk) freed = true;
-        }
-        if (freed) return;
+            freeC = freeC->next;
+        } while (freeC && !freed);
+        if (freed) return false;
 
         bool found = false;
         for (usize i = 0; i < Capacity; ++i) {
