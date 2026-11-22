@@ -50,8 +50,8 @@ File Summary:
 
 #include <memory>
 #include <utility>
-#include <array>
 #include <cassert>
+#include <unordered_set>
 
 #include "spike/def_aliases.h"
 
@@ -88,10 +88,6 @@ namespace memsys {
         uptr _start;
         uptr _end;
 
-#if _DEBUG
-        std::array<std::pair<bool, Chunk*>, Capacity> _checker{};
-#endif
-
     public:
         PoolAllocator(const void* memoryBase, const usize memorySize) : 
             _memoryBase(memoryBase),
@@ -117,12 +113,6 @@ namespace memsys {
             _free = reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase));
             Chunk* cur = _free;
 
-#if _DEBUG
-            for (usize i = 0; i < Capacity; ++i) {
-                _checker[i] = std::make_pair(false, reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i);
-            }
-#endif
-
             for (usize i = 1; i < Capacity; ++i) {
                 cur->next = reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i;
                 cur = cur->next;
@@ -147,24 +137,24 @@ namespace memsys {
         /// Calls the destructor of T and adds the chunk to the free list.
         /// </summary>
         /// <returns>if the destroy was successful</returns>
-bool Destroy(T* ptr);
+        bool Destroy(T* ptr);
 
-/// <summary>
-/// Resets the free list and allocator bookkeeping.
-/// This does NOT destroy outstanding objects; caller is responsible for destroying live objects first.
-/// </summary>
-void Reset();
+        /// <summary>
+        /// Resets the free list and allocator bookkeeping.
+        /// This does NOT destroy outstanding objects; caller is responsible for destroying live objects first.
+        /// </summary>
+        void Reset();
 
-inline const void* GetMemoryBase() const { return _memoryBase; }
-inline const u64 GetAllocationCount() const noexcept { return _allocationCount; }
-inline const usize GetAllocatedMemory() const noexcept { return _allocatedMemory; }
-inline const usize GetMemorySize() const noexcept { return _memorySize; }
+        inline const void* GetMemoryBase() const { return _memoryBase; }
+        inline const u64 GetAllocationCount() const noexcept { return _allocationCount; }
+        inline const usize GetAllocatedMemory() const noexcept { return _allocatedMemory; }
+        inline const usize GetMemorySize() const noexcept { return _memorySize; }
 
-inline const uptr GetStart() const noexcept { return _start; }
-inline const uptr GetEnd() const noexcept { return _end; }
+        inline const uptr GetStart() const noexcept { return _start; }
+        inline const uptr GetEnd() const noexcept { return _end; }
 
-PoolAllocator(const PoolAllocator&) = delete;
-PoolAllocator(PoolAllocator&&) = delete;
+        PoolAllocator(const PoolAllocator&) = delete;
+        PoolAllocator(PoolAllocator&&) = delete;
     };
 
 #pragma region Implementation
@@ -179,15 +169,6 @@ PoolAllocator(PoolAllocator&&) = delete;
         ++_allocationCount;
         _allocatedMemory += kChunkStride;
 
-#if _DEBUG
-        for (usize i = 0; i < Capacity; ++i) {
-            if (_checker[i].second == chunk) {
-                _checker[i].first = true;
-                break;
-            }
-        }
-#endif
-
         try {
             return std::construct_at(reinterpret_cast<T*>(chunk->storage), std::forward<Args>(args)...);
         }
@@ -197,15 +178,6 @@ PoolAllocator(PoolAllocator&&) = delete;
 
             --_allocationCount;
             _allocatedMemory = (_allocatedMemory >= kChunkStride) ? (_allocatedMemory - kChunkStride) : 0;
-
-#if _DEBUG
-            for (usize i = 0; i < Capacity; ++i) {
-                if (_checker[i].second == chunk) {
-                    _checker[i].first = false;
-                    break;
-                }
-            }
-#endif
 
             throw;
         }
@@ -219,29 +191,20 @@ PoolAllocator(PoolAllocator&&) = delete;
 
         Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
 
-#if _DEBUG
-        bool found = false;
-        for (usize i = 0; i < Capacity; ++i) {
-            if (_checker[i].second == chunk) {
-                if (!_checker[i].first)
-                    assert(false && "checker chunk is already marked false during destroy check, double free or stale pointer!");
+        bool freed = false;
+        Chunk* freeC = _free;
 
-                _checker[i].first = false;
-                found = true;
-                break;
-            }
+        while (freeC) {
+            assert(freeC != chunk && "chunk is already free during destroy, double free or stale pointer!");
+            if (freeC == chunk) freed = true;
         }
-        if (!found) return false;
-#else
-        bool found = false;
-        for (usize i = 0; i < Capacity; ++i) {
-            if (reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i) == chunk){
-                found = true;
-                break;
-            }
+        if (freed) return;
+
+        bool aligned = false;
+        for (usize i = 1; i < Capacity; ++i) {
+            if (reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i == ptr) aligned = true;
         }
-        if (!found) return false;
-#endif
+        if (!aligned) return false;
 
         chunk->next = _free;
         _free = chunk;
@@ -250,15 +213,31 @@ PoolAllocator(PoolAllocator&&) = delete;
 
         --_allocationCount;
         _allocatedMemory = (_allocatedMemory >= kChunkStride) ? (_allocatedMemory - kChunkStride) : 0;
+        _allocatedObjects.erase(chunk);
         return true;
     }
 
     template<class T, usize Capacity>
     void PoolAllocator<T, Capacity>::Reset() {
+        if (!_memoryBase) return;
+        if (_start == _end) return;
+
+        std::unordered_set<Chunk*> free;
+
+        Chunk* f = _free;
+        while (f) {
+            free.insert(f);
+            f = f->next;
+        }
+
         _free = reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase));
         Chunk* cur = _free;
 
         for (usize i = 1; i < Capacity; ++i) {
+            if (!free.contains(cur)) { // live object
+                std::destroy_at(reinterpret_cast<T*>(cur));
+            }
+
             cur->next = reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i;
             cur = cur->next;
         }
@@ -267,12 +246,6 @@ PoolAllocator(PoolAllocator&&) = delete;
 
         _allocationCount = 0;
         _allocatedMemory = 0;
-
-#if _DEBUG
-        for (usize i = 0; i < Capacity; ++i) {
-            _checker[i].first = false;
-        }
-#endif
     }
 
 #pragma endregion

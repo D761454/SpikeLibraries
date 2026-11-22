@@ -52,6 +52,7 @@ File Summary:
 #include <utility>
 #include <array>
 #include <cassert>
+#include <unordered_set>
 
 #include "spike/def_aliases.h"
 
@@ -167,29 +168,23 @@ namespace memsys {
 
         Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
 
-#if _DEBUG
-        bool found = false;
-        for (usize i = 0; i < Capacity; ++i) {
-            if (_checker[i].second == chunk) {
-                if (!_checker[i].first)
-                    assert(false && "checker chunk is already marked false during destroy check, double free or stale pointer!");
+        bool freed = false;
+        Chunk* freeC = _free;
 
-                _checker[i].first = false;
-                found = true;
-                break;
-            }
+        while (freeC) {
+            assert(freeC != chunk && "chunk is already free during destroy, double free or stale pointer!");
+            if (freeC == chunk) freed = true;
         }
-        if (!found) return false;
-#else
+        if (freed) return;
+
         bool found = false;
         for (usize i = 0; i < Capacity; ++i) {
-            if (reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i) == chunk){
+            if (&_pool[i] == chunk) {
                 found = true;
                 break;
             }
         }
         if (!found) return false;
-#endif
 
         chunk->next = _free;
         _free = chunk;
@@ -203,10 +198,23 @@ namespace memsys {
 
     template<class T, usize Capacity>
     void PoolAllocatorIso<T, Capacity>::Reset() {
-        _free = &_pool.front();
-        Chunk* cur = _free;
+        std::unordered_set<Chunk*> free;
 
-        for (usize i = 0; i + 1 < Capacity; ++i) _pool[i].next = &_pool[i + 1];
+        Chunk* f = _free;
+        while (f) {
+            free.insert(f);
+            f = f->next;
+        }
+
+        for (usize i = 0; i + 1 < Capacity; ++i) {
+            if (!free.contains(&_pool[i])) {
+                std::destroy_at(reinterpret_cast<T*>(&_pool[i]));
+            }
+
+            _pool[i].next = &_pool[i + 1];
+        }
+
+        _free = &_pool.front();
         _pool.back().next = nullptr;
 
         _allocationCount = 0;
