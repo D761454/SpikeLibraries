@@ -464,7 +464,7 @@ namespace memsys {
 		}
 		else {
 			for (auto f : _toFree) {
-				if (f == mH) return errlib::Error();
+				if (f == ptr) return errlib::Error();
 			}
 
 			_toFree.push_back(ptr);

@@ -76,8 +76,8 @@ namespace memsys {
 		uptr _start;
 		uptr _end;
 
-		std::vector<MemoryHeader*> _stack;
-		std::vector<MemoryHeader*> _toFree;
+		std::vector<void*> _stack;
+		std::vector<void*> _toFree;
 
 	public:
 		StackAllocator(const void* memoryBase, const usize memorySize) : 
@@ -203,9 +203,10 @@ namespace memsys {
 		_allocatedMemory += totalSize;
 		_allocationCount++;
 
-		_stack.push_back(mH);
+		void* ptr = reinterpret_cast<void*>(objectAddress);
 
-		return reinterpret_cast<void*>(objectAddress);
+		_stack.push_back(ptr);
+		return ptr;
 	}
 
 	template<typename T, typename... Args>
@@ -247,7 +248,7 @@ namespace memsys {
 		_allocatedMemory += totalSize;
 		_allocationCount++;
 
-		_stack.push_back(mH);
+		_stack.push_back(reinterpret_cast<void*>(objectAddress));
 
 		try {
 			return std::construct_at(reinterpret_cast<T*>(objectAddress), std::forward<Args>(args)...);
@@ -268,6 +269,12 @@ namespace memsys {
 		if (!is_pointer_owned(ptr, _start, _end)) return false;
 		if (_stack.empty()) return false;
 
+		bool valid = false;
+		for (auto l : _stack) {
+			if (ptr == l) valid = true;
+		}
+		if (!valid) return false;
+
 		const usize offsetStorageSize = sizeof(uptr);
 		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);
 		MemoryHeader* mH = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(ptr) - offsetToHeader);
@@ -286,17 +293,20 @@ namespace memsys {
 		}
 		else {
 			for (auto f : _toFree) {
-				if (f == mH) return true;
+				if (f == ptr) return true;
 			}
 
-			_toFree.push_back(mH);
+			_toFree.push_back(ptr);
 			return true;
 		}
 
 		auto i = _toFree.begin();
 		while (i != _toFree.end()) {
 			if ((*i) == _stack.back()) {
-				_allocatedMemory -= (*i)->size;
+				uptr offsetToHeader2 = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>((*i)) - offsetStorageSize);
+				MemoryHeader* mH2 = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>((*i)) - offsetToHeader2);
+
+				_allocatedMemory -= mH2->size;
 				_allocationCount--;
 				_stack.pop_back();
 				_toFree.erase(i);
@@ -345,9 +355,10 @@ namespace memsys {
 		_allocatedMemory += totalSize;
 		_allocationCount++;
 
-		_stack.push_back(mH);
+		void* ptr = reinterpret_cast<void*>(objectAddress);
 
-		return { reinterpret_cast<void*>(objectAddress), errlib::Error() };
+		_stack.push_back(ptr);
+		return { ptr, errlib::Error() };
 	}
 
 	template<typename T, typename... Args>
@@ -390,7 +401,7 @@ namespace memsys {
 		_allocatedMemory += totalSize;
 		_allocationCount++;
 
-		_stack.push_back(mH);
+		_stack.push_back(reinterpret_cast<void*>(objectAddress));
 
 		try {
 			return { std::construct_at(reinterpret_cast<T*>(objectAddress), std::forward<Args>(args)...), errlib::Error() };
@@ -416,6 +427,12 @@ namespace memsys {
 		if (_stack.empty())
 			return errlib::Error(errlib::ErrorCode_emptyContainer, "StackAllocator.CheckedFree: attempting to free from an empty stack!");
 
+		bool valid = false;
+		for (auto l : _stack) {
+			if (ptr == l) valid = true;
+		}
+		if (!valid) return errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not to an active object!");
+
 		const usize offsetStorageSize = sizeof(uptr);
 		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);
 		MemoryHeader* mH = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(ptr) - offsetToHeader);
@@ -434,17 +451,20 @@ namespace memsys {
 		}
 		else {
 			for (auto f : _toFree) {
-				if (f == mH) return errlib::Error();
+				if (f == ptr) return errlib::Error();
 			}
 
-			_toFree.push_back(mH);
+			_toFree.push_back(ptr);
 			return errlib::Error();
 		}
 
 		auto i = _toFree.begin();
 		while (i != _toFree.end()) {
 			if ((*i) == _stack.back()) {
-				_allocatedMemory -= (*i)->size;
+				uptr offsetToHeader2 = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>((*i)) - offsetStorageSize);
+				MemoryHeader* mH2 = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>((*i)) - offsetToHeader2);
+
+				_allocatedMemory -= mH2->size;
 				_allocationCount--;
 				_stack.pop_back();
 				_toFree.erase(i);
