@@ -240,6 +240,8 @@ namespace memsys {
 			--_allocationCount;
 			_allocatedMemory -= totalSize;
 
+			_stack.pop_back();
+
 			throw;
 		}
 	}
@@ -250,6 +252,10 @@ namespace memsys {
 		}
 
 		if (!is_pointer_owned(ptr, _start, _end)) {
+			return false;
+		}
+
+		if (_stack.empty()) {
 			return false;
 		}
 

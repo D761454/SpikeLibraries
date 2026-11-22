@@ -53,6 +53,7 @@ File Summary:
 #include <cstddef>
 
 #include "spike/def_aliases.h"
+#include "spike/error.hpp"
 
 #include "spike/memsys/Allocator.h"
 
@@ -104,12 +105,32 @@ namespace memsys {
 		[[nodiscard]] void* Allocate(usize size, usize alignment = alignof(std::max_align_t));
 
 		/// <summary>
+		/// Allocate a memory chunk of size with the specified alignment
+		/// </summary>
+		/// <param name="size">size of memory chunk to allocate</param>
+		/// <param name="alignment">alignment of object within memory chunk</param>
+		/// <returns>pointer to the memory chunk or nullptr if it could not be allocated, paired with an error 
+		/// output, allowing identification of the cause of an allocation failure</returns>
+		[[nodiscard]] std::pair<void*, errlib::Error> CheckedAllocate(usize size, usize alignment = alignof(std::max_align_t));
+
+		/// <summary>
 		/// Allocate a memory chunk of sizeof T, ensuring alignment of T is satisfied
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <returns>pointer to the allocated object or nulltpr if it could not be allocated</returns>
 		template<typename T, typename... Args>
 		[[nodiscard]] T* Allocate(Args&&... args);
+
+		/// <summary>
+		/// Allocate a memory chunk of sizeof T, ensuring alignment of T is satisfied
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="...Args"></typeparam>
+		/// <param name="...args">Arguments to be supplied to the constructor of T</param>
+		/// <returns>Pointer to T or nullptr if it could not be allocated, paired with an error 
+		/// output, allowing identification of the cause of an allocation failure</returns>
+		template<typename T, typename... Args>
+		[[nodiscard]] std::pair<T*, errlib::Error> CheckedAllocate(Args&&... args);
 
 		/// <summary>
 		/// Removes the allocated memory for the chunk at ptr, decrementing the allocation count and memory usage. 
@@ -229,6 +250,8 @@ namespace memsys {
 			--_allocationCount;
 			_allocatedMemory -= totalSize;
 
+			_stack.pop_back();
+
 			throw;
 		}
 	}
@@ -239,6 +262,10 @@ namespace memsys {
 		}
 
 		if (!is_pointer_owned(ptr, _start, _end)) {
+			return false;
+		}
+
+		if (_stack.empty()) {
 			return false;
 		}
 
