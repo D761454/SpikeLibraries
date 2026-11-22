@@ -128,6 +128,24 @@ namespace memsys {
 	}
 
 	using LogCallback = void (*)(std::string_view message, void* userData) noexcept;
+
+	class Allocator {
+	private:
+		inline static LogCallback _logCallback = nullptr;
+		inline static void* _logUserData = nullptr;
+
+	protected:
+		inline static void Report(std::string_view message) noexcept {
+			if (_logCallback)
+				_logCallback(message, _logUserData);
+		}
+
+	public:
+		static void SetLogCallback(LogCallback callback, void* userData = nullptr) noexcept {
+			_logCallback = callback;
+			_logUserData = userData;
+		}
+	};
 }
 
 #endif

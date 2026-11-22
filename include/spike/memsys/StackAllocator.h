@@ -65,7 +65,7 @@ namespace memsys {
 	/// You can push (allocate) and pop (free) memory in LIFO (Last-In, First-Out) order.
 	/// Object dtors must be handled manually as the stack can hold many different object types!
 	/// </summary>
-	class StackAllocator {
+	class StackAllocator : public Allocator {
 	private:
 		u64 _allocationCount;
 		usize _allocatedMemory;
@@ -76,16 +76,8 @@ namespace memsys {
 		uptr _start;
 		uptr _end;
 
-		inline static LogCallback _logCallback = nullptr;
-		inline static void* _logUserData = nullptr;
-
 		std::vector<MemoryHeader*> _stack;
 		std::vector<MemoryHeader*> _toFree;
-
-		inline static void Report(std::string_view message) noexcept {
-			if (_logCallback)
-				_logCallback(message, _logUserData);
-		}
 
 	public:
 		StackAllocator(const void* memoryBase, const usize memorySize) : 
@@ -159,11 +151,6 @@ namespace memsys {
 		inline const u64 GetAllocationCount() const noexcept { return _allocationCount; }
 		inline const usize GetAllocatedMemory() const noexcept { return _allocatedMemory; }
 		inline const usize GetMemorySize() const noexcept { return _memorySize; }
-
-		static void SetLogCallback(LogCallback callback, void* userData = nullptr) noexcept {
-			_logCallback = callback;
-			_logUserData = userData;
-		}
 
 		StackAllocator(const StackAllocator&) = delete;
 		StackAllocator(StackAllocator&&) = delete;
