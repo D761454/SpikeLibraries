@@ -46,6 +46,7 @@ File Summary:
 */
 
 #include <cassert>
+#include <string_view>
 
 #include "spike/def_aliases.h"
 #include "spike/error.hpp"
@@ -125,6 +126,8 @@ namespace memsys {
 		const uptr objAddr = reinterpret_cast<uptr>(ptr);
 		return (objAddr >= start && objAddr < end);
 	}
+
+	using LogCallback = void (*)(std::string_view message, void* userData) noexcept;
 }
 
 #endif

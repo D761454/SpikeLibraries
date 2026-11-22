@@ -51,6 +51,8 @@ File Summary:
 #include <utility>
 #include <vector>
 #include <cstddef>
+#include <string_view>
+#include <cassert>
 
 #include "spike/def_aliases.h"
 #include "spike/error.hpp"
@@ -74,8 +76,16 @@ namespace memsys {
 		uptr _start;
 		uptr _end;
 
+		inline static LogCallback _logCallback = nullptr;
+		inline static void* _logUserData = nullptr;
+
 		std::vector<MemoryHeader*> _stack;
 		std::vector<MemoryHeader*> _toFree;
+
+		inline static void Report(std::string_view message) noexcept {
+			if (_logCallback)
+				_logCallback(message, _logUserData);
+		}
 
 	public:
 		StackAllocator(const void* memoryBase, const usize memorySize) : 
@@ -85,6 +95,7 @@ namespace memsys {
 			_allocatedMemory(0) 
 		{
 			if (!memoryBase) {
+				Report("StackAllocator: memory base is nullptr!");
 				_start = 0;
 				_end = 0;
 				return;
@@ -149,6 +160,11 @@ namespace memsys {
 		inline const usize GetAllocatedMemory() const noexcept { return _allocatedMemory; }
 		inline const usize GetMemorySize() const noexcept { return _memorySize; }
 
+		static void SetLogCallback(LogCallback callback, void* userData = nullptr) noexcept {
+			_logCallback = callback;
+			_logUserData = userData;
+		}
+
 		StackAllocator(const StackAllocator&) = delete;
 		StackAllocator(StackAllocator&&) = delete;
 	};
@@ -166,7 +182,7 @@ namespace memsys {
 		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
 		usize headerAdjustment; 
-		if (!get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment).ok()) {
+		if (auto ex = get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment); !ex.ok()) {
 			return nullptr;
 		}
 		byte* headerAddress = baseAddress + headerAdjustment;
@@ -175,7 +191,7 @@ namespace memsys {
 
 		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
 		usize objectAdjustment;
-		if (!get_adjustment(reinterpret_cast<uptr>(objectAddress), alignment, objectAdjustment).ok()) {
+		if (auto ex = get_adjustment(reinterpret_cast<uptr>(objectAddress), alignment, objectAdjustment); !ex.ok()) {
 			return nullptr;
 		}
 		objectAddress += objectAdjustment;
@@ -262,10 +278,12 @@ namespace memsys {
 		}
 
 		if (!is_pointer_owned(ptr, _start, _end)) {
+			Report("StackAllocator.Free: pointer is not owned by this allocator!");
 			return false;
 		}
 
 		if (_stack.empty()) {
+			Report("StackAllocator.Free: attempting to free from an empty stack!");
 			return false;
 		}
 
@@ -275,6 +293,7 @@ namespace memsys {
 
 #if _DEBUG
 		if (mH->checkVal != kCheckVal) {
+			assert(false && "Check value in memory header for object within the stack allocator is corrupted!");
 			return false;
 		}
 #endif
