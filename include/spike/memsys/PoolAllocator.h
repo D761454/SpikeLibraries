@@ -51,8 +51,8 @@ File Summary:
 #include <memory>
 #include <utility>
 #include <cassert>
-#include <unordered_set>
-#include <algorithm>
+#include <type_traits>
+#include <limits>
 
 #include "spike/def_aliases.h"
 
@@ -66,6 +66,7 @@ namespace memsys {
     template<class T, usize Capacity>
     class PoolAllocator : Allocator {
         static_assert(Capacity > 0);
+        static_assert(std::is_nothrow_destructible_v<T>, "PoolAllocator requires a non-throwing T destructor");
 
     private:
         union Chunk {
@@ -89,13 +90,29 @@ namespace memsys {
 
     public:
         inline static constexpr usize kChunkSize = sizeof(Chunk);
+        static_assert(Capacity <= std::numeric_limits<usize>::max() / kChunkSize, "PoolAllocator pool size overflows usize");
 
-        PoolAllocator(const void* memoryBase, const usize memorySize) : 
+        PoolAllocator(const void* memoryBase, const usize memorySize) :
             _memoryBase(memoryBase),
             _memorySize(memorySize) {
 
             if (!memoryBase) {
                 Report("PoolAllocator: memory base is nullptr!");
+                _start = 0;
+                _end = 0;
+                return;
+            }
+
+            const uptr baseAddress = reinterpret_cast<uptr>(memoryBase);
+            if (baseAddress % alignof(Chunk) != 0) {
+                Report("PoolAllocator: memory base does not satisfy the pool chunk alignment requirement!");
+                _start = 0;
+                _end = 0;
+                return;
+            }
+
+            if (memorySize > static_cast<usize>(-1) - baseAddress) {
+                Report("PoolAllocator: memory range overflows the address space!");
                 _start = 0;
                 _end = 0;
                 return;
@@ -141,9 +158,9 @@ namespace memsys {
         bool Destroy(T* ptr);
 
         /// <summary>
-        /// Resets the free list and allocator bookkeeping.
+        /// Destroys all live objects and resets the free list and allocator bookkeeping.
         /// </summary>
-        void Reset();
+        void Reset() noexcept;
 
         inline const void* GetMemoryBase() const { return _memoryBase; }
         inline const u64 GetAllocationCount() const noexcept { return _allocationCount; }
@@ -152,6 +169,7 @@ namespace memsys {
 
         inline const uptr GetStart() const noexcept { return _start; }
         inline const uptr GetEnd() const noexcept { return _end; }
+        inline bool IsValid() const noexcept { return _start != _end; }
 
         PoolAllocator(const PoolAllocator&) = delete;
         PoolAllocator(PoolAllocator&&) = delete;
@@ -187,69 +205,55 @@ namespace memsys {
     template<class T, usize Capacity>
     bool PoolAllocator<T, Capacity>::Destroy(T* ptr) {
         if (!ptr) return true; // not technically an error
-        if (!is_pointer_owned(ptr, _start, _end)) return false;
+        if (!IsValid() || !is_pointer_owned(ptr, _start, _end)) return false;
 
-        Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
-
-        bool aligned = false;
+        Chunk* chunk = nullptr;
+        Chunk* base = reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase));
         for (usize i = 0; i < Capacity; ++i) {
-            if (reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i == ptr) aligned = true;
-        }
-        if (!aligned) return false;
-
-        bool freed = false;
-        Chunk* freeC = _free;
-
-        while (freeC) {
-            assert(freeC != chunk && "chunk is already free during destroy, double free or stale pointer!");
-            if (freeC == chunk) {
-                freed = true;
+            Chunk* candidate = base + i;
+            if (reinterpret_cast<T*>(candidate->storage) == ptr) {
+                chunk = candidate;
                 break;
             }
-            freeC = freeC->next;
         }
-        if (freed) return false;
+        if (!chunk || _allocationCount == 0) return false;
+
+        for (Chunk* freeChunk = _free; freeChunk; freeChunk = freeChunk->next) {
+            assert(freeChunk != chunk && "chunk is already free during destroy, double free or stale pointer!");
+            if (freeChunk == chunk) return false;
+        }
 
         std::destroy_at(ptr);
-
         chunk->next = _free;
         _free = chunk;
 
         --_allocationCount;
-        _allocatedMemory = (_allocatedMemory >= kChunkSize) ? (_allocatedMemory - kChunkSize) : 0;
+        _allocatedMemory -= kChunkSize;
         return true;
     }
 
     template<class T, usize Capacity>
-    void PoolAllocator<T, Capacity>::Reset() {
-        if (!_memoryBase) return;
-        if (_start == _end) return;
+    void PoolAllocator<T, Capacity>::Reset() noexcept {
+        if (!IsValid()) return;
 
-        std::unordered_set<Chunk*> free;
-
-        Chunk* f = _free;
-        while (f) {
-            free.insert(f);
-            f = f->next;
-        }
-
-        _free = reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase));
-        Chunk* cur = _free;
-
-        for (usize i = 1; i < Capacity; ++i) {
-            if (!free.contains(cur)) { // live object
-                std::destroy_at(reinterpret_cast<T*>(cur));
+        Chunk* base = reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase));
+        for (usize i = 0; i < Capacity; ++i) {
+            Chunk* candidate = base + i;
+            bool isFree = false;
+            for (Chunk* freeChunk = _free; freeChunk; freeChunk = freeChunk->next) {
+                if (freeChunk == candidate) {
+                    isFree = true;
+                    break;
+                }
             }
-
-            cur->next = reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i;
-            cur = cur->next;
+            if (!isFree)
+                std::destroy_at(reinterpret_cast<T*>(candidate->storage));
         }
 
-        if (!free.contains(cur)) { // live object
-            std::destroy_at(reinterpret_cast<T*>(cur));
-        }
-
-        cur->next = nullptr;
+        _free = base;
+        for (usize i = 0; i + 1 < Capacity; ++i)
+            (base + i)->next = base + i + 1;
+        (base + Capacity - 1)->next = nullptr;
 
         _allocationCount = 0;
         _allocatedMemory = 0;

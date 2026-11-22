@@ -52,8 +52,7 @@ File Summary:
 #include <utility>
 #include <array>
 #include <cassert>
-#include <unordered_set>
-#include <algorithm>
+#include <type_traits>
 
 #include "spike/def_aliases.h"
 
@@ -69,6 +68,7 @@ namespace memsys {
     template<class T, usize Capacity>
     class PoolAllocatorIso : Allocator {
         static_assert(Capacity > 0);
+        static_assert(std::is_nothrow_destructible_v<T>, "PoolAllocatorIso requires a non-throwing T destructor");
 
     private:
         union Chunk {
@@ -117,9 +117,9 @@ namespace memsys {
         bool Destroy(T* ptr);
 
         /// <summary>
-        /// Resets the free list and allocator bookkeeping.
+        /// Destroys all live objects and resets the free list and allocator bookkeeping.
         /// </summary>
-        void Reset();
+        void Reset() noexcept;
 
         inline const u64 GetAllocationCount() const noexcept { return _allocationCount; }
         inline const usize GetAllocatedMemory() const noexcept { return _allocatedMemory; }
@@ -164,63 +164,47 @@ namespace memsys {
         if (!ptr) return true; // not technically an error
         if (!is_pointer_owned(ptr, _start, _end)) return false;
 
-        Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
-
-        bool found = false;
+        Chunk* chunk = nullptr;
         for (usize i = 0; i < Capacity; ++i) {
-            if (&_pool[i] == chunk) {
-                found = true;
+            if (reinterpret_cast<T*>(_pool[i].storage) == ptr) {
+                chunk = &_pool[i];
                 break;
             }
         }
-        if (!found) return false;
+        if (!chunk || _allocationCount == 0) return false;
 
-        bool freed = false;
-        Chunk* freeC = _free;
-
-        while (freeC) {
-            assert(freeC != chunk && "chunk is already free during destroy, double free or stale pointer!");
-            if (freeC == chunk) {
-                freed = true;
-                break;
-            }
-            freeC = freeC->next;
+        for (Chunk* freeChunk = _free; freeChunk; freeChunk = freeChunk->next) {
+            assert(freeChunk != chunk && "chunk is already free during destroy, double free or stale pointer!");
+            if (freeChunk == chunk) return false;
         }
-        if (freed) return false;
 
         std::destroy_at(ptr);
-
         chunk->next = _free;
         _free = chunk;
 
         --_allocationCount;
-        _allocatedMemory = (_allocatedMemory >= sizeof(Chunk)) ? (_allocatedMemory - sizeof(Chunk)) : 0;
+        _allocatedMemory -= sizeof(Chunk);
         return true;
     }
 
     template<class T, usize Capacity>
-    void PoolAllocatorIso<T, Capacity>::Reset() {
-        std::unordered_set<Chunk*> free;
-
-        Chunk* f = _free;
-        while (f) {
-            free.insert(f);
-            f = f->next;
-        }
-
-        for (usize i = 0; i + 1 < Capacity; ++i) {
-            if (!free.contains(&_pool[i])) {
-                std::destroy_at(reinterpret_cast<T*>(&_pool[i]));
+    void PoolAllocatorIso<T, Capacity>::Reset() noexcept {
+        for (usize i = 0; i < Capacity; ++i) {
+            Chunk* candidate = &_pool[i];
+            bool isFree = false;
+            for (Chunk* freeChunk = _free; freeChunk; freeChunk = freeChunk->next) {
+                if (freeChunk == candidate) {
+                    isFree = true;
+                    break;
+                }
             }
-
-            _pool[i].next = &_pool[i + 1];
-        }
-
-        if (!free.contains(&_pool[Capacity-1])) {
-            std::destroy_at(reinterpret_cast<T*>(&_pool[Capacity-1]));
+            if (!isFree)
+                std::destroy_at(reinterpret_cast<T*>(candidate->storage));
         }
 
         _free = &_pool.front();
+        for (usize i = 0; i + 1 < Capacity; ++i)
+            _pool[i].next = &_pool[i + 1];
         _pool.back().next = nullptr;
 
         _allocationCount = 0;
