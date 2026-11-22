@@ -219,7 +219,13 @@ namespace memsys {
 
 		void* ptr = reinterpret_cast<void*>(objectAddress);
 
-		_stack.push_back(ptr);
+		try {
+			_stack.push_back(ptr);
+		}
+		catch (...) {
+
+		}
+
 		return ptr;
 	}
 
@@ -262,7 +268,12 @@ namespace memsys {
 		_allocatedMemory += totalSize;
 		_allocationCount++;
 
-		_stack.push_back(reinterpret_cast<void*>(objectAddress));
+		try {
+			_stack.push_back(reinterpret_cast<void*>(objectAddress));
+		}
+		catch (...) {
+
+		}
 
 		try {
 			return std::construct_at(reinterpret_cast<T*>(objectAddress), std::forward<Args>(args)...);

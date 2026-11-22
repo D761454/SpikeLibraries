@@ -128,7 +128,6 @@ namespace memsys {
     };
 
 #pragma region Implementation
-
     template<class T, usize Capacity>
     DynamicPoolAllocatorIso<T, Capacity>::~DynamicPoolAllocatorIso() {
         for (Pool* pool : pools) {
@@ -195,9 +194,10 @@ namespace memsys {
                     return false;
                 }
 
-                pool->allocatedObjects.erase(it);
-                pool->allocator->Destroy(obj);
-                return true;
+                if (pool->allocator->Destroy(obj)) {
+                    pool->allocatedObjects.erase(it);
+                    return true;
+                }
             }
         }
         Report("DynamicPoolAllocatorIso.Destroy: pointer is valid but does not exist within any pools of this dpa!");

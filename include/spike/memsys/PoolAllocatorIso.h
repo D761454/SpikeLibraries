@@ -53,6 +53,7 @@ File Summary:
 #include <array>
 #include <cassert>
 #include <unordered_set>
+#include <algorithm>
 
 #include "spike/def_aliases.h"
 
@@ -70,11 +71,9 @@ namespace memsys {
         static_assert(Capacity > 0);
 
     private:
-        static constexpr usize kChunkStride = align_up(sizeof(T), alignof(T));
-
         union Chunk {
             Chunk* next;
-            alignas(T) u8 storage[kChunkStride];
+            alignas(T) u8 storage[align_up(sizeof(T), alignof(T))];
 
             Chunk() noexcept : next(nullptr) {}
             ~Chunk() = default;
@@ -92,7 +91,7 @@ namespace memsys {
     public:
         PoolAllocatorIso() noexcept :
             _start(reinterpret_cast<uptr>(&_pool)),
-            _end(reinterpret_cast<uptr>(&_pool) + (Capacity * kChunkStride)) {
+            _end(reinterpret_cast<uptr>(&_pool) + (Capacity * sizeof(Chunk))) {
 
             for (usize i = 0; i + 1 < Capacity; ++i) _pool[i].next = &_pool[i + 1];
             _pool.back().next = nullptr;
@@ -119,19 +118,18 @@ namespace memsys {
 
         /// <summary>
         /// Resets the free list and allocator bookkeeping.
-        /// This does NOT destroy outstanding objects; caller is responsible for destroying live objects first.
         /// </summary>
         void Reset();
 
         inline const u64 GetAllocationCount() const noexcept { return _allocationCount; }
         inline const usize GetAllocatedMemory() const noexcept { return _allocatedMemory; }
-        inline const usize GetMemorySize() const noexcept { return Capacity * kChunkStride; }
+        inline const usize GetMemorySize() const noexcept { return Capacity * sizeof(Chunk); }
 
         inline const uptr GetStart() const noexcept { return _start; }
         inline const uptr GetEnd() const noexcept { return _end; }
 
-        PoolAllocator(const PoolAllocator&) = delete;
-        PoolAllocator(PoolAllocator&&) = delete;
+        PoolAllocatorIso(const PoolAllocatorIso&) = delete;
+        PoolAllocatorIso(PoolAllocatorIso&&) = delete;
     };
 
 #pragma region Implementation
@@ -144,7 +142,7 @@ namespace memsys {
         _free = _free->next;
 
         ++_allocationCount;
-        _allocatedMemory += kChunkStride;
+        _allocatedMemory += sizeof(Chunk);
 
         try {
             return std::construct_at(reinterpret_cast<T*>(chunk->storage), std::forward<Args>(args)...);
@@ -154,7 +152,7 @@ namespace memsys {
             _free = chunk;
 
             --_allocationCount;
-            _allocatedMemory = (_allocatedMemory >= kChunkStride) ? (_allocatedMemory - kChunkStride) : 0;
+            _allocatedMemory = (_allocatedMemory >= sizeof(Chunk)) ? (_allocatedMemory - sizeof(Chunk)) : 0;
 
             throw;
         }
@@ -180,20 +178,23 @@ namespace memsys {
         bool freed = false;
         Chunk* freeC = _free;
 
-        do {
+        while (freeC) {
             assert(freeC != chunk && "chunk is already free during destroy, double free or stale pointer!");
-            if (freeC == chunk) freed = true;
+            if (freeC == chunk) {
+                freed = true;
+                break;
+            }
             freeC = freeC->next;
-        } while (freeC && !freed);
+        }
         if (freed) return false;
+
+        std::destroy_at(ptr);
 
         chunk->next = _free;
         _free = chunk;
 
-        std::destroy_at(ptr);
-
         --_allocationCount;
-        _allocatedMemory = (_allocatedMemory >= kChunkStride) ? (_allocatedMemory - kChunkStride) : 0;
+        _allocatedMemory = (_allocatedMemory >= sizeof(Chunk)) ? (_allocatedMemory - sizeof(Chunk)) : 0;
         return true;
     }
 
@@ -213,6 +214,10 @@ namespace memsys {
             }
 
             _pool[i].next = &_pool[i + 1];
+        }
+
+        if (!free.contains(&_pool[Capacity-1])) {
+            std::destroy_at(reinterpret_cast<T*>(&_pool[Capacity-1]));
         }
 
         _free = &_pool.front();

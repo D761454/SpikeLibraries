@@ -75,7 +75,7 @@ namespace memsys {
 
         using PoolAlloc = PoolAllocator<T, Capacity>;
 
-        static constexpr usize poolSize = Capacity * align_up(sizeof(T), alignof(T));
+        inline static constexpr usize kPoolSize = PoolAlloc::kPoolSize;
         const char* id = nullptr;
 
     public:
@@ -95,12 +95,12 @@ namespace memsys {
 
     public:
         explicit DynamicPoolAllocator(const char* id = nullptr) : id(id) {
-            void* pa = RequestMemoryChunk(poolSize, id);
+            void* pa = RequestMemoryChunk(kPoolSize, id);
             if (!pa) {
                 Report("DynamicPoolAllocator: could not get memory chunk for the first pool!");
                 return;
             }
-            PoolAlloc* newPoolAlloc = new PoolAlloc(pa, poolSize);
+            PoolAlloc* newPoolAlloc = new PoolAlloc(pa, kPoolSize);
             pools.push_back(new Pool(newPoolAlloc));
         }
 
@@ -177,13 +177,13 @@ namespace memsys {
             }
         }
 
-        void* pa = RequestMemoryChunk(poolSize, id);
+        void* pa = RequestMemoryChunk(kPoolSize, id);
         if (!pa) {
             Report("DynamicPoolAllocator.Create: could not get memory chunk for a new pool!");
             return nullptr;
         }
 
-        PoolAlloc* newPoolAlloc = new PoolAlloc(pa, poolSize);
+        PoolAlloc* newPoolAlloc = new PoolAlloc(pa, kPoolSize);
         Pool* newPool = new Pool(newPoolAlloc);
         pools.push_front(newPool);
 
@@ -212,9 +212,10 @@ namespace memsys {
                     return false;
                 }
 
-                pool->allocatedObjects.erase(it);
-                pool->allocator->Destroy(obj);
-                return true;
+                if (pool->allocator->Destroy(obj)) {
+                    pool->allocatedObjects.erase(it);
+                    return true;
+                }
             }
         }
         Report("DynamicPoolAllocator.Destroy: pointer is valid but does not exist within any pools of this dpa!");

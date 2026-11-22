@@ -62,14 +62,18 @@ namespace memsys {
 			return;
 		}
 
-		_allocator = new StackAllocator(_globalMemoryBase, kTotalSize);
-		if (_allocator) {
+		try {
+			_allocator = new StackAllocator(_globalMemoryBase, kTotalSize);
 			_start = _allocator->GetStart();
 			_end = _allocator->GetEnd();
 		}
-		else {
+		catch (...) {
+			_allocator = nullptr;
 			_start = 0;
 			_end = 0;
+			free(_globalMemoryBase);
+			_globalMemoryBase = nullptr;
+			throw;
 		}
 
 		_allocatedChunks.clear();
@@ -116,24 +120,17 @@ namespace memsys {
 			_allocator->Free(ptr);
 			_allocatedChunks.pop_back();
 
-			bool toFree = true;
-			while (toFree) {
-				toFree = false;
+			auto i = _freeChunks.begin();
+			while (i != _freeChunks.end()) {
+				if (_allocatedChunks.empty()) break;
+				if ((*i) == _allocatedChunks.back().second) {
+					_allocator->Free((*i));
+					_allocatedChunks.pop_back();
+					_freeChunks.remove((*i));
 
-				for (void* freeChunk : _freeChunks) {
-					if (_allocatedChunks.empty()) {
-						toFree = true;
-						break;
-					}
-					if (freeChunk == _allocatedChunks.back().second) {
-						_allocator->Free(freeChunk);
-						_allocatedChunks.pop_back();
-						_freeChunks.remove(freeChunk);
-
-						toFree = true;
-						break;
-					}
+					i = _freeChunks.begin();
 				}
+				else ++i;
 			}
 		}
 		else {

@@ -249,7 +249,7 @@ namespace memsys {
 		_allocationCount++;
 
 		try {
-			return std::construct_at(reinterpret_cast<T*>(currentAddress), std::forward<Args>(args)...);
+			return { std::construct_at(reinterpret_cast<T*>(currentAddress), std::forward<Args>(args)...), errlib::Error() };
 		}
 		catch (...) {
 			--_allocationCount;
