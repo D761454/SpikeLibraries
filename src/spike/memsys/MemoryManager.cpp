@@ -142,7 +142,7 @@ namespace memsys {
 				}
 
 				if (!isFree)
-					Report("Leaked Chunk " + std::string(chunk.first) + " at address " + &*(char*)chunk.second);
+					Report("Leaked Chunk " + (chunk.first ? std::string(chunk.first) : "null ID") + " at address " + std::to_string(reinterpret_cast<uptr>(chunk.second)));
 			}
 		}
 	}

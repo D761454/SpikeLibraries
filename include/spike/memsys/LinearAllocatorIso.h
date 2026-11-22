@@ -77,6 +77,8 @@ namespace memsys {
 
 	public:
 		LinearAllocatorIso(const usize memorySize) : _memoryBase(malloc(memorySize)), _memorySize(memorySize), _allocationCount(0), _allocatedMemory(0) {
+			if (!_memoryBase)
+				Report("LinearAllocator: memory base is nullptr! malloc failure!");
 			if (memorySize == 0)
 				Report("LinearAllocatorIso: memory size is 0!");
 		}

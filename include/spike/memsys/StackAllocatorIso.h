@@ -94,7 +94,7 @@ namespace memsys {
 			_end(reinterpret_cast<uptr>(_memoryBase) + memorySize)
 		{
 			if (!_memoryBase) {
-				Report("StackAllocatorIso: memory base is nullptr!");
+				Report("StackAllocatorIso: memory base is nullptr! malloc failure!");
 				_start = 0;
 				_end = 0;
 				return;
