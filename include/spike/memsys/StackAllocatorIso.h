@@ -179,8 +179,7 @@ namespace memsys {
 #pragma region Implementation
 
 	void* StackAllocatorIso::Allocate(usize size, usize alignment) {
-		if (!_memoryBase || size <= 0)
-			return nullptr;
+		if (!_memoryBase || size <= 0) return nullptr;
 
 		const usize headerSize = sizeof(MemoryHeader);
 		const usize offsetStorageSize = sizeof(uptr);
@@ -222,8 +221,7 @@ namespace memsys {
 
 	template<typename T, typename... Args>
 	T* StackAllocatorIso::Allocate(Args&&... args) {
-		if (!_memoryBase)
-			return nullptr;
+		if (!_memoryBase) return nullptr;
 
 		const usize objectSize = sizeof(T);
 		const usize headerSize = sizeof(MemoryHeader);

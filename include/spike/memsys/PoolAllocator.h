@@ -51,19 +51,19 @@ File Summary:
 #include <memory>
 #include <utility>
 #include <array>
+#include <cassert>
 
 #include "spike/def_aliases.h"
 
 #include "spike/memsys/Allocator.h"
 
 namespace memsys {
-
     /// <summary>
     /// This is an allocator that holds a pool of fixed-size memory blocks for fast allocation / freeing.
     /// This is useful for allocating many small objects of the same size, such as particles or game entities.
     /// </summary>
     template<class T, usize Capacity>
-    class PoolAllocator {
+    class PoolAllocator : public Allocator {
         static_assert(Capacity > 0);
 
     private:
@@ -98,14 +98,13 @@ namespace memsys {
             _memorySize(memorySize) {
 
             if (!memoryBase) {
+                Report("PoolAllocator: memory base is nullptr!");
                 _start = 0;
                 _end = 0;
                 return;
             }
 
-            if (memorySize != Capacity * kChunkStride) {
-                return;
-            }
+            assert(memorySize == Capacity * kChunkStride && "PoolAllocator: incorrect memory size to house 'Capacity' objects within the pool!");
 
             _start = reinterpret_cast<uptr>(memoryBase);
             _end = reinterpret_cast<uptr>(memoryBase) + memorySize;
@@ -205,15 +204,15 @@ namespace memsys {
 
             throw;
         }
+        return nullptr;
     }
 
     template<class T, usize Capacity>
     bool PoolAllocator<T, Capacity>::Destroy(T* ptr) {
-        if (!ptr) {
-            return true; // not technically an error
-        }
+        if (!ptr) return true; // not technically an error
 
         if (!is_pointer_owned(ptr, _start, _end)) {
+            Report("PoolAllocator.Destroy: pointer is not owned by this allocator!");
             return false;
         }
 
@@ -264,18 +263,3 @@ namespace memsys {
 }
 
 #endif
-
-
-/*
-
-for library isolation:
-
-make preproc def not _ first
-
-avoid spike dependencies in headers, must move impl into cpp files
-
-- target_compile_definitions(spike_memsys PUBLIC SPIKE_MEMSYS_WITH_DEBUGL=1)
-
-only in cpp, not public headers
-also use PRIVATE if only cpp files need it
-*/

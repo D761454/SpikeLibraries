@@ -64,7 +64,7 @@ namespace memsys {
     /// This Iso version manages its memory itself.
     /// </summary>
     template<class T, usize Capacity>
-    class PoolAllocatorIso {
+    class PoolAllocatorIso : public Allocator {
         static_assert(Capacity > 0);
 
     private:
@@ -156,15 +156,15 @@ namespace memsys {
 
             throw;
         }
+        return nullptr;
     }
 
     template<class T, usize Capacity>
     bool PoolAllocatorIso<T, Capacity>::Destroy(T* ptr) {
-        if (!ptr) {
-            return true; // not technically an error
-        }
+        if (!ptr) return true; // not technically an error
 
         if (!is_pointer_owned(ptr, _start, _end)) {
+            Report("PoolAllocatorIso.Destroy: pointer is not owned by this allocator!");
             return false;
         }
 
@@ -176,6 +176,7 @@ namespace memsys {
 
         --_allocationCount;
         _allocatedMemory = (_allocatedMemory >= kChunkStride) ? (_allocatedMemory - kChunkStride) : 0;
+        return true;
     }
 
     template<class T, usize Capacity>
