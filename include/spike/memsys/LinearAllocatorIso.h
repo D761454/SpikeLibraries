@@ -56,6 +56,7 @@ File Summary:
 #include <cstddef>
 
 #include "spike/def_aliases.h"
+#include "spike/error.hpp"
 
 #include "spike/memsys/Allocator.h"
 
@@ -66,7 +67,7 @@ namespace memsys {
 	/// This is useful for temporary memory that is only needed for a short time, such as during a single frame.
 	/// Object dtors must be handled manually as the stack can hold many different object types!
 	/// </summary>
-	class LinearAllocatorIso {
+	class LinearAllocatorIso : public Allocator {
 	private:
 		u64 _allocationCount;
 		usize _allocatedMemory;
@@ -76,9 +77,8 @@ namespace memsys {
 
 	public:
 		LinearAllocatorIso(const usize memorySize) : _memoryBase(malloc(memorySize)), _memorySize(memorySize), _allocationCount(0), _allocatedMemory(0) {
-			if (memorySize == 0) {
-
-			}
+			if (memorySize == 0)
+				Report("LinearAllocatorIso: memory base is nullptr!");
 		}
 
 		~LinearAllocatorIso() { 
@@ -127,9 +127,8 @@ namespace memsys {
 #pragma region Implementation
 
 	void* LinearAllocatorIso::Allocate(usize size, usize alignment) {
-		if (!_memoryBase) {
+		if (!_memoryBase)
 			return nullptr;
-		}
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
@@ -148,9 +147,8 @@ namespace memsys {
 
 	template<typename T, typename... Args>
 	T* LinearAllocatorIso::Allocate(Args&&... args) {
-		if (!_memoryBase) {
+		if (!_memoryBase)
 			return nullptr;
-		}
 
 		i32 size = sizeof(T);
 
@@ -175,6 +173,7 @@ namespace memsys {
 
 			throw;
 		}
+		return nullptr;
 	}
 
 #pragma endregion

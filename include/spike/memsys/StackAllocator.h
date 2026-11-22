@@ -52,6 +52,7 @@ File Summary:
 #include <vector>
 #include <cstddef>
 #include <cassert>
+#include <string>
 
 #include "spike/def_aliases.h"
 #include "spike/error.hpp"
