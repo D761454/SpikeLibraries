@@ -105,6 +105,11 @@ namespace memsys {
             }
 
             assert(memorySize == Capacity * kChunkStride && "PoolAllocator: incorrect memory size to house 'Capacity' objects within the pool!");
+            if (memorySize != Capacity * kChunkStride) {
+                _start = 0;
+                _end = 0;
+                return;
+            }
 
             _start = reinterpret_cast<uptr>(memoryBase);
             _end = reinterpret_cast<uptr>(memoryBase) + memorySize;

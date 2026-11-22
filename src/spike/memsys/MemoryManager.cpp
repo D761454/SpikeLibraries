@@ -43,6 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <string>
 #include <cassert>
+#include <stdexcept>
 
 #include "spike/def_aliases.h"
 
@@ -54,8 +55,8 @@ namespace memsys {
 		_globalMemoryBase = malloc(kTotalSize);
 
 		if (!_globalMemoryBase) {
-			assert(false && "Memory managers global memory base is nullptr!");
 			_allocator = nullptr;
+			throw std::runtime_error("Global Memory Manager failed to malloc memory to its global memory base!");
 			return;
 		}
 
@@ -66,7 +67,7 @@ namespace memsys {
 	}
 
 	MemoryManager::~MemoryManager() {
-		_allocator->Reset();
+		if (_allocator) _allocator->Reset();
 
 		delete _allocator;
 		_allocator = nullptr;
@@ -79,6 +80,7 @@ namespace memsys {
 	}
 
 	void* MemoryManager::AllocateChunk(const usize size, const char* id) {
+		if (!_allocator) return nullptr;
 		void* chunk = _allocator->Allocate(size);
 		if (!chunk) return nullptr;
 		_allocatedChunks.push_back(std::pair<const char*, void*>(id, chunk));
@@ -91,6 +93,7 @@ namespace memsys {
 		assert(!_allocatedChunks.empty() && "MemoryManager.FreeChunk: Attempting to free a chunk with no allocated chunks! Double free or stale pointer!");
 		if (_allocatedChunks.empty()) return;
 		if (ptr == _allocatedChunks.back().second) {
+			if (!_allocator) return;
 			_allocator->Free(ptr);
 			_allocatedChunks.pop_back();
 

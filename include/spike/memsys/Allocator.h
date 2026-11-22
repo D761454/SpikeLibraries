@@ -52,6 +52,10 @@ File Summary:
 #include "spike/error.hpp"
 
 namespace memsys {
+	inline constexpr const bool is_power_of_two(const usize value) noexcept {
+		return value > 0 && (value & (value - 1)) == 0;
+	}
+
 	/// <summary>
 	/// Calculates the size required by an object of size 'value' with alignment 'alignment' 
 	/// returning the total size needed to place objects of that size subsequently in memory while respecting alignment
@@ -60,7 +64,7 @@ namespace memsys {
 	/// <param name="alignment">alignemnt required by the object</param>
 	/// <returns>memory space required to house the object while respecting alignment</returns>
 	inline constexpr const usize align_up(usize value, usize alignment) {
-		assert(alignment > 0 && (alignment & (alignment - 1)) == 0 && "Alignment must be power of 2, or 1");
+		assert(is_power_of_two(alignment) && "Alignment must be power of 2, or 1");
 		return (value + alignment - 1) & ~(alignment - 1);
 	}
 
@@ -72,7 +76,7 @@ namespace memsys {
 	/// <param name="outSize">amount of bytes needed to shift ptr by to correctly align it</param>
 	/// <returns>if the adjustment was valid</returns>
 	[[nodiscard]] inline errlib::Error get_adjustment(uptr ptr, usize alignment, usize& outSize) {
-		if (alignment < 1 && (alignment & (alignment - 1)) != 0)
+		if (!is_power_of_two(alignment))
 			return errlib::Error(errlib::ErrorCode_invalidArgument, "Alignment must be a power of 2, or 1");
 
 		usize adjustment = alignment - (ptr & (alignment - 1));
@@ -89,7 +93,7 @@ namespace memsys {
 	/// <param name="outPtr">returned aligned pointer</param>
 	/// <returns>if the alignment was valid</returns>
 	[[nodiscard]] inline errlib::Error align_forward(uptr ptr, usize alignment, uptr& outPtr) {
-		if (alignment < 1 && (alignment & (alignment - 1)) != 0)
+		if (!is_power_of_two(alignment))
 			return errlib::Error(errlib::ErrorCode_invalidArgument, "Alignment must be a power of 2, or 1");
 
 		usize adjustment = alignment - (ptr & (alignment - 1));
