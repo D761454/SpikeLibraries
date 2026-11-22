@@ -41,9 +41,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #endif
 #include <utility>
+#include <iostream>
+#include <string>
 
 #include "spike/def_aliases.h"
-#include "spike/debugl/debug.hpp"
 
 #include "spike/memsys/StackAllocator.h"
 
@@ -52,7 +53,7 @@ namespace memsys {
 		_globalMemoryBase = malloc(kTotalSize);
 
 		if (!_globalMemoryBase) {
-			Debug::LogWarning("Failed to allocate global memory for MemoryManager!");
+			assert(false && "Memory managers global memory base is nullptr!");
 			_allocator = nullptr;
 			return;
 		}
@@ -60,7 +61,7 @@ namespace memsys {
 		_allocator = new StackAllocator(_globalMemoryBase, kTotalSize);
 
 		if (!_allocator) {
-			Debug::LogWarning("Failed to create primary allocator for MemoryManager!");
+			assert(false && "Memory managers allocator could not be created!");
 		}
 
 		_allocatedChunks.clear();
@@ -115,15 +116,13 @@ namespace memsys {
 	}
 
 	void MemoryManager::LogMemoryUsage() const {
-		if (_allocator) {
-			Debug::Log("Current Memory Usage: {} / {}", _allocator->GetAllocatedMemory(), _allocator->GetMemorySize());
-		}
-		else Debug::LogError("WARNING! No primary allocator for memory manager!");
+		if (_allocator) std::cout << "Current Memory Usage: " + std::to_string(_allocator->GetAllocatedMemory()) + " / " + std::to_string(_allocator->GetMemorySize()) + "\n";
+		else std::cerr << "No allocator for the global memory manager!\n";
 	}
 
 	void MemoryManager::IntegrityCheck() const {
 		if (_allocatedChunks.size() > 0) {
-			Debug::LogError("!!! MEMORY LEAK !!!");
+			std::cerr << "!!! MEMORY LEAK !!!\n";
 
 			for (std::pair<const char*, const void*> chunk : _allocatedChunks) {
 				bool isFree = false;
@@ -136,7 +135,7 @@ namespace memsys {
 				}
 
 				if (!isFree) {
-					Debug::LogError("Leaked Chunk {} at address {}", chunk.first, chunk.second);
+					std::cerr << "Leaked Chunk " + std::string(chunk.first) + " at address " + &*(char*)chunk.second;
 				}
 			}
 		}
