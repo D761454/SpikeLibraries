@@ -97,7 +97,14 @@ namespace memsys {
 		if (!_allocator) return nullptr;
 		void* chunk = _allocator->Allocate(size);
 		if (!chunk) return nullptr;
-		_allocatedChunks.push_back(std::pair<const char*, void*>(id, chunk));
+		try {
+			_allocatedChunks.push_back(std::pair<const char*, void*>(id, chunk));
+		}
+		catch (...) {
+			if (!_allocator->Free(chunk))
+				Report("MemoryManager.AllocateChunk: failed to roll back an allocation after bookkeeping failed.");
+			throw;
+		}
 
 		return chunk;
 	}
@@ -116,18 +123,31 @@ namespace memsys {
 		if (!valid) return;
 
 		if (ptr == _allocatedChunks.back().second) {
-			if (!_allocator) return;
-			_allocator->Free(ptr);
+			if (!_allocator) {
+				Report("MemoryManager.FreeChunk: allocator is unavailable for a tracked chunk.");
+				return;
+			}
+			if (!_allocator->Free(ptr)) {
+				Report("MemoryManager.FreeChunk: allocator rejected the most recently allocated chunk.");
+				return;
+			}
 			_allocatedChunks.pop_back();
 
 			auto i = _freeChunks.begin();
 			while (i != _freeChunks.end()) {
-				if (_allocatedChunks.empty()) break;
+				if (_allocatedChunks.empty()) {
+					_freeChunks.clear();
+					break;
+				}
 				if ((*i) == _allocatedChunks.back().second) {
-					_allocator->Free((*i));
+					void* freeChunk = *i;
+					if (!_allocator->Free(freeChunk)) {
+						Report("MemoryManager.FreeChunk: failed to free a deferred chunk.");
+						++i;
+						continue;
+					}
 					_allocatedChunks.pop_back();
-					_freeChunks.remove((*i));
-
+					_freeChunks.erase(i);
 					i = _freeChunks.begin();
 				}
 				else ++i;

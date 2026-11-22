@@ -56,6 +56,12 @@ namespace memsys {
 		return value > 0 && (value & (value - 1)) == 0;
 	}
 
+	inline constexpr bool checked_add(usize left, usize right, usize& result) noexcept {
+		if (right > static_cast<usize>(-1) - left) return false;
+		result = left + right;
+		return true;
+	}
+
 	/// <summary>
 	/// Calculates the size required by an object of size 'value' with alignment 'alignment' 
 	/// returning the total size needed to place objects of that size subsequently in memory while respecting alignment
