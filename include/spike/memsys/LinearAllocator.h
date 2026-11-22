@@ -193,7 +193,7 @@ namespace memsys {
 
 	std::pair<void*, errlib::Error> LinearAllocator::CheckedAllocate(usize size, usize alignment) {
 		if (!_memoryBase || size <= 0)
-			return { nullptr, _memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "LinearAllocator.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "LinearAllocator.CheckedAllocate: allocation size must be > 0!") };
+			return { nullptr, !_memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "LinearAllocator.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "LinearAllocator.CheckedAllocate: allocation size must be > 0!") };
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 

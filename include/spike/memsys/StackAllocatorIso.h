@@ -304,24 +304,24 @@ namespace memsys {
 
 			_allocatedMemory -= mH->size;
 			_allocationCount--;
+
+			if (_stack.empty()) return true;
 		}
 		else {
 			_toFree.push_back(mH);
 			return true;
 		}
 
-		bool loop = true;
-		while (loop) {
-			bool inner = false;
-			for (auto it : _toFree) {
-				if (it == _stack.back()) {
-					_allocatedMemory -= it->size;
-					_allocationCount--;
-					inner = true;
-				}
+		auto i = _toFree.begin();
+		while (i != _toFree.end()) {
+			if ((*i) == _stack.back()) {
+				_allocatedMemory -= (*i)->size;
+				_allocationCount--;
+				_stack.pop_back();
+				_toFree.erase(i);
+				i = _toFree.begin();
 			}
-			if (!inner)
-				loop = false;
+			else ++i;
 		}
 
 		return true;
@@ -329,7 +329,7 @@ namespace memsys {
 
 	std::pair<void*, errlib::Error> StackAllocatorIso::CheckedAllocate(usize size, usize alignment) {
 		if (!_memoryBase || size <= 0)
-			return { nullptr, _memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocatorIso.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocatorIso.CheckedAllocate: allocation size must be > 0!") };
+			return { nullptr, !_memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocatorIso.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocatorIso.CheckedAllocate: allocation size must be > 0!") };
 
 		const usize headerSize = sizeof(MemoryHeader);
 		const usize offsetStorageSize = sizeof(uptr);
@@ -372,7 +372,7 @@ namespace memsys {
 	template<typename T, typename... Args>
 	std::pair<T*, errlib::Error> StackAllocatorIso::CheckedAllocate(Args&&... args) {
 		if (!_memoryBase)
-			return { nullptr, _memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocatorIso.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedAllocate: allocation size must be > 0!") };
+			return { nullptr, !_memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocatorIso.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedAllocate: allocation size must be > 0!") };
 
 		const usize objectSize = sizeof(T);
 		const usize headerSize = sizeof(MemoryHeader);
@@ -455,24 +455,24 @@ namespace memsys {
 
 			_allocatedMemory -= mH->size;
 			_allocationCount--;
+
+			if (_stack.empty()) return errlib::Error();
 		}
 		else {
 			_toFree.push_back(mH);
 			return errlib::Error();
 		}
 
-		bool loop = true;
-		while (loop) {
-			bool inner = false;
-			for (auto it : _toFree) {
-				if (it == _stack.back()) {
-					_allocatedMemory -= it->size;
-					_allocationCount--;
-					inner = true;
-				}
+		auto i = _toFree.begin();
+		while (i != _toFree.end()) {
+			if ((*i) == _stack.back()) {
+				_allocatedMemory -= (*i)->size;
+				_allocationCount--;
+				_stack.pop_back();
+				_toFree.erase(i);
+				i = _toFree.begin();
 			}
-			if (!inner)
-				loop = false;
+			else ++i;
 		}
 
 		return errlib::Error();
