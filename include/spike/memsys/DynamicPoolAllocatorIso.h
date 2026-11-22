@@ -56,6 +56,7 @@ File Summary:
 #include <algorithm>
 #include <utility>
 #include <cassert>
+#include <memory>
 
 #include "spike/def_aliases.h"
 
@@ -93,8 +94,11 @@ namespace memsys {
 
     public:
         explicit DynamicPoolAllocatorIso(const char* id = nullptr) : id(id) {
-            PoolAlloc* newPoolAlloc = new PoolAlloc();
-            pools.push_back(new Pool(newPoolAlloc));
+            std::unique_ptr<PoolAlloc> allocator(new PoolAlloc());
+            std::unique_ptr<Pool> pool(new Pool(allocator.get()));
+            pools.push_back(pool.get());
+            pool.release();
+            allocator.release();
         }
 
         ~DynamicPoolAllocatorIso();
@@ -133,19 +137,8 @@ namespace memsys {
         for (Pool* pool : pools) {
             if (!pool) continue;
 
-            PoolAlloc* pa = pool->allocator;
-            if (!pa) continue;
-
-            auto objects = pool->allocatedObjects;
-            for (T* obj : objects) {
-                if (obj) pa->Destroy(obj);
-            }
-
-            pool->allocatedObjects.clear();
-
-            delete pa;
+            delete pool->allocator;
             pool->allocator = nullptr;
-
             delete pool;
         }
 
@@ -165,15 +158,16 @@ namespace memsys {
             }
         }
 
-        PoolAlloc* newPoolAlloc = new PoolAlloc();
-        Pool* newPool = new Pool(newPoolAlloc);
-        pools.push_front(newPool);
+        std::unique_ptr<PoolAlloc> newPoolAlloc(new PoolAlloc());
+        std::unique_ptr<Pool> newPool(new Pool(newPoolAlloc.get()));
+        pools.push_front(newPool.get());
 
-        T* obj = newPool->allocator->Create(std::forward<Args>(args)...);
-
+        Pool* pool = newPool.release();
+        newPoolAlloc.release();
+        T* obj = pool->allocator->Create(std::forward<Args>(args)...);
         if (!obj) return nullptr;
 
-        newPool->allocatedObjects.push_back(obj);
+        pool->allocatedObjects.push_back(obj);
         return obj;
     }
 

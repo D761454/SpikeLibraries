@@ -56,6 +56,7 @@ File Summary:
 #include <algorithm>
 #include <utility>
 #include <cassert>
+#include <memory>
 
 #include "spike/def_aliases.h"
 
@@ -95,13 +96,30 @@ namespace memsys {
 
     public:
         explicit DynamicPoolAllocator(const char* id = nullptr) : id(id) {
-            void* pa = RequestMemoryChunk(kPoolSize, id);
-            if (!pa) {
+            void* memory = RequestMemoryChunk(kPoolSize, id);
+            if (!memory) {
                 Report("DynamicPoolAllocator: could not get memory chunk for the first pool!");
                 return;
             }
-            PoolAlloc* newPoolAlloc = new PoolAlloc(pa, kPoolSize);
-            pools.push_back(new Pool(newPoolAlloc));
+
+            try {
+                std::unique_ptr<PoolAlloc> allocator(new PoolAlloc(memory, kPoolSize));
+                if (!allocator->IsValid()) {
+                    Report("DynamicPoolAllocator: allocated memory is invalid for a pool!");
+                    allocator.reset();
+                    FreeMemoryChunk(memory);
+                    return;
+                }
+
+                std::unique_ptr<Pool> pool(new Pool(allocator.get()));
+                pools.push_back(pool.get());
+                pool.release();
+                allocator.release();
+            }
+            catch (...) {
+                FreeMemoryChunk(memory);
+                throw;
+            }
         }
 
         ~DynamicPoolAllocator();
@@ -141,23 +159,14 @@ namespace memsys {
         for (Pool* pool : pools) {
             if (!pool) continue;
 
-            PoolAlloc* pa = pool->allocator;
-            if (!pa) continue;
-
-            auto objects = pool->allocatedObjects;
-            for (T* obj : objects) {
-                if (obj) pa->Destroy(obj);
+            void* memory = nullptr;
+            if (pool->allocator) {
+                memory = const_cast<void*>(pool->allocator->GetMemoryBase());
+                delete pool->allocator;
+                pool->allocator = nullptr;
             }
 
-            pool->allocatedObjects.clear();
-
-            void* base = const_cast<void*>(pa->GetMemoryBase());
-
-            delete pa;
-            pool->allocator = nullptr;
-
-            FreeMemoryChunk(base);
-
+            if (memory) FreeMemoryChunk(memory);
             delete pool;
         }
 
@@ -183,15 +192,31 @@ namespace memsys {
             return nullptr;
         }
 
-        PoolAlloc* newPoolAlloc = new PoolAlloc(pa, kPoolSize);
-        Pool* newPool = new Pool(newPoolAlloc);
-        pools.push_front(newPool);
+        std::unique_ptr<PoolAlloc> newPoolAlloc;
+        std::unique_ptr<Pool> newPool;
+        try {
+            newPoolAlloc.reset(new PoolAlloc(pa, kPoolSize));
+            if (!newPoolAlloc->IsValid()) {
+                Report("DynamicPoolAllocator.Create: allocated memory is invalid for a pool!");
+                newPoolAlloc.reset();
+                FreeMemoryChunk(pa);
+                return nullptr;
+            }
 
-        T* obj = newPool->allocator->Create(std::forward<Args>(args)...);
+            newPool.reset(new Pool(newPoolAlloc.get()));
+            pools.push_front(newPool.get());
+        }
+        catch (...) {
+            FreeMemoryChunk(pa);
+            throw;
+        }
 
+        Pool* pool = newPool.release();
+        newPoolAlloc.release();
+        T* obj = pool->allocator->Create(std::forward<Args>(args)...);
         if (!obj) return nullptr;
 
-        newPool->allocatedObjects.push_back(obj);
+        pool->allocatedObjects.push_back(obj);
         return obj;
     }
 
