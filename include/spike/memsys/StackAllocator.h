@@ -285,6 +285,10 @@ namespace memsys {
 			if (_stack.empty()) return true;
 		}
 		else {
+			for (auto f : _toFree) {
+				if (f == mH) return true;
+			}
+
 			_toFree.push_back(mH);
 			return true;
 		}
@@ -429,6 +433,10 @@ namespace memsys {
 			if (_stack.empty()) return errlib::Error();
 		}
 		else {
+			for (auto f : _toFree) {
+				if (f == mH) return errlib::Error();
+			}
+
 			_toFree.push_back(mH);
 			return errlib::Error();
 		}
