@@ -136,7 +136,7 @@ namespace memsys {
 #pragma region Implementation
 
 	void* LinearAllocator::Allocate(usize size, usize alignment) {
-		if (!_memoryBase)
+		if (!_memoryBase || size <= 0)
 			return nullptr;
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
