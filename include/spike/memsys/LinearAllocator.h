@@ -149,7 +149,7 @@ namespace memsys {
 
 		size += adjustment;
 
-		if (_allocatedMemory + size > _memorySize) return nullptr;
+		if (size > _memorySize - _allocatedMemory) return nullptr;
 
 		currentAddress += adjustment;
 
@@ -174,7 +174,7 @@ namespace memsys {
 
 		size += adjustment;
 
-		if (_allocatedMemory + size > _memorySize) return nullptr;
+		if (size > _memorySize - _allocatedMemory) return nullptr;
 
 		currentAddress += adjustment;
 
@@ -205,7 +205,7 @@ namespace memsys {
 
 		size += adjustment;
 
-		if (_allocatedMemory + size > _memorySize)
+		if (size > _memorySize - _allocatedMemory)
 			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "LinearAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " would overflow the allocators memory!") };
 
 		currentAddress += adjustment;
@@ -231,7 +231,7 @@ namespace memsys {
 
 		size += adjustment;
 
-		if (_allocatedMemory + size > _memorySize)
+		if (size > _memorySize - _allocatedMemory)
 			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "LinearAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " would overflow the allocators memory!") };
 
 		currentAddress += adjustment;

@@ -195,7 +195,7 @@ namespace memsys {
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
 
-		if (_allocatedMemory + totalSize > _memorySize)
+		if (totalSize > _memorySize - _allocatedMemory)
 			return nullptr;
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
@@ -246,7 +246,7 @@ namespace memsys {
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
 
-		if (_allocatedMemory + totalSize > _memorySize)
+		if (totalSize > _memorySize - _allocatedMemory)
 			return nullptr;
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
@@ -358,7 +358,7 @@ namespace memsys {
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
 
-		if (_allocatedMemory + totalSize > _memorySize)
+		if (totalSize > _memorySize - _allocatedMemory)
 			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!") };
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
@@ -404,7 +404,7 @@ namespace memsys {
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
 
-		if (_allocatedMemory + totalSize > _memorySize)
+		if (totalSize > _memorySize - _allocatedMemory)
 			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(objectSize) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!") };
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
