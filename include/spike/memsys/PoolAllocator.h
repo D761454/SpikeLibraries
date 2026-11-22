@@ -87,9 +87,9 @@ namespace memsys {
         uptr _start;
         uptr _end;
 
+    public:
         inline static constexpr usize kChunkSize = sizeof(Chunk);
 
-    public:
         PoolAllocator(const void* memoryBase, const usize memorySize) : 
             _memoryBase(memoryBase),
             _memorySize(memorySize) {

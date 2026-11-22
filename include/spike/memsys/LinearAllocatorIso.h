@@ -156,8 +156,8 @@ namespace memsys {
 		if (!get_adjustment(reinterpret_cast<uptr>(currentAddress), alignment, adjustment).ok())
 			return nullptr;
 
+		if (size > _memorySize - _allocatedMemory) return nullptr;
 		size += adjustment;
-
 		if (size > _memorySize - _allocatedMemory) return nullptr;
 
 		currentAddress += adjustment;
@@ -181,8 +181,8 @@ namespace memsys {
 		if (!get_adjustment(reinterpret_cast<uptr>(currentAddress), alignof(T), adjustment).ok())
 			return nullptr;
 
+		if (size > _memorySize - _allocatedMemory) return nullptr;
 		size += adjustment;
-
 		if (size > _memorySize - _allocatedMemory) return nullptr;
 
 		currentAddress += adjustment;
@@ -212,6 +212,9 @@ namespace memsys {
 		if (auto ex = get_adjustment(reinterpret_cast<uptr>(currentAddress), alignment, adjustment); !ex.ok())
 			return { nullptr, ex };
 
+		if (size > _memorySize - _allocatedMemory)
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "LinearAllocatorIso.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " would overflow the allocators memory!") };
+
 		size += adjustment;
 
 		if (size > _memorySize - _allocatedMemory)
@@ -237,6 +240,9 @@ namespace memsys {
 		usize adjustment;
 		if (auto ex = get_adjustment(reinterpret_cast<uptr>(currentAddress), alignof(T), adjustment); !ex.ok())
 			return { nullptr, ex };
+
+		if (size > _memorySize - _allocatedMemory)
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "LinearAllocatorIso.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " would overflow the allocators memory!") };
 
 		size += adjustment;
 

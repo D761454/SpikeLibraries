@@ -303,7 +303,7 @@ namespace memsys {
 		assert(mH->checkVal == kCheckVal && "Check value in memory header for object within the stack allocator is corrupted!");
 #endif
 
-		if (mH == _stack.back()) {
+		if (ptr == _stack.back()) {
 			_stack.pop_back();
 
 			_allocatedMemory -= mH->size;
@@ -485,7 +485,7 @@ namespace memsys {
 		assert(mH->checkVal == kCheckVal && "Check value in memory header for object within the stack allocator is corrupted!");
 #endif
 
-		if (mH == _stack.back()) {
+		if (ptr == _stack.back()) {
 			_stack.pop_back();
 
 			_allocatedMemory -= mH->size;
