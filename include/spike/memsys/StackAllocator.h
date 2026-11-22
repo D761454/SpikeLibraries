@@ -264,18 +264,9 @@ namespace memsys {
 	}
 
 	bool StackAllocator::Free(void* ptr) {
-		if (!ptr)
-			return true; // not technically an error
-
-		if (!is_pointer_owned(ptr, _start, _end)) {
-			Report("StackAllocator.Free: pointer is not owned by this allocator!");
-			return false;
-		}
-
-		if (_stack.empty()) {
-			Report("StackAllocator.Free: attempting to free from an empty stack!");
-			return false;
-		}
+		if (!ptr) return true; // not technically an error
+		if (!is_pointer_owned(ptr, _start, _end)) return false;
+		if (_stack.empty()) return false;
 
 		const usize offsetStorageSize = sizeof(uptr);
 		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);
@@ -415,15 +406,11 @@ namespace memsys {
 		if (!ptr)
 			return errlib::Error(); // not technically an error
 
-		if (!is_pointer_owned(ptr, _start, _end)) {
-			Report("StackAllocator.CheckedFree: pointer is not owned by this allocator!");
-			return errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not owned by this allocator!");
-		}
+		if (!is_pointer_owned(ptr, _start, _end))
+			return errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not owned by this allocator! " + std::to_string(reinterpret_cast<uptr>(ptr)));
 
-		if (_stack.empty()) {
-			Report("StackAllocator.CheckedFree: attempting to free from an empty stack!");
+		if (_stack.empty())
 			return errlib::Error(errlib::ErrorCode_emptyContainer, "StackAllocator.CheckedFree: attempting to free from an empty stack!");
-		}
 
 		const usize offsetStorageSize = sizeof(uptr);
 		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);

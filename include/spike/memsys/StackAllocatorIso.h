@@ -275,18 +275,9 @@ namespace memsys {
 	}
 
 	bool StackAllocatorIso::Free(void* ptr) {
-		if (!ptr)
-			return true; // not technically an error
-
-		if (!is_pointer_owned(ptr, _start, _end)) {
-			Report("StackAllocatorIso.Free: pointer is not owned by this allocator!");
-			return false;
-		}
-
-		if (_stack.empty()) {
-			Report("StackAllocatorIso.Free: attempting to free from an empty stack!");
-			return false;
-		}
+		if (!ptr) return true; // not technically an error
+		if (!is_pointer_owned(ptr, _start, _end)) return false;
+		if (_stack.empty()) return false;
 
 		const usize offsetStorageSize = sizeof(uptr);
 		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);
@@ -396,7 +387,7 @@ namespace memsys {
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
 
 		if (_allocatedMemory + totalSize > _memorySize)
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!") };
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: attempting allocation of size: " + std::to_string(objectSize) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!") };
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
@@ -427,12 +418,10 @@ namespace memsys {
 			return errlib::Error(); // not technically an error
 
 		if (!is_pointer_owned(ptr, _start, _end)) {
-			Report("StackAllocatorIso.CheckedFree: pointer is not owned by this allocator!");
-			return errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not owned by this allocator!");
+			return errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not owned by this allocator! " + std::to_string(reinterpret_cast<uptr>(ptr)));
 		}
 
 		if (_stack.empty()) {
-			Report("StackAllocatorIso.CheckedFree: attempting to free from an empty stack!");
 			return errlib::Error(errlib::ErrorCode_emptyContainer, "StackAllocator.CheckedFree: attempting to free from an empty stack!");
 		}
 

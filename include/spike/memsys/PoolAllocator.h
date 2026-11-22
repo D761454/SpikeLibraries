@@ -215,11 +215,7 @@ PoolAllocator(PoolAllocator&&) = delete;
     template<class T, usize Capacity>
     bool PoolAllocator<T, Capacity>::Destroy(T* ptr) {
         if (!ptr) return true; // not technically an error
-
-        if (!is_pointer_owned(ptr, _start, _end)) {
-            Report("PoolAllocator.Destroy: pointer is not owned by this allocator!");
-            return false;
-        }
+        if (!is_pointer_owned(ptr, _start, _end)) return false;
 
         Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
 
@@ -235,10 +231,7 @@ PoolAllocator(PoolAllocator&&) = delete;
                 break;
             }
         }
-        if (!found) {
-            Report("PoolAllocator.Destroy: pointer does not point to a valid chunk!");
-            return false;
-        }
+        if (!found) return false;
 #else
         bool found = false;
         for (usize i = 0; i < Capacity; ++i) {
@@ -247,10 +240,7 @@ PoolAllocator(PoolAllocator&&) = delete;
                 break;
             }
         }
-        if (!found) {
-            Report("PoolAllocator.Destroy: pointer does not point to a valid chunk!");
-            return false;
-        }
+        if (!found) return false;
 #endif
 
         chunk->next = _free;

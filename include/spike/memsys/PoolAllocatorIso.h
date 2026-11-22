@@ -163,11 +163,7 @@ namespace memsys {
     template<class T, usize Capacity>
     bool PoolAllocatorIso<T, Capacity>::Destroy(T* ptr) {
         if (!ptr) return true; // not technically an error
-
-        if (!is_pointer_owned(ptr, _start, _end)) {
-            Report("PoolAllocatorIso.Destroy: pointer is not owned by this allocator!");
-            return false;
-        }
+        if (!is_pointer_owned(ptr, _start, _end)) return false;
 
         Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
 
@@ -183,10 +179,7 @@ namespace memsys {
                 break;
             }
         }
-        if (!found) {
-            Report("PoolAllocator.Destroy: pointer does not point to a valid chunk!");
-            return false;
-        }
+        if (!found) return false;
 #else
         bool found = false;
         for (usize i = 0; i < Capacity; ++i) {
@@ -195,10 +188,7 @@ namespace memsys {
                 break;
             }
         }
-        if (!found) {
-            Report("PoolAllocator.Destroy: pointer does not point to a valid chunk!");
-            return false;
-        }
+        if (!found) return false;
 #endif
 
         chunk->next = _free;
