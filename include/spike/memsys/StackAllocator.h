@@ -161,6 +161,9 @@ namespace memsys {
 		inline const usize GetAllocatedMemory() const noexcept { return _allocatedMemory; }
 		inline const usize GetMemorySize() const noexcept { return _memorySize; }
 
+		inline const uptr GetStart() const noexcept { return _start; }
+		inline const uptr GetEnd() const noexcept { return _end; }
+
 		StackAllocator(const StackAllocator&) = delete;
 		StackAllocator(StackAllocator&&) = delete;
 	};

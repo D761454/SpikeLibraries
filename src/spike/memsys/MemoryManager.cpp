@@ -56,11 +56,21 @@ namespace memsys {
 
 		if (!_globalMemoryBase) {
 			_allocator = nullptr;
+			_start = 0;
+			_end = 0;
 			throw std::runtime_error("Global Memory Manager failed to malloc memory to its global memory base!");
 			return;
 		}
 
 		_allocator = new StackAllocator(_globalMemoryBase, kTotalSize);
+		if (_allocator) {
+			_start = _allocator->GetStart();
+			_end = _allocator->GetEnd();
+		}
+		else {
+			_start = 0;
+			_end = 0;
+		}
 
 		_allocatedChunks.clear();
 		_freeChunks.clear();
@@ -90,8 +100,17 @@ namespace memsys {
 
 	void MemoryManager::FreeChunk(void* ptr) {
 		if (!ptr) return;
+		if (!is_pointer_owned(ptr, _start, _end)) return;
 		assert(!_allocatedChunks.empty() && "MemoryManager.FreeChunk: Attempting to free a chunk with no allocated chunks! Double free or stale pointer!");
 		if (_allocatedChunks.empty()) return;
+
+		bool valid = false;
+		for (auto l : _allocatedChunks) {
+			if (ptr == l.second) valid = true;
+		}
+		assert(valid && "MemoryManager.FreeChunk: Attempting to free a pointer that does not point to a valid allocated chunk!");
+		if (!valid) return;
+
 		if (ptr == _allocatedChunks.back().second) {
 			if (!_allocator) return;
 			_allocator->Free(ptr);
@@ -118,6 +137,10 @@ namespace memsys {
 			}
 		}
 		else {
+			for (auto f : _freeChunks) {
+				if (f == ptr) return;
+			}
+
 			_freeChunks.push_back(ptr);
 		}
 	}

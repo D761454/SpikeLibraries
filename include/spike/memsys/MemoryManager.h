@@ -76,6 +76,9 @@ namespace memsys {
 		StackAllocator* _allocator;
 		void* _globalMemoryBase;
 
+		uptr _start;
+		uptr _end;
+
 		std::vector<std::pair<const char*, void*>> _allocatedChunks;
 		std::list<void*> _freeChunks; // store memory to free that is not at the head of the stack
 
