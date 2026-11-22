@@ -51,7 +51,6 @@ File Summary:
 #include <utility>
 #include <vector>
 #include <cstddef>
-#include <string_view>
 #include <cassert>
 
 #include "spike/def_aliases.h"
@@ -108,6 +107,22 @@ namespace memsys {
 		[[nodiscard]] void* Allocate(usize size, usize alignment = alignof(std::max_align_t));
 
 		/// <summary>
+		/// Allocate a memory chunk of sizeof T, ensuring alignment of T is satisfied
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns>pointer to the allocated object or nulltpr if it could not be allocated</returns>
+		template<typename T, typename... Args>
+		[[nodiscard]] T* Allocate(Args&&... args);
+
+		/// <summary>
+		/// Removes the allocated memory for the chunk at ptr, decrementing the allocation count and memory usage. 
+		/// If the chunk if not at the back of the stack, it is added to a free list for handling on a subsequent free call.
+		/// </summary>
+		/// <param name="ptr">pointer to the memory chunk to be freed</param>
+		/// <returns>if the free was a success</returns>
+		bool Free(void* ptr);
+
+		/// <summary>
 		/// Allocate a memory chunk of size with the specified alignment
 		/// </summary>
 		/// <param name="size">size of memory chunk to allocate</param>
@@ -115,14 +130,6 @@ namespace memsys {
 		/// <returns>pointer to the memory chunk or nullptr if it could not be allocated, paired with an error 
 		/// output, allowing identification of the cause of an allocation failure</returns>
 		[[nodiscard]] std::pair<void*, errlib::Error> CheckedAllocate(usize size, usize alignment = alignof(std::max_align_t));
-
-		/// <summary>
-		/// Allocate a memory chunk of sizeof T, ensuring alignment of T is satisfied
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <returns>pointer to the allocated object or nulltpr if it could not be allocated</returns>
-		template<typename T, typename... Args>
-		[[nodiscard]] T* Allocate(Args&&... args);
 
 		/// <summary>
 		/// Allocate a memory chunk of sizeof T, ensuring alignment of T is satisfied
@@ -140,7 +147,8 @@ namespace memsys {
 		/// If the chunk if not at the back of the stack, it is added to a free list for handling on a subsequent free call.
 		/// </summary>
 		/// <param name="ptr">pointer to the memory chunk to be freed</param>
-		bool Free(void* ptr);
+		/// <returns>an error code holding if the free had an error</returns>
+		errlib::Error CheckedFree(void* ptr);
 
 		/// <summary>
 		/// Sets the memory usage and allocation count to 0, clearing the stack and toFree lists.
@@ -159,9 +167,8 @@ namespace memsys {
 #pragma region Implementation
 
 	void* StackAllocator::Allocate(usize size, usize alignment) {
-		if (!_memoryBase || size <= 0) {
+		if (!_memoryBase || size <= 0)
 			return nullptr;
-		}
 
 		const usize headerSize = sizeof(MemoryHeader);
 		const usize offsetStorageSize = sizeof(uptr);
@@ -169,25 +176,24 @@ namespace memsys {
 		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
 		usize headerAdjustment; 
-		if (auto ex = get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment); !ex.ok()) {
+		if (auto ex = get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment); !ex.ok())
 			return nullptr;
-		}
+
 		byte* headerAddress = baseAddress + headerAdjustment;
 
 		byte* offsetStorageAddress = headerAddress + headerSize;
 
 		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
 		usize objectAdjustment;
-		if (auto ex = get_adjustment(reinterpret_cast<uptr>(objectAddress), alignment, objectAdjustment); !ex.ok()) {
+		if (auto ex = get_adjustment(reinterpret_cast<uptr>(objectAddress), alignment, objectAdjustment); !ex.ok())
 			return nullptr;
-		}
+
 		objectAddress += objectAdjustment;
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
 
-		if (_allocatedMemory + totalSize > _memorySize) {
+		if (_allocatedMemory + totalSize > _memorySize)
 			return nullptr;
-		}
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
@@ -204,9 +210,8 @@ namespace memsys {
 
 	template<typename T, typename... Args>
 	T* StackAllocator::Allocate(Args&&... args) {
-		if (!_memoryBase) {
+		if (!_memoryBase)
 			return nullptr;
-		}
 
 		const usize objectSize = sizeof(T);
 		const usize headerSize = sizeof(MemoryHeader);
@@ -216,25 +221,24 @@ namespace memsys {
 		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
 		usize headerAdjustment;
-		if (!get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment).ok()) {
+		if (!get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment).ok())
 			return nullptr;
-		}
+
 		byte* headerAddress = baseAddress + headerAdjustment;
 
 		byte* offsetStorageAddress = headerAddress + headerSize;
 
 		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
 		usize objectAdjustment;
-		if (!get_adjustment(reinterpret_cast<uptr>(objectAddress), objectAlignment, objectAdjustment).ok()) {
+		if (!get_adjustment(reinterpret_cast<uptr>(objectAddress), objectAlignment, objectAdjustment).ok())
 			return nullptr;
-		}
+
 		objectAddress += objectAdjustment;
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
 
-		if (_allocatedMemory + totalSize > _memorySize) {
+		if (_allocatedMemory + totalSize > _memorySize)
 			return nullptr;
-		}
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
@@ -257,12 +261,12 @@ namespace memsys {
 
 			throw;
 		}
+		return nullptr;
 	}
 
 	bool StackAllocator::Free(void* ptr) {
-		if (!ptr) {
+		if (!ptr)
 			return true; // not technically an error
-		}
 
 		if (!is_pointer_owned(ptr, _start, _end)) {
 			Report("StackAllocator.Free: pointer is not owned by this allocator!");
@@ -306,12 +310,162 @@ namespace memsys {
 					inner = true;
 				}
 			}
-			if (!inner) {
+			if (!inner)
 				loop = false;
-			}
 		}
 
 		return true;
+	}
+
+	std::pair<void*, errlib::Error> StackAllocator::CheckedAllocate(usize size, usize alignment) {
+		if (!_memoryBase || size <= 0)
+			return { nullptr, _memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocator.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedAllocate: allocation size must be > 0!") };
+
+		const usize headerSize = sizeof(MemoryHeader);
+		const usize offsetStorageSize = sizeof(uptr);
+
+		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
+
+		usize headerAdjustment;
+		if (auto ex = get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment); !ex.ok())
+			return { nullptr, ex };
+
+		byte* headerAddress = baseAddress + headerAdjustment;
+
+		byte* offsetStorageAddress = headerAddress + headerSize;
+
+		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
+		usize objectAdjustment;
+		if (auto ex = get_adjustment(reinterpret_cast<uptr>(objectAddress), alignment, objectAdjustment); !ex.ok())
+			return { nullptr, ex };
+
+		objectAddress += objectAdjustment;
+
+		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
+
+		if (_allocatedMemory + totalSize > _memorySize)
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!")};
+
+		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
+
+		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
+		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
+
+		_allocatedMemory += totalSize;
+		_allocationCount++;
+
+		_stack.push_back(mH);
+
+		return { reinterpret_cast<void*>(objectAddress), errlib::Error() };
+	}
+
+	template<typename T, typename... Args>
+	std::pair<T*, errlib::Error> StackAllocator::CheckedAllocate(Args&&... args) {
+		if (!_memoryBase)
+			return { nullptr, _memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocator.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedAllocate: allocation size must be > 0!") };
+
+		const usize objectSize = sizeof(T);
+		const usize headerSize = sizeof(MemoryHeader);
+		const usize objectAlignment = alignof(T);
+		const usize offsetStorageSize = sizeof(uptr);
+
+		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
+
+		usize headerAdjustment;
+		if (auto ex = get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment); !ex.ok())
+			return { nullptr, ex };
+
+		byte* headerAddress = baseAddress + headerAdjustment;
+
+		byte* offsetStorageAddress = headerAddress + headerSize;
+
+		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
+		usize objectAdjustment;
+		if (auto ex = get_adjustment(reinterpret_cast<uptr>(objectAddress), objectAlignment, objectAdjustment); !ex.ok())
+			return { nullptr, ex };
+
+		objectAddress += objectAdjustment;
+
+		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
+
+		if (_allocatedMemory + totalSize > _memorySize)
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!") };
+
+		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
+
+		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
+		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
+
+		_allocatedMemory += totalSize;
+		_allocationCount++;
+
+		_stack.push_back(mH);
+
+		try {
+			return { std::construct_at(reinterpret_cast<T*>(objectAddress), std::forward<Args>(args)...), errlib::Error() };
+		}
+		catch (...) {
+			--_allocationCount;
+			_allocatedMemory -= totalSize;
+
+			_stack.pop_back();
+
+			throw;
+		}
+		return { nullptr, errlib::Error(errlib::ErrorCode_unknown, "StackAllocator.CheckedAllocate: objects construction failed! recommend implementing a catch to handle this!")};
+	}
+
+	errlib::Error StackAllocator::CheckedFree(void* ptr) {
+		if (!ptr)
+			return errlib::Error(); // not technically an error
+
+		if (!is_pointer_owned(ptr, _start, _end)) {
+			Report("StackAllocator.CheckedFree: pointer is not owned by this allocator!");
+			return errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not owned by this allocator!");
+		}
+
+		if (_stack.empty()) {
+			Report("StackAllocator.CheckedFree: attempting to free from an empty stack!");
+			return errlib::Error(errlib::ErrorCode_emptyContainer, "StackAllocator.CheckedFree: attempting to free from an empty stack!");
+		}
+
+		const usize offsetStorageSize = sizeof(uptr);
+		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);
+		MemoryHeader* mH = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(ptr) - offsetToHeader);
+
+#if _DEBUG
+		if (mH->checkVal != kCheckVal) {
+			assert(false && "Check value in memory header for object within the stack allocator is corrupted!");
+			return errlib::Error(errlib::ErrorCode_memoryCorruption, "StackAllocator.CheckedFree: checkVal for memory header is not correct!, potential memory corruption detected!");
+		}
+#endif
+
+		if (mH == _stack.back()) {
+			_stack.pop_back();
+
+			_allocatedMemory -= mH->size;
+			_allocationCount--;
+		}
+		else {
+			_toFree.push_back(mH);
+			return errlib::Error();
+		}
+
+		bool loop = true;
+		while (loop) {
+			bool inner = false;
+			for (auto it : _toFree) {
+				if (it == _stack.back()) {
+					_allocatedMemory -= it->size;
+					_allocationCount--;
+					inner = true;
+				}
+			}
+			if (!inner)
+				loop = false;
+		}
+
+		return errlib::Error();
 	}
 
 	void StackAllocator::Reset() noexcept {

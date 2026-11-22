@@ -72,6 +72,9 @@ namespace errlib {
 		ErrorCode_missingFile = 13,
 		ErrorCode_IDmismatch = 14,
 		ErrorCode_missingAsset = 15,
+		ErrorCode_attemptingUseOfNullptr = 16,
+		ErrorCode_memoryCorruption = 17,
+		ErrorCode_emptyContainer = 18,
 		
 		ErrorCode_unknown = 0xFFFF
 	};
@@ -100,6 +103,9 @@ namespace errlib {
 		case ErrorCode_missingFile: return "missing file";
 		case ErrorCode_IDmismatch: return "id mismatch";
 		case ErrorCode_missingAsset: return "missing asset";
+		case ErrorCode_attemptingUseOfNullptr: return "attempting to use a nullptr";
+		case ErrorCode_memoryCorruption: return "memory corruption";
+		case ErrorCode_emptyContainer: return "attempted use of an empty container";
 		case ErrorCode_unknown: return "unknown error";
 		default: return "Invalid Error Code!";
 		}

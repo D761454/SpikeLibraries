@@ -127,6 +127,7 @@ namespace memsys {
 		/// If the chunk if not at the back of the stack, it is added to a free list for handling on a subsequent free call.
 		/// </summary>
 		/// <param name="ptr">pointer to the memory chunk to be freed</param>
+		/// <returns>if the free was a success</returns>
 		bool Free(void* ptr);
 
 		/// <summary>
