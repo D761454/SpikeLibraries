@@ -75,7 +75,7 @@ namespace memsys {
 
         using PoolAlloc = PoolAllocator<T, Capacity>;
 
-        inline static constexpr usize kPoolSize = PoolAlloc::kPoolSize;
+        inline static constexpr usize kPoolSize = Capacity * PoolAlloc::kChunkSize;
         const char* id = nullptr;
 
     public:

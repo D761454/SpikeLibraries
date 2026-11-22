@@ -87,7 +87,7 @@ namespace memsys {
         uptr _start;
         uptr _end;
 
-        inline static constexpr usize kPoolSize = sizeof(Chunk);
+        inline static constexpr usize kChunkSize = sizeof(Chunk);
 
     public:
         PoolAllocator(const void* memoryBase, const usize memorySize) : 
@@ -101,8 +101,8 @@ namespace memsys {
                 return;
             }
 
-            assert(memorySize == Capacity * kPoolSize && "PoolAllocator: incorrect memory size to house 'Capacity' objects within the pool!");
-            if (memorySize != Capacity * kPoolSize) {
+            assert(memorySize == Capacity * kChunkSize && "PoolAllocator: incorrect memory size to house 'Capacity' objects within the pool!");
+            if (memorySize != Capacity * kChunkSize) {
                 _start = 0;
                 _end = 0;
                 return;
@@ -177,7 +177,7 @@ namespace memsys {
             _free = chunk;
 
             --_allocationCount;
-            _allocatedMemory = (_allocatedMemory >= kPoolSize) ? (_allocatedMemory - kPoolSize) : 0;
+            _allocatedMemory = (_allocatedMemory >= kChunkSize) ? (_allocatedMemory - kChunkSize) : 0;
 
             throw;
         }
@@ -216,7 +216,7 @@ namespace memsys {
         _free = chunk;
 
         --_allocationCount;
-        _allocatedMemory = (_allocatedMemory >= kPoolSize) ? (_allocatedMemory - kPoolSize) : 0;
+        _allocatedMemory = (_allocatedMemory >= kChunkSize) ? (_allocatedMemory - kChunkSize) : 0;
         return true;
     }
 
