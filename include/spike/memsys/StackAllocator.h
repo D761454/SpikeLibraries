@@ -65,7 +65,7 @@ namespace memsys {
 	/// You can push (allocate) and pop (free) memory in LIFO (Last-In, First-Out) order.
 	/// Object dtors must be handled manually as the stack can hold many different object types!
 	/// </summary>
-	class StackAllocator : public Allocator {
+	class StackAllocator : Allocator {
 	private:
 		u64 _allocationCount;
 		usize _allocatedMemory;
@@ -388,7 +388,7 @@ namespace memsys {
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
 
 		if (_allocatedMemory + totalSize > _memorySize)
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!") };
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(objectSize) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!") };
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 

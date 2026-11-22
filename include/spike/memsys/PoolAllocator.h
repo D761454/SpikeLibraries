@@ -63,7 +63,7 @@ namespace memsys {
     /// This is useful for allocating many small objects of the same size, such as particles or game entities.
     /// </summary>
     template<class T, usize Capacity>
-    class PoolAllocator : public Allocator {
+    class PoolAllocator : Allocator {
         static_assert(Capacity > 0);
 
     private:

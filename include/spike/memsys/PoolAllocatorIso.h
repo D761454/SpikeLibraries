@@ -64,7 +64,7 @@ namespace memsys {
     /// This Iso version manages its memory itself.
     /// </summary>
     template<class T, usize Capacity>
-    class PoolAllocatorIso : public Allocator {
+    class PoolAllocatorIso : Allocator {
         static_assert(Capacity > 0);
 
     private:

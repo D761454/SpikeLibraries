@@ -59,6 +59,8 @@ File Summary:
 
 #include "spike/def_aliases.h"
 
+#include "spike/memsys/Allocator.h"
+
 namespace memsys {
 	class StackAllocator;
 
@@ -67,7 +69,7 @@ namespace memsys {
 	/// it can dish out memory chunks to users, allowing for these chunks to be managed by
 	/// different allocator types. The manager uses a linear allocator for its memory management.
 	/// </summary>
-	class MemoryManager {
+	class MemoryManager : Allocator {
 	private:
 		inline static const usize kTotalSize = kMegaByte * 128;
 
@@ -104,7 +106,7 @@ namespace memsys {
 		void LogMemoryUsage() const;
 
 		/// <summary>
-		/// Checks if there are nay unfreed chunks in memory. Recommended for use on shutdown as a security check.
+		/// Checks if there are nay unfreed chunks in memory. Recommended for use on shutdown as a security check. If a chunk is still allocated and not marked for deletion, it will be logged.
 		/// </summary>
 		void IntegrityCheck() const;
 

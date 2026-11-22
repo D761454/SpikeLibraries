@@ -41,11 +41,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #endif
 #include <utility>
-#include <iostream>
 #include <string>
+#include <cassert>
 
 #include "spike/def_aliases.h"
 
+#include "spike/memsys/Allocator.h"
 #include "spike/memsys/StackAllocator.h"
 
 namespace memsys {
@@ -60,10 +61,6 @@ namespace memsys {
 
 		_allocator = new StackAllocator(_globalMemoryBase, kTotalSize);
 
-		if (!_allocator) {
-			assert(false && "Memory managers allocator could not be created!");
-		}
-
 		_allocatedChunks.clear();
 		_freeChunks.clear();
 	}
@@ -74,7 +71,7 @@ namespace memsys {
 		delete _allocator;
 		_allocator = nullptr;
 
-		free(_globalMemoryBase);
+		if (_globalMemoryBase) free(_globalMemoryBase);
 		_globalMemoryBase = nullptr;
 
 		_allocatedChunks.clear();
@@ -83,13 +80,16 @@ namespace memsys {
 
 	void* MemoryManager::AllocateChunk(const usize size, const char* id) {
 		void* chunk = _allocator->Allocate(size);
+		if (!chunk) return nullptr;
 		_allocatedChunks.push_back(std::pair<const char*, void*>(id, chunk));
 
 		return chunk;
 	}
 
-	void MemoryManager::FreeChunk(void* ptr) { // may need to add ownership check here
+	void MemoryManager::FreeChunk(void* ptr) {
 		if (!ptr) return;
+		assert(!_allocatedChunks.empty() && "MemoryManager.FreeChunk: Attempting to free a chunk with no allocated chunks! Double free or stale pointer!");
+		if (_allocatedChunks.empty()) return;
 		if (ptr == _allocatedChunks.back().second) {
 			_allocator->Free(ptr);
 			_allocatedChunks.pop_back();
@@ -99,6 +99,10 @@ namespace memsys {
 				toFree = false;
 
 				for (void* freeChunk : _freeChunks) {
+					if (_allocatedChunks.empty()) {
+						toFree = true;
+						break;
+					}
 					if (freeChunk == _allocatedChunks.back().second) {
 						_allocator->Free(freeChunk);
 						_allocatedChunks.pop_back();
@@ -116,13 +120,13 @@ namespace memsys {
 	}
 
 	void MemoryManager::LogMemoryUsage() const {
-		if (_allocator) std::cout << "Current Memory Usage: " + std::to_string(_allocator->GetAllocatedMemory()) + " / " + std::to_string(_allocator->GetMemorySize()) + "\n";
-		else std::cerr << "No allocator for the global memory manager!\n";
+		if (_allocator) Report("Current Memory Usage: " + std::to_string(_allocator->GetAllocatedMemory()) + " / " + std::to_string(_allocator->GetMemorySize()));
+		else Report("No allocator for the global memory manager!");
 	}
 
 	void MemoryManager::IntegrityCheck() const {
 		if (_allocatedChunks.size() > 0) {
-			std::cerr << "!!! MEMORY LEAK !!!\n";
+			Report("!!! MEMORY LEAK !!!");
 
 			for (std::pair<const char*, const void*> chunk : _allocatedChunks) {
 				bool isFree = false;
@@ -134,9 +138,8 @@ namespace memsys {
 					}
 				}
 
-				if (!isFree) {
-					std::cerr << "Leaked Chunk " + std::string(chunk.first) + " at address " + &*(char*)chunk.second;
-				}
+				if (!isFree)
+					Report("Leaked Chunk " + std::string(chunk.first) + " at address " + &*(char*)chunk.second);
 			}
 		}
 	}

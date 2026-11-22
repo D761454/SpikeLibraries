@@ -67,7 +67,7 @@ namespace memsys {
 	/// This is useful for temporary memory that is only needed for a short time, such as during a single frame.
 	/// Object dtors must be handled manually as the stack can hold many different object types!
 	/// </summary>
-	class LinearAllocatorIso : public Allocator {
+	class LinearAllocatorIso : Allocator {
 	private:
 		u64 _allocationCount;
 		usize _allocatedMemory;

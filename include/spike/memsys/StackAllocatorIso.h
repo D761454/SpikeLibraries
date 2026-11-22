@@ -70,7 +70,7 @@ namespace memsys {
 	/// You can push (allocate) and pop (free) memory in LIFO (Last-In, First-Out) order.
 	/// Object dtors must be handled manually as the stack can hold many different object types!
 	/// </summary>
-	class StackAllocatorIso : public Allocator {
+	class StackAllocatorIso : Allocator {
 	private:
 		u64 _allocationCount;
 		usize _allocatedMemory;
