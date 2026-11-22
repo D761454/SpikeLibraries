@@ -55,9 +55,12 @@ File Summary:
 #include <memory>
 #include <utility>
 #include <vector>
+#include <algorithm>
 #include <cstddef>
 #include <cassert>
 #include <string>
+#include <stdexcept>
+#include <exception>
 
 #include "spike/def_aliases.h"
 #include "spike/error.hpp"
@@ -83,6 +86,43 @@ namespace memsys {
 
 		std::vector<void*> _stack;
 		std::vector<void*> _toFree;
+
+		bool ReserveStackEntry() noexcept {
+			if (_stack.size() == _stack.max_size()) return false;
+			try {
+				_stack.reserve(_stack.size() + 1);
+				return true;
+			}
+			catch (const std::bad_alloc&) {
+				return false;
+			}
+			catch (const std::length_error&) {
+				return false;
+			}
+		}
+
+		bool ReserveDeferredFreeEntry() noexcept {
+			if (_toFree.size() == _toFree.max_size()) return false;
+			try {
+				_toFree.reserve(_toFree.size() + 1);
+				return true;
+			}
+			catch (const std::bad_alloc&) {
+				return false;
+			}
+			catch (const std::length_error&) {
+				return false;
+			}
+		}
+
+		bool CalculateAllocationSize(usize headerAdjustment, usize headerSize, usize offsetStorageSize, usize objectAdjustment, usize objectSize, usize& totalSize) const noexcept {
+			return checked_add(headerAdjustment, headerSize, totalSize)
+				&& checked_add(totalSize, offsetStorageSize, totalSize)
+				&& checked_add(totalSize, objectAdjustment, totalSize)
+				&& checked_add(totalSize, objectSize, totalSize)
+				&& _allocatedMemory <= _memorySize
+				&& totalSize <= _memorySize - _allocatedMemory;
+		}
 
 	public:
 		StackAllocatorIso(const usize memorySize) : 
@@ -204,9 +244,8 @@ namespace memsys {
 
 		objectAddress += objectAdjustment;
 
-		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
-
-		if (totalSize > _memorySize - _allocatedMemory)
+		usize totalSize;
+		if (!CalculateAllocationSize(headerAdjustment, headerSize, offsetStorageSize, objectAdjustment, size, totalSize) || !ReserveStackEntry())
 			return nullptr;
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
@@ -214,20 +253,10 @@ namespace memsys {
 		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
 		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
 
+		void* ptr = reinterpret_cast<void*>(objectAddress);
+		_stack.push_back(ptr);
 		_allocatedMemory += totalSize;
 		_allocationCount++;
-
-		void* ptr = reinterpret_cast<void*>(objectAddress);
-
-		try {
-			_stack.reserve(_stack.size() + 1);
-			_stack.push_back(ptr);
-		}
-		catch (...) {
-			_allocationCount--;
-			_allocatedMemory -= totalSize;
-			ptr = nullptr;
-		}
 
 		return ptr;
 	}
@@ -258,9 +287,8 @@ namespace memsys {
 
 		objectAddress += objectAdjustment;
 
-		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
-
-		if (totalSize > _memorySize - _allocatedMemory)
+		usize totalSize;
+		if (!CalculateAllocationSize(headerAdjustment, headerSize, offsetStorageSize, objectAdjustment, objectSize, totalSize) || !ReserveStackEntry())
 			return nullptr;
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
@@ -268,18 +296,9 @@ namespace memsys {
 		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
 		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
 
+		_stack.push_back(reinterpret_cast<void*>(objectAddress));
 		_allocatedMemory += totalSize;
 		_allocationCount++;
-
-		try {
-			_stack.reserve(_stack.size() + 1);
-			_stack.push_back(reinterpret_cast<void*>(objectAddress));
-		}
-		catch (...) {
-			_allocationCount--;
-			_allocatedMemory -= totalSize;
-			return nullptr;
-		}
 
 		try {
 			return std::construct_at(reinterpret_cast<T*>(objectAddress), std::forward<Args>(args)...);
@@ -327,30 +346,22 @@ namespace memsys {
 				if (f == ptr) return true;
 			}
 
-			try {
-				_toFree.reserve(_toFree.size() + 1);
-				_toFree.push_back(ptr);
-			}
-			catch (...) {
-				return false;
-			}
-
+			if (!ReserveDeferredFreeEntry()) return false;
+			_toFree.push_back(ptr);
 			return true;
 		}
 
-		auto i = _toFree.begin();
-		while (i != _toFree.end()) {
-			if ((*i) == _stack.back()) {
-				uptr offsetToHeader2 = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>((*i)) - offsetStorageSize);
-				MemoryHeader* mH2 = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>((*i)) - offsetToHeader2);
+		while (!_stack.empty()) {
+			auto pending = std::find(_toFree.begin(), _toFree.end(), _stack.back());
+			if (pending == _toFree.end()) break;
 
-				_allocatedMemory -= mH2->size;
-				_allocationCount--;
-				_stack.pop_back();
-				_toFree.erase(i);
-				i = _toFree.begin();
-			}
-			else ++i;
+			uptr offsetToHeader2 = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(*pending) - offsetStorageSize);
+			MemoryHeader* mH2 = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(*pending) - offsetToHeader2);
+
+			_allocatedMemory -= mH2->size;
+			_allocationCount--;
+			_stack.pop_back();
+			_toFree.erase(pending);
 		}
 
 		return true;
@@ -380,30 +391,21 @@ namespace memsys {
 
 		objectAddress += objectAdjustment;
 
-		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
-
-		if (totalSize > _memorySize - _allocatedMemory)
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!") };
+		usize totalSize;
+		if (!CalculateAllocationSize(headerAdjustment, headerSize, offsetStorageSize, objectAdjustment, size, totalSize))
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: allocation size plus allocator overhead exceeds available memory.") };
+		if (!ReserveStackEntry())
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed due to insufficient memory.") };
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
 		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
 		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
 
+		void* ptr = reinterpret_cast<void*>(objectAddress);
+		_stack.push_back(ptr);
 		_allocatedMemory += totalSize;
 		_allocationCount++;
-
-		void* ptr = reinterpret_cast<void*>(objectAddress);
-
-		try {
-			_stack.reserve(_stack.size() + 1);
-			_stack.push_back(ptr);
-		}
-		catch (...) {
-			_allocationCount--;
-			_allocatedMemory -= totalSize;
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed, stack capacity reached?") };
-		}
 
 		return { ptr, errlib::Error() };
 	}
@@ -435,28 +437,20 @@ namespace memsys {
 
 		objectAddress += objectAdjustment;
 
-		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;
-
-		if (totalSize > _memorySize - _allocatedMemory)
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: attempting allocation of size: " + std::to_string(objectSize) + " (total size: " + std::to_string(totalSize) + ") would overflow the stacks memory!") };
+		usize totalSize;
+		if (!CalculateAllocationSize(headerAdjustment, headerSize, offsetStorageSize, objectAdjustment, objectSize, totalSize))
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: allocation size plus allocator overhead exceeds available memory.") };
+		if (!ReserveStackEntry())
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed due to insufficient memory.") };
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
 		uptr offsetToHeader = reinterpret_cast<uptr>(objectAddress) - reinterpret_cast<uptr>(mH);
 		*reinterpret_cast<uptr*>(objectAddress - offsetStorageSize) = offsetToHeader;
 
+		_stack.push_back(reinterpret_cast<void*>(objectAddress));
 		_allocatedMemory += totalSize;
 		_allocationCount++;
-
-		try {
-			_stack.reserve(_stack.size() + 1);
-			_stack.push_back(reinterpret_cast<void*>(objectAddress));
-		}
-		catch (...) {
-			_allocationCount--;
-			_allocatedMemory -= totalSize;
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed, stack capacity reached?") };
-		}
 
 		try {
 			return { std::construct_at(reinterpret_cast<T*>(objectAddress), std::forward<Args>(args)...), errlib::Error() };
@@ -510,30 +504,23 @@ namespace memsys {
 				if (f == ptr) return errlib::Error();
 			}
 
-			try {
-				_toFree.reserve(_toFree.size() + 1);
-				_toFree.push_back(ptr);
-			}
-			catch (...) {
-				return errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocator.CheckedFree: to free vector update failed, vector capacity reached?");
-			}
-
+			if (!ReserveDeferredFreeEntry())
+				return errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedFree: to free vector update failed due to insufficient memory.");
+			_toFree.push_back(ptr);
 			return errlib::Error();
 		}
 
-		auto i = _toFree.begin();
-		while (i != _toFree.end()) {
-			if ((*i) == _stack.back()) {
-				uptr offsetToHeader2 = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>((*i)) - offsetStorageSize);
-				MemoryHeader* mH2 = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>((*i)) - offsetToHeader2);
+		while (!_stack.empty()) {
+			auto pending = std::find(_toFree.begin(), _toFree.end(), _stack.back());
+			if (pending == _toFree.end()) break;
 
-				_allocatedMemory -= mH2->size;
-				_allocationCount--;
-				_stack.pop_back();
-				_toFree.erase(i);
-				i = _toFree.begin();
-			}
-			else ++i;
+			uptr offsetToHeader2 = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(*pending) - offsetStorageSize);
+			MemoryHeader* mH2 = reinterpret_cast<MemoryHeader*>(reinterpret_cast<byte*>(*pending) - offsetToHeader2);
+
+			_allocatedMemory -= mH2->size;
+			_allocationCount--;
+			_stack.pop_back();
+			_toFree.erase(pending);
 		}
 
 		return errlib::Error();
