@@ -220,10 +220,13 @@ namespace memsys {
 		void* ptr = reinterpret_cast<void*>(objectAddress);
 
 		try {
+			_stack.reserve(_stack.size() + 1);
 			_stack.push_back(ptr);
 		}
 		catch (...) {
-
+			_allocationCount--;
+			_allocatedMemory -= totalSize;
+			ptr = nullptr;
 		}
 
 		return ptr;
@@ -269,10 +272,13 @@ namespace memsys {
 		_allocationCount++;
 
 		try {
+			_stack.reserve(_stack.size() + 1);
 			_stack.push_back(reinterpret_cast<void*>(objectAddress));
 		}
 		catch (...) {
-
+			_allocationCount--;
+			_allocatedMemory -= totalSize;
+			return nullptr;
 		}
 
 		try {
@@ -321,7 +327,14 @@ namespace memsys {
 				if (f == ptr) return true;
 			}
 
-			_toFree.push_back(ptr);
+			try {
+				_toFree.reserve(_toFree.size() + 1);
+				_toFree.push_back(ptr);
+			}
+			catch (...) {
+				return false;
+			}
+
 			return true;
 		}
 
@@ -382,7 +395,16 @@ namespace memsys {
 
 		void* ptr = reinterpret_cast<void*>(objectAddress);
 
-		_stack.push_back(ptr);
+		try {
+			_stack.reserve(_stack.size() + 1);
+			_stack.push_back(ptr);
+		}
+		catch (...) {
+			_allocationCount--;
+			_allocatedMemory -= totalSize;
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed, stack capacity reached?") };
+		}
+
 		return { ptr, errlib::Error() };
 	}
 
@@ -426,7 +448,15 @@ namespace memsys {
 		_allocatedMemory += totalSize;
 		_allocationCount++;
 
-		_stack.push_back(reinterpret_cast<void*>(objectAddress));
+		try {
+			_stack.reserve(_stack.size() + 1);
+			_stack.push_back(reinterpret_cast<void*>(objectAddress));
+		}
+		catch (...) {
+			_allocationCount--;
+			_allocatedMemory -= totalSize;
+			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed, stack capacity reached?") };
+		}
 
 		try {
 			return { std::construct_at(reinterpret_cast<T*>(objectAddress), std::forward<Args>(args)...), errlib::Error() };
@@ -481,7 +511,14 @@ namespace memsys {
 				if (f == ptr) return errlib::Error();
 			}
 
-			_toFree.push_back(ptr);
+			try {
+				_toFree.reserve(_toFree.size() + 1);
+				_toFree.push_back(ptr);
+			}
+			catch (...) {
+				return errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocator.CheckedFree: to free vector update failed, vector capacity reached?");
+			}
+
 			return errlib::Error();
 		}
 
