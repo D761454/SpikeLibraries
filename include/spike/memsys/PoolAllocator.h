@@ -142,24 +142,24 @@ namespace memsys {
         /// Calls the destructor of T and adds the chunk to the free list.
         /// </summary>
         /// <returns>if the destroy was successful</returns>
-        bool Destroy(T* ptr);
+bool Destroy(T* ptr);
 
-        /// <summary>
-        /// Resets the free list and allocator bookkeeping.
-        /// This does NOT destroy outstanding objects; caller is responsible for destroying live objects first.
-        /// </summary>
-        void Reset();
+/// <summary>
+/// Resets the free list and allocator bookkeeping.
+/// This does NOT destroy outstanding objects; caller is responsible for destroying live objects first.
+/// </summary>
+void Reset();
 
-        inline const void* GetMemoryBase() const { return _memoryBase; }
-        inline const u64 GetAllocationCount() const noexcept { return _allocationCount; }
-        inline const usize GetAllocatedMemory() const noexcept { return _allocatedMemory; }
-        inline const usize GetMemorySize() const noexcept { return _memorySize; }
+inline const void* GetMemoryBase() const { return _memoryBase; }
+inline const u64 GetAllocationCount() const noexcept { return _allocationCount; }
+inline const usize GetAllocatedMemory() const noexcept { return _allocatedMemory; }
+inline const usize GetMemorySize() const noexcept { return _memorySize; }
 
-        inline const uptr GetStart() const noexcept { return _start; }
-        inline const uptr GetEnd() const noexcept { return _end; }
+inline const uptr GetStart() const noexcept { return _start; }
+inline const uptr GetEnd() const noexcept { return _end; }
 
-        PoolAllocator(const PoolAllocator&) = delete;
-        PoolAllocator(PoolAllocator&&) = delete;
+PoolAllocator(const PoolAllocator&) = delete;
+PoolAllocator(PoolAllocator&&) = delete;
     };
 
 #pragma region Implementation
@@ -216,20 +216,42 @@ namespace memsys {
             return false;
         }
 
-        std::destroy_at(ptr);
-
         Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
-        chunk->next = _free;
-        _free = chunk;
 
 #if _DEBUG
+        bool found = false;
         for (usize i = 0; i < Capacity; ++i) {
             if (_checker[i].second == chunk) {
+                if (!_checker[i].first)
+                    assert(false && "checker chunk is already marked false during destroy check, double free or stale pointer!");
+
                 _checker[i].first = false;
+                found = true;
                 break;
             }
         }
+        if (!found) {
+            Report("PoolAllocator.Destroy: pointer does not point to a valid chunk!");
+            return false;
+        }
+#else
+        bool found = false;
+        for (usize i = 0; i < Capacity; ++i) {
+            if (reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i) == chunk){
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            Report("PoolAllocator.Destroy: pointer does not point to a valid chunk!");
+            return false;
+        }
 #endif
+
+        chunk->next = _free;
+        _free = chunk;
+
+        std::destroy_at(ptr);
 
         --_allocationCount;
         _allocatedMemory = (_allocatedMemory >= kChunkStride) ? (_allocatedMemory - kChunkStride) : 0;

@@ -190,6 +190,11 @@ namespace memsys {
                 auto it = std::find(pool->allocatedObjects.begin(), pool->allocatedObjects.end(), obj);
                 assert(it != pool->allocatedObjects.end() && "DynamicPoolAllocatorIso.Destroy: pointer is within a pools bounds but does not point to an allocated chunk! Double free or stale pointer!");
 
+                if (it == pool->allocatedObjects.end()) {
+                    Report("DynamicPoolAllocatorIso.Destroy: pointer is within a pools bounds but does not point to an allocated chunk! Double free or stale pointer!");
+                    return false;
+                }
+
                 pool->allocatedObjects.erase(it);
                 pool->allocator->Destroy(obj);
                 return true;

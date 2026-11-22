@@ -51,6 +51,7 @@ File Summary:
 #include <memory>
 #include <utility>
 #include <array>
+#include <cassert>
 
 #include "spike/def_aliases.h"
 
@@ -168,11 +169,42 @@ namespace memsys {
             return false;
         }
 
-        std::destroy_at(ptr);
-
         Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
+
+#if _DEBUG
+        bool found = false;
+        for (usize i = 0; i < Capacity; ++i) {
+            if (_checker[i].second == chunk) {
+                if (!_checker[i].first)
+                    assert(false && "checker chunk is already marked false during destroy check, double free or stale pointer!");
+
+                _checker[i].first = false;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            Report("PoolAllocator.Destroy: pointer does not point to a valid chunk!");
+            return false;
+        }
+#else
+        bool found = false;
+        for (usize i = 0; i < Capacity; ++i) {
+            if (reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i) == chunk){
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            Report("PoolAllocator.Destroy: pointer does not point to a valid chunk!");
+            return false;
+        }
+#endif
+
         chunk->next = _free;
         _free = chunk;
+
+        std::destroy_at(ptr);
 
         --_allocationCount;
         _allocatedMemory = (_allocatedMemory >= kChunkStride) ? (_allocatedMemory - kChunkStride) : 0;
