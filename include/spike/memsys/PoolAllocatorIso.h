@@ -168,6 +168,15 @@ namespace memsys {
 
         Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
 
+        bool found = false;
+        for (usize i = 0; i < Capacity; ++i) {
+            if (&_pool[i] == chunk) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) return false;
+
         bool freed = false;
         Chunk* freeC = _free;
 
@@ -177,15 +186,6 @@ namespace memsys {
             freeC = freeC->next;
         } while (freeC && !freed);
         if (freed) return false;
-
-        bool found = false;
-        for (usize i = 0; i < Capacity; ++i) {
-            if (&_pool[i] == chunk) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) return false;
 
         chunk->next = _free;
         _free = chunk;

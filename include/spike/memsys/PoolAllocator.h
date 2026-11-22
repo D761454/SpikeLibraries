@@ -191,6 +191,12 @@ namespace memsys {
 
         Chunk* chunk = reinterpret_cast<Chunk*>(ptr);
 
+        bool aligned = false;
+        for (usize i = 0; i < Capacity; ++i) {
+            if (reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i == ptr) aligned = true;
+        }
+        if (!aligned) return false;
+
         bool freed = false;
         Chunk* freeC = _free;
 
@@ -200,12 +206,6 @@ namespace memsys {
             freeC = freeC->next;
         }  while (freeC && !freed);
         if (freed) return false;
-
-        bool aligned = false;
-        for (usize i = 1; i < Capacity; ++i) {
-            if (reinterpret_cast<Chunk*>(const_cast<void*>(_memoryBase)) + i == ptr) aligned = true;
-        }
-        if (!aligned) return false;
 
         chunk->next = _free;
         _free = chunk;
