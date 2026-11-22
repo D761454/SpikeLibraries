@@ -252,9 +252,8 @@ namespace memsys {
 			--_allocationCount;
 			_allocatedMemory -= size;
 
-			throw;
+			return errlib::Error(errlib::ErrorCode_unknown, "LinearAllocator.CheckedAllocate: objects construction failed!");
 		}
-		return { nullptr, errlib::Error(errlib::ErrorCode_unknown, "LinearAllocator.CheckedAllocate: objects construction failed! recommend implementing a catch to handle this!") };
 	}
 
 #pragma endregion

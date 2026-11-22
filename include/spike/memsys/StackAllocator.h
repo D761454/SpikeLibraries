@@ -456,9 +456,8 @@ namespace memsys {
 
 			_stack.pop_back();
 
-			throw;
+			return { nullptr, errlib::Error(errlib::ErrorCode_unknown, "StackAllocator.CheckedAllocate: objects construction failed! recommend implementing a catch to handle this!") };
 		}
-		return { nullptr, errlib::Error(errlib::ErrorCode_unknown, "StackAllocator.CheckedAllocate: objects construction failed! recommend implementing a catch to handle this!") };
 	}
 
 	errlib::Error StackAllocator::CheckedFree(void* ptr) {
