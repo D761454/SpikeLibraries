@@ -146,10 +146,7 @@ namespace memsys {
 #pragma region Implementation
 
 	void* StackAllocatorIso::Allocate(usize size, usize alignment) {
-		if (!_memoryBase) {
-			return nullptr;
-		}
-		if (size <= 0) {
+		if (!_memoryBase || size <= 0) {
 			return nullptr;
 		}
 
@@ -158,13 +155,19 @@ namespace memsys {
 
 		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
-		usize headerAdjustment = get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader));
+		usize headerAdjustment;
+		if (!get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment).ok()) {
+			return nullptr;
+		}
 		byte* headerAddress = baseAddress + headerAdjustment;
 
 		byte* offsetStorageAddress = headerAddress + headerSize;
 
 		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
-		usize objectAdjustment = get_adjustment(reinterpret_cast<uptr>(objectAddress), alignment);
+		usize objectAdjustment;
+		if (!get_adjustment(reinterpret_cast<uptr>(objectAddress), alignment, objectAdjustment).ok()) {
+			return nullptr;
+		}
 		objectAddress += objectAdjustment;
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + size;
@@ -199,13 +202,19 @@ namespace memsys {
 
 		byte* baseAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
-		usize headerAdjustment = get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader));
+		usize headerAdjustment; 
+		if (!get_adjustment(reinterpret_cast<uptr>(baseAddress), alignof(MemoryHeader), headerAdjustment).ok()) {
+			return nullptr;
+		}
 		byte* headerAddress = baseAddress + headerAdjustment;
 
 		byte* offsetStorageAddress = headerAddress + headerSize;
 
 		byte* objectAddress = offsetStorageAddress + offsetStorageSize;
-		usize objectAdjustment = get_adjustment(reinterpret_cast<uptr>(objectAddress), objectAlignment);
+		usize objectAdjustment;
+		if (!get_adjustment(reinterpret_cast<uptr>(objectAddress), objectAlignment, objectAdjustment).ok()) {
+			return nullptr;
+		}
 		objectAddress += objectAdjustment;
 
 		usize totalSize = headerAdjustment + headerSize + offsetStorageSize + objectAdjustment + objectSize;

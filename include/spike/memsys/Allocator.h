@@ -48,6 +48,7 @@ File Summary:
 #include <cassert>
 
 #include "spike/def_aliases.h"
+#include "spike/error.hpp"
 
 namespace memsys {
 	/// <summary>
@@ -57,8 +58,8 @@ namespace memsys {
 	/// <param name="value">size of the object to align</param>
 	/// <param name="alignment">alignemnt required by the object</param>
 	/// <returns>memory space required to house the object while respecting alignment</returns>
-	static inline constexpr const usize align_up(usize value, usize alignment) {
-		assert(alignment != 0 && (alignment & (alignment - 1)) == 0 && "Alignment must be power of two");
+	inline constexpr const usize align_up(usize value, usize alignment) {
+		assert(alignment > 0 && (alignment & (alignment - 1)) == 0 && "Alignment must be power of 2, or 1");
 		return (value + alignment - 1) & ~(alignment - 1);
 	}
 
@@ -67,13 +68,16 @@ namespace memsys {
 	/// </summary>
 	/// <param name="ptr">pointer to the memory location to align</param>
 	/// <param name="alignment">desired alignment for an object at ptr</param>
-	/// <returns>amount of bytes needed to shift ptr by to correctly align it</returns>
-	static inline usize get_adjustment(uptr ptr, usize alignment) {
-		assert(alignment == 1 || (alignment & (alignment - 1)) == 0 && "Alignment must be a power of 2, or 1");
+	/// <param name="outSize">amount of bytes needed to shift ptr by to correctly align it</param>
+	/// <returns>if the adjustment was valid</returns>
+	[[nodiscard]] inline errlib::Error get_adjustment(uptr ptr, usize alignment, usize& outSize) {
+		if (alignment < 1 && (alignment & (alignment - 1)) != 0)
+			return errlib::Error(errlib::ErrorCode_invalidArgument, "Alignment must be a power of 2, or 1");
 
 		usize adjustment = alignment - (ptr & (alignment - 1));
-		if (adjustment == alignment) return 0;
-		return adjustment;
+		if (adjustment == alignment) outSize = 0;
+		else outSize = adjustment;
+		return errlib::Error();
 	}
 
 	/// <summary>
@@ -81,13 +85,16 @@ namespace memsys {
 	/// </summary>
 	/// <param name="ptr">pointer to the memory location to align</param>
 	/// <param name="alignment">desired alignment for an object at ptr</param>
-	/// <returns>aligned pointer</returns>
-	static inline uptr align_forward(uptr ptr, usize alignment) {
-		assert(alignment == 1 || (alignment & (alignment - 1)) == 0 && "Alignment must be a power of 2, or 1");
+	/// <param name="outPtr">returned aligned pointer</param>
+	/// <returns>if the alignment was valid</returns>
+	[[nodiscard]] inline errlib::Error align_forward(uptr ptr, usize alignment, uptr& outPtr) {
+		if (alignment < 1 && (alignment & (alignment - 1)) != 0)
+			return errlib::Error(errlib::ErrorCode_invalidArgument, "Alignment must be a power of 2, or 1");
 
 		usize adjustment = alignment - (ptr & (alignment - 1));
-		if (adjustment == alignment) return ptr;
-		return ptr + adjustment;
+		if (adjustment == alignment) outPtr = ptr;
+		else outPtr = ptr + adjustment;
+		return errlib::Error();
 	}
 
 #if _DEBUG
@@ -112,8 +119,8 @@ namespace memsys {
 	/// <param name="end">upper bound for the range check</param>
 	/// <returns>if the pointer is located between start and end</returns>
 	inline bool is_pointer_owned(const void* ptr, const uptr start, const uptr end) {
-		assert(ptr != nullptr && "Cannot check ownership of a nullptr!");
 		if (!ptr) return false;
+		assert(start != end && "Cannot check ownership within a memory region of range 0 (start == end)");
 
 		const uptr objAddr = reinterpret_cast<uptr>(ptr);
 		return (objAddr >= start && objAddr < end);
