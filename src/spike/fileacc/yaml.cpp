@@ -59,11 +59,6 @@ DISABLE_WARNING_POP
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 #include "spike/error.hpp"
-#include "spike/debugl/debug.hpp"
-
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNINITIALIZED_VARIABLE
-DISABLE_WARNING_UNUSED_VARIABLE
 
 namespace YAML {
 	template<>
@@ -115,24 +110,18 @@ namespace {
 			return node;
 		}
 
-		if (d.IsString()) {
+		if (d.IsString())
 			return YAML::Node(*d.Get<string>());
-		}
-		if (d.IsI32()) {
+		if (d.IsI32())
 			return YAML::Node(*d.Get<i32>());
-		}
-		if (d.IsI64()) {
+		if (d.IsI64())
 			return YAML::Node(*d.Get<i64>());
-		}
-		if (d.IsU32()) {
+		if (d.IsU32())
 			return YAML::Node(*d.Get<u32>());
-		}
-		if (d.IsU64()) {
+		if (d.IsU64())
 			return YAML::Node(*d.Get<u64>());
-		}
-		if (d.IsF64()) {
+		if (d.IsF64())
 			return YAML::Node(*d.Get<f64>());
-		}
 
 		return YAML::Node(string{});
 	}
@@ -215,49 +204,38 @@ errlib::Error fileacc::save_yaml(const string& filePath, const YAMLData& data) {
 		YAML::Emitter emitter;
 		emitter << root;
 
-		if (!emitter.good()) {
-			Debug::LogError("YAMLFileIO::SaveToFile - emitter error: {}", emitter.GetLastError());
-			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, emitter.GetLastError());
-		}
+		if (!emitter.good())
+			return errlib::Error(errlib::ErrorCode_IOerror, emitter.GetLastError());
 
 		std::ofstream ofs(filePath, std::ios::binary);
-		if (!ofs) {
-			Debug::LogError("YAMLFileIO::SaveToFile - failed to open: {}", filePath);
-			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, "failed to open: " + filePath);
-		}
+		if (!ofs)
+			return errlib::Error(errlib::ErrorCode_IOerror, "save_yaml: failed to open: " + filePath);
 
 		ofs << emitter.c_str();
 		ofs.close();
-		return errlib::ErrorCode_{};
+		return errlib::Error();
 	}
 	catch (const std::exception& ex) {
-		Debug::LogError("YAMLFileIO::SaveToFile - exception writing {}: {}", filePath, ex.what());
-		return errlib::Error::FromCode(errlib::ErrorCode_IOerror, string(ex.what()));
+		return errlib::Error(errlib::ErrorCode_IOerror, string(ex.what()));
 	}
 	catch (...) {
-		Debug::LogError("YAMLFileIO::SaveToFile - unknown exception writing to: {}", filePath);
-		return errlib::Error::FromCode(errlib::ErrorCode_unknown, "unknown exception writing to: " + filePath);
+		return errlib::Error(errlib::ErrorCode_unknown, "unknown exception writing to: " + filePath);
 	}
 }
 
-std::optional<fileacc::YAMLData> fileacc::load_yaml(const string& filePath) {
+errlib::Error fileacc::load_yaml(const string& filePath, YAMLData& outData) {
 	try {
-		if (!std::filesystem::exists(std::filesystem::path(filePath))) {
-			Debug::LogError("YAMLFileIO::LoadFromFile - file not found: {}", filePath);
-			return std::nullopt;
-		}
+		if (!std::filesystem::exists(std::filesystem::path(filePath)))
+			return errlib::Error(errlib::ErrorCode_missingFile, "load_yaml: file does not exist: " + filePath);
 
 		YAML::Node root = YAML::LoadFile(filePath);
-		return node_to_yaml_data(root);
+		outData = node_to_yaml_data(root);
+		return errlib::Error();
 	}
 	catch (const std::exception& ex) {
-		Debug::LogError("YAMLFileIO::LoadFromFile - exception loading {}: {}", filePath, ex.what());
-		return std::nullopt;
+		return errlib::Error(errlib::ErrorCode_IOerror, string(ex.what()));
 	}
 	catch (...) {
-		Debug::LogError("YAMLFileIO::LoadFromFile - unknown exception loading {}", filePath);
-		return std::nullopt;
+		return errlib::Error(errlib::ErrorCode_unknown, "unknown exception reading from: " + filePath);
 	}
 }
-
-DISABLE_WARNING_POP

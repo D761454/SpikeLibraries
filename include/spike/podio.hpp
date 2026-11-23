@@ -78,7 +78,7 @@ namespace podio {
 	/// <param name="obj">Object to write</param>
 	/// <returns>if the write / os is good</returns>
 	template <typename T>
-	inline bool write_pod(std::ostream& os, T const& obj) {
+	inline bool write_pod(std::ofstream& os, T const& obj) {
 		static_assert(is_pod_writable_v<T>, "write_pod requires trivially copyable, standard-layout type");
 		os.write(reinterpret_cast<char const*>(&obj), sizeof(T));
 		return os.good();
@@ -92,7 +92,7 @@ namespace podio {
 	/// <param name="out">Object to read data into</param>
 	/// <returns>if the read was good or it is end of file</returns>
 	template <typename T>
-	[[nodiscard]] inline bool read_pod(std::istream& is, T& out) {
+	[[nodiscard]] inline bool read_pod(std::ifstream& is, T& out) {
 		static_assert(is_pod_writable_v<T>, "read_pod requires trivially copyable, standard-layout type");
 		is.read(reinterpret_cast<char*>(&out), sizeof(T));
 		return is.good();

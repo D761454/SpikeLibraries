@@ -800,6 +800,7 @@ using f64	= double;
 
 using uchar		= unsigned char;
 using ushort	= unsigned short;
+using ulong		= unsigned long;
 using ll		= long long;
 using ull		= unsigned long long;
 using usize		= std::size_t;
@@ -808,6 +809,7 @@ inline constexpr u16 kMaxU16 = std::numeric_limits<u16>::max();
 inline constexpr u32 kMaxU32 = std::numeric_limits<u32>::max();
 inline constexpr u64 kMaxU64 = std::numeric_limits<u64>::max();
 inline constexpr ushort kMaxUshort = std::numeric_limits<ushort>::max();
+inline constexpr ull kMaxUlong = std::numeric_limits<ulong>::max();
 inline constexpr ull kMaxUll = std::numeric_limits<ull>::max();
 inline constexpr usize kMaxUsize = std::numeric_limits<usize>::max();
 

@@ -46,30 +46,35 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
-#include <ostream>
 #include <fstream>
 #include <limits>
+#include <memory>
+#include <string>
+#include <type_traits>
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 #include "spike/podio.hpp"
-#include "spike/warning.h"
 #include "spike/nivector.h"
+#include <ios>
 
 namespace iocomp {
 	enum CompressionMethod_ : u32 {
 		CompressionMethod_none = 0,	// raw text - YAML or uncompressed binary
 		CompressionMethod_zlib = 1,	// portable
-		CompressionMethod_lz4 = 2,	// v. fast + fast runtime
-		CompressionMethod_zstd = 3,	// best compromise speed / ratio - recommended for final builds
+		CompressionMethod_lz4 = 2,	// reserved; currently unsupported
+		CompressionMethod_zstd = 3	// best compromise speed / ratio - recommended for final builds
 	};
 
-	/// <summary>
-	/// Used to convert a compression method enum into a string
-	/// </summary>
-	/// <param name="cm">compression method enum</param>
-	/// <returns>string representation of the compression method</returns>
-	const string to_string(const CompressionMethod_& cm);
+	inline std::string to_string(CompressionMethod_ method) {
+		switch (method) {
+		case CompressionMethod_none: return "NONE";
+		case CompressionMethod_zlib: return "ZLIB";
+		case CompressionMethod_lz4: return "LZ4";
+		case CompressionMethod_zstd: return "ZSTD";
+		default: return "UNKNOWN";
+		}
+	}
 
 	/// <summary>
 	/// Calculates a crc32 value from a data buffer
@@ -78,9 +83,6 @@ namespace iocomp {
 	/// <param name="len">length of the byte buffer</param>
 	/// <returns>crc32 value corresponding with the buffer</returns>
 	const u32 crc32(const u8* data, usize len);
-	
-	DISABLE_WARNING_PUSH
-	DISABLE_WARNING_UNINITIALIZED_VARIABLE
 	
 	/// <summary>
 	/// Struct used to hold relevant data used to decompress and validate decompression of a compressed data blob
@@ -107,8 +109,6 @@ namespace iocomp {
 			dataOffset(offset) {}
 	};
 	
-	DISABLE_WARNING_POP
-	
 	/// <summary>
 	/// Holding static class, contains methods for compression and decompressions using various compression algorithms
 	/// </summary>
@@ -129,9 +129,10 @@ namespace iocomp {
 		/// <param name="src">pointer to the data to compress</param>
 		/// <param name="srcSize">size of the data to compress (in bytes)</param>
 		/// <param name="dst">pointer to the destination to place the compressed data</param>
+		/// <param name="dstCapacity">available size of the destination buffer in bytes; use the codec's bound when compressing</param>
 		/// <param name="compressionMethod">compression method to use on the data</param>
-		/// <returns>size of the compressed data</returns>
-		static u64 Compress(const void* src, const u64& srcSize, void* dst, const CompressionMethod_& compressionMethod);
+		/// <returns>size of the compressed data, or 0 if the input, method, or destination is invalid or too small</returns>
+		static u64 Compress(const void* src, const u64& srcSize, void* dst, const u64& dstCapacity, const CompressionMethod_& compressionMethod);
 
 		/// <summary>
 		/// Compresses a chunk of memory to a byte array using the corresponding compression method
@@ -168,16 +169,115 @@ namespace iocomp {
 		/// <returns>size of the decompressed data</returns>
 		template<typename T>
 		static u64 Decompress(const void* src, const u64& srcSize, niVector<T>& dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
-			usize realSize = expectedSize / sizeof(T);
-			dst.resize(realSize);
-			return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
+			static_assert(std::is_trivially_copyable_v<T>, "Decompressing into a vector requires trivially copyable elements");
+			if (expectedSize == 0 || expectedSize % sizeof(T) != 0 || expectedSize > std::numeric_limits<usize>::max()) {
+				dst.clear();
+				return 0;
+			}
+
+			const usize elementCount = static_cast<usize>(expectedSize / sizeof(T));
+			if (elementCount > dst.max_size()) {
+				dst.clear();
+				return 0;
+			}
+
+			niVector<T> decoded;
+			decoded.resize(elementCount);
+			const u64 decodedSize = Decompress(src, srcSize, decoded.data(), expectedSize, expectedCrc32, compressionMethod);
+			if (decodedSize != expectedSize) {
+				dst.clear();
+				return 0;
+			}
+			dst.swap(decoded);
+			return decodedSize;
 		}
 	};
 
-	template<>
-	u64 IOComp::Decompress(const void* src, const u64& srcSize, niVector<u8>& dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
-		dst.resize(expectedSize);
-		return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
+	namespace internal {
+		inline bool is_supported_method(CompressionMethod_ method) noexcept {
+			return method == CompressionMethod_none || method == CompressionMethod_zlib || method == CompressionMethod_zstd;
+		}
+
+		class InputPositionGuard {
+		public:
+			explicit InputPositionGuard(std::ifstream& stream) : _stream(stream), _position(stream.tellg()) {}
+			~InputPositionGuard() { if (_active && _position != std::streampos(-1)) restore(_stream, _position); }
+
+			bool valid() const noexcept { return _position != std::streampos(-1); }
+			std::streampos position() const noexcept { return _position; }
+			void set_restore_position(std::streampos position) noexcept { _position = position; }
+			bool restore_position() noexcept {
+				if (_position == std::streampos(-1) || !restore(_stream, _position)) return false;
+				_active = false;
+				return true;
+			}
+			void commit() noexcept { _active = false; }
+
+		private:
+			static bool restore(std::ifstream& stream, std::streampos position) noexcept {
+				try {
+					stream.clear();
+					stream.seekg(position);
+					return stream.good();
+				}
+				catch (const std::ios_base::failure&) {
+					return false;
+				}
+			}
+
+			std::ifstream& _stream;
+			std::streampos _position;
+			bool _active = true;
+		};
+
+		inline bool file_size(std::ifstream& stream, std::streampos restorePosition, u64& size) {
+			stream.clear();
+			stream.seekg(0, std::ios::end);
+			if (!stream.good()) return false;
+			const std::streampos end = stream.tellg();
+			if (end == std::streampos(-1)) return false;
+			const std::streamoff endOffset = static_cast<std::streamoff>(end);
+			if (endOffset < 0) return false;
+			size = static_cast<u64>(endOffset);
+			stream.clear();
+			stream.seekg(restorePosition);
+			return stream.good();
+		}
+
+		inline bool read_header(std::ifstream& stream, CompressedDataHeader& header, std::streampos& afterHeader, u64& fileSize) {
+			if (!stream.good() || !podio::read_pod(stream, header)) return false;
+			afterHeader = stream.tellg();
+			if (afterHeader == std::streampos(-1)) return false;
+			return file_size(stream, afterHeader, fileSize);
+		}
+
+		inline bool validate_payload(const CompressedDataHeader& header, u64 fileSize, u64 minimumOffset) noexcept {
+			return is_supported_method(header.compressionMethod) && header.compressedSize > 0 && header.uncompressedSize > 0
+				&& header.dataOffset >= minimumOffset && header.dataOffset <= fileSize
+				&& header.compressedSize <= fileSize - header.dataOffset
+				&& header.dataOffset <= static_cast<u64>(std::numeric_limits<std::streamoff>::max())
+				&& header.compressedSize <= static_cast<u64>(std::numeric_limits<std::streamsize>::max());
+		}
+
+		inline bool read_payload(std::ifstream& stream, const CompressedDataHeader& header, u64 fileSize, u64 minimumOffset, niVector<u8>& compressed) {
+			if (!validate_payload(header, fileSize, minimumOffset) || header.compressedSize > compressed.max_size()) return false;
+
+			stream.clear();
+			stream.seekg(static_cast<std::streamoff>(header.dataOffset), std::ios::beg);
+			if (!stream.good()) return false;
+			compressed.resize(static_cast<usize>(header.compressedSize));
+			stream.read(reinterpret_cast<char*>(compressed.data()), static_cast<std::streamsize>(header.compressedSize));
+			return stream.good() && static_cast<u64>(stream.gcount()) == header.compressedSize;
+		}
+
+		inline bool seek_payload_end(std::ifstream& stream, const CompressedDataHeader& header, u64 fileSize, u64 minimumOffset) {
+			if (!validate_payload(header, fileSize, minimumOffset)) return false;
+			const u64 endOffset = header.dataOffset + header.compressedSize;
+			if (endOffset > static_cast<u64>(std::numeric_limits<std::streamoff>::max())) return false;
+			stream.clear();
+			stream.seekg(static_cast<std::streamoff>(endOffset), std::ios::beg);
+			return stream.good();
+		}
 	}
 
 	/// <summary>
@@ -188,17 +288,23 @@ namespace iocomp {
 	/// <param name="srcSize">size of the data to compress (in bytes)</param>
 	/// <param name="compressionMethod">compression method to use on the data</param>
 	/// <returns>if the write was successful</returns>
-	[[nodiscard]] static bool compress_to_file(std::ostream& ofs, const void* source, const usize& srcSize, CompressionMethod_& compressionMethod) {
-		if (compressionMethod == CompressionMethod_zstd) if (!IOComp::ZSTD()) compressionMethod = CompressionMethod_zlib;
+	[[nodiscard]] static bool compress_to_file(std::ofstream& ofs, const void* source, const usize& srcSize, CompressionMethod_& compressionMethod) {
+		if (!ofs.good() || !source || srcSize == 0 || !internal::is_supported_method(compressionMethod)) return false;
+		if (compressionMethod == CompressionMethod_zstd && !IOComp::ZSTD()) compressionMethod = CompressionMethod_zlib;
 
 		niVector<u8> compressed;
-		usize compressedSize = IOComp::Compress(source, srcSize, compressed, compressionMethod);
-		if (compressedSize == 0) return false;
-		auto p = ofs.tellp();
-		if (p == -1) return false;
-		CompressedDataHeader cdh(compressionMethod, crc32(reinterpret_cast<const u8*>(source), srcSize), srcSize, compressedSize, static_cast<u64>(p) + sizeof(CompressedDataHeader));
-		if (!podio::write_pod(ofs, cdh)) return false;
-		ofs.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
+		const u64 compressedSize = IOComp::Compress(source, static_cast<u64>(srcSize), compressed, compressionMethod);
+		if (compressedSize == 0 || compressedSize > static_cast<u64>(std::numeric_limits<std::streamsize>::max())) return false;
+		const std::streampos position = ofs.tellp();
+		if (position == std::streampos(-1)) return false;
+		const std::streamoff offset = static_cast<std::streamoff>(position);
+		constexpr u64 maxOffset = static_cast<u64>(std::numeric_limits<std::streamoff>::max());
+		if (offset < 0 || static_cast<u64>(offset) > maxOffset - sizeof(CompressedDataHeader)
+			|| compressedSize > maxOffset - static_cast<u64>(offset) - sizeof(CompressedDataHeader)) return false;
+
+		CompressedDataHeader header(compressionMethod, crc32(reinterpret_cast<const u8*>(source), srcSize), srcSize, compressedSize, static_cast<u64>(offset) + sizeof(CompressedDataHeader));
+		if (!podio::write_pod(ofs, header)) return false;
+		ofs.write(reinterpret_cast<const char*>(compressed.data()), static_cast<std::streamsize>(compressedSize));
 		return ofs.good();
 	}
 
@@ -211,19 +317,10 @@ namespace iocomp {
 	/// <param name="compressionMethod">compression method to use on the data</param>
 	/// <returns>if the write was successful</returns>
 	template<typename T>
-	[[nodiscard]] static bool compress_to_file(std::ostream& ofs, const T* source, CompressionMethod_& compressionMethod) {
-		static_assert(podio::is_pod_writable_v<T>, "CompressToFile->write_pod requires trivially copyable, standard-layout type");
-		if (compressionMethod == CompressionMethod_zstd) if (!IOComp::ZSTD()) compressionMethod = CompressionMethod_zlib;
-
-		niVector<u8> compressed;
-		usize compressedSize = IOComp::Compress(source, sizeof(T), compressed, compressionMethod);
-		if (compressedSize == 0) return false;
-		auto p = ofs.tellp();
-		if (p == -1) return false;
-		CompressedDataHeader cdh(compressionMethod, crc32(reinterpret_cast<const u8*>(source), sizeof(T)), sizeof(T), compressedSize, static_cast<u64>(p) + sizeof(CompressedDataHeader));
-		if (!podio::write_pod(ofs, cdh)) return false;
-		ofs.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
-		return ofs.good();
+	[[nodiscard]] static bool compress_to_file(std::ofstream& ofs, const T* source, CompressionMethod_& compressionMethod) {
+		static_assert(podio::is_pod_writable_v<T>, "CompressToFile requires a trivially copyable, standard-layout type");
+		if (!source) return false;
+		return compress_to_file(ofs, static_cast<const void*>(source), sizeof(T), compressionMethod);
 	}
 
 	/// <summary>
@@ -235,44 +332,23 @@ namespace iocomp {
 	/// <returns>object of type T if successful, else nullptr</returns>
 	template<typename T>
 	[[nodiscard]] static T* decompress_from_file(std::ifstream& ifs, bool seekBackToheader = false) {
-		static_assert(podio::is_pod_writable_v<T>, "DecompressFromFile->read_pod requires trivially copyable, standard-layout type");
-		u64 remsize = 0;
-		auto curr = ifs.tellg();
-		if (curr == -1) return nullptr;
-		ifs.seekg(0, std::ios::beg);
-		auto start = ifs.tellg();
-		if (start == -1) return nullptr;
-		ifs.seekg(0, std::ios::end);
-		auto end = ifs.tellg();
-		if (end == -1) return nullptr;
-		remsize = end - start;
-		ifs.seekg(curr, std::ios::beg);
+		static_assert(podio::is_pod_writable_v<T> && std::is_default_constructible_v<T>, "DecompressFromFile requires a default-constructible, trivially copyable, standard-layout type");
+		internal::InputPositionGuard position(ifs);
+		if (!position.valid()) return nullptr;
 
-		CompressedDataHeader cdh;
-		if (!podio::read_pod(ifs, cdh) || ifs.eof()) return nullptr;
-		auto afterheader = ifs.tellg();
-		if (afterheader == -1) return nullptr;
-		if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return nullptr;
-		ifs.seekg(cdh.dataOffset);
-		if (!ifs.good() || ifs.eof() || cdh.uncompressedSize != sizeof(T)) return nullptr;
-
+		CompressedDataHeader header;
+		std::streampos afterHeader;
+		u64 fileSize;
+		if (!internal::read_header(ifs, header, afterHeader, fileSize) || header.uncompressedSize != sizeof(T)) return nullptr;
+		if (seekBackToheader) position.set_restore_position(afterHeader);
 
 		niVector<u8> compressed;
-		if (cdh.compressedSize > std::numeric_limits<std::streamsize>::max() || cdh.compressedSize > compressed.max_size()) return nullptr;
-		compressed.resize(cdh.compressedSize);
-		ifs.read(reinterpret_cast<char*>(compressed.data()), cdh.compressedSize);
-		if (ifs.gcount() != cdh.compressedSize) return nullptr;
-		T* newObject = new T();
-		if (IOComp::Decompress(compressed.data(), cdh.compressedSize, newObject, cdh.uncompressedSize, cdh.crc32, cdh.compressionMethod) != cdh.uncompressedSize) {
-			delete newObject;
-			newObject = nullptr;
-		}
-
-		if (seekBackToheader) {
-			ifs.seekg(afterheader, std::ios::beg);
-		}
-
-		return newObject;
+		if (!internal::read_payload(ifs, header, fileSize, static_cast<u64>(static_cast<std::streamoff>(afterHeader)), compressed)) return nullptr;
+		std::unique_ptr<T> object(new T());
+		if (IOComp::Decompress(compressed.data(), header.compressedSize, object.get(), header.uncompressedSize, header.crc32, header.compressionMethod) != header.uncompressedSize) return nullptr;
+		if (seekBackToheader && !position.restore_position()) return nullptr;
+		position.commit();
+		return object.release();
 	}
 
 	/// <summary>
@@ -284,40 +360,20 @@ namespace iocomp {
 	/// <param name="seekBackToheader">whether to seek back to the file position just after the header or to remain after the compressed blob</param>
 	/// <returns>if the read and decompression were successful</returns>
 	[[nodiscard]] static bool decompress_from_file(std::ifstream& ifs, void* dst, const u64 capacity, bool seekBackToheader = false) {
-		u64 remsize = 0;
-		auto curr = ifs.tellg();
-		if (curr == -1) return false;
-		ifs.seekg(0, std::ios::beg);
-		auto start = ifs.tellg();
-		if (start == -1) return false;
-		ifs.seekg(0, std::ios::end);
-		auto end = ifs.tellg();
-		if (end == -1) return false;
-		remsize = end - start;
-		ifs.seekg(curr, std::ios::beg);
+		internal::InputPositionGuard position(ifs);
+		if (!position.valid() || !dst) return false;
 
-		CompressedDataHeader cdh;
-		if (!podio::read_pod(ifs, cdh) || ifs.eof()) return false;
-		auto afterheader = ifs.tellg();
-		if (afterheader == -1) return false;
-		if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return false;
-		ifs.seekg(cdh.dataOffset);
-		if (!ifs.good() || ifs.eof() || cdh.uncompressedSize > capacity) return false;
+		CompressedDataHeader header;
+		std::streampos afterHeader;
+		u64 fileSize;
+		if (!internal::read_header(ifs, header, afterHeader, fileSize) || header.uncompressedSize > capacity) return false;
+		if (seekBackToheader) position.set_restore_position(afterHeader);
 
 		niVector<u8> compressed;
-		if (cdh.compressedSize > std::numeric_limits<std::streamsize>::max() || cdh.compressedSize > compressed.max_size()) return false;
-		compressed.resize(cdh.compressedSize);
-		ifs.read(reinterpret_cast<char*>(compressed.data()), cdh.compressedSize);
-		if (ifs.gcount() != cdh.compressedSize) return false;
-		if (IOComp::Decompress(compressed.data(), cdh.compressedSize, dst, cdh.uncompressedSize, cdh.crc32, cdh.compressionMethod) != cdh.uncompressedSize) {
-			if (seekBackToheader) {
-				ifs.seekg(afterheader, std::ios::beg);
-			}
-			return false;
-		}
-		if (seekBackToheader) {
-			ifs.seekg(afterheader, std::ios::beg);
-		}
+		if (!internal::read_payload(ifs, header, fileSize, static_cast<u64>(static_cast<std::streamoff>(afterHeader)), compressed)) return false;
+		if (IOComp::Decompress(compressed.data(), header.compressedSize, dst, header.uncompressedSize, header.crc32, header.compressionMethod) != header.uncompressedSize) return false;
+		if (seekBackToheader && !position.restore_position()) return false;
+		position.commit();
 		return true;
 	}
 
@@ -331,40 +387,23 @@ namespace iocomp {
 	/// <returns>if the read and decompression were successful</returns>
 	template<typename T>
 	[[nodiscard]] static bool decompress_from_file(std::ifstream& ifs, niVector<T>& dst, bool seekBackToheader = false) {
-		u64 remsize = 0;
-		auto curr = ifs.tellg();
-		if (curr == -1) return false;
-		ifs.seekg(0, std::ios::beg);
-		auto start = ifs.tellg();
-		if (start == -1) return false;
-		ifs.seekg(0, std::ios::end);
-		auto end = ifs.tellg();
-		if (end == -1) return false;
-		remsize = end - start;
-		ifs.seekg(curr, std::ios::beg);
+		static_assert(std::is_trivially_copyable_v<T>, "Decompressing into a vector requires trivially copyable elements");
+		internal::InputPositionGuard position(ifs);
+		if (!position.valid()) return false;
 
-		CompressedDataHeader cdh;
-		if (!podio::read_pod(ifs, cdh) || ifs.eof()) return false;
-		auto afterheader = ifs.tellg();
-		if (afterheader == -1) return false;
-		if (cdh.dataOffset > remsize || cdh.compressedSize > remsize - cdh.dataOffset) return false;
-		ifs.seekg(cdh.dataOffset);
-		if (!ifs.good() || ifs.eof()) return false;
+		CompressedDataHeader header;
+		std::streampos afterHeader;
+		u64 fileSize;
+		if (!internal::read_header(ifs, header, afterHeader, fileSize)) return false;
+		if (seekBackToheader) position.set_restore_position(afterHeader);
 
 		niVector<u8> compressed;
-		if (cdh.compressedSize > std::numeric_limits<std::streamsize>::max() || cdh.compressedSize > compressed.max_size()) return false;
-		compressed.resize(cdh.compressedSize);
-		ifs.read(reinterpret_cast<char*>(compressed.data()), cdh.compressedSize);
-		if (ifs.gcount() != cdh.compressedSize) return false;
-		if (IOComp::Decompress(compressed.data(), cdh.compressedSize, dst, cdh.uncompressedSize, cdh.crc32, cdh.compressionMethod) != cdh.uncompressedSize) {
-			if (seekBackToheader) {
-				ifs.seekg(afterheader, std::ios::beg);
-			}
-			return false;
-		}
-		if (seekBackToheader) {
-			ifs.seekg(afterheader, std::ios::beg);
-		}
+		if (!internal::read_payload(ifs, header, fileSize, static_cast<u64>(static_cast<std::streamoff>(afterHeader)), compressed)) return false;
+		niVector<T> decoded;
+		if (IOComp::Decompress(compressed.data(), header.compressedSize, decoded, header.uncompressedSize, header.crc32, header.compressionMethod) != header.uncompressedSize) return false;
+		if (seekBackToheader && !position.restore_position()) return false;
+		position.commit();
+		dst.swap(decoded);
 		return true;
 	}
 
@@ -374,32 +413,18 @@ namespace iocomp {
 	/// <param name="ifs">file stream to the file</param>
 	/// <param name="dataHeader">header containing all required information to decompress the associated blob</param>
 	/// <param name="dst">pointer to the buffer to store the decompressed data</param>
+	/// <param name="capacity">size of the destination buffer in bytes</param>
 	/// <returns>if the read and decompression were successful</returns>
-	[[nodiscard]] static bool decompress_from_file(std::ifstream& ifs, const CompressedDataHeader& dataHeader, void* dst) {
-		u64 remsize = 0;
-		auto curr = ifs.tellg();
-		if (curr == -1) return false;
-		ifs.seekg(0, std::ios::beg);
-		auto start = ifs.tellg();
-		if (start == -1) return false;
-		ifs.seekg(0, std::ios::end);
-		auto end = ifs.tellg();
-		if (end == -1) return false;
-		remsize = end - start;
-		ifs.seekg(curr, std::ios::beg);
-
-		if (dataHeader.dataOffset > remsize || dataHeader.compressedSize > remsize - dataHeader.dataOffset) return false;
-		ifs.seekg(dataHeader.dataOffset);
-		if (!ifs.good() || ifs.eof()) return false;
+	[[nodiscard]] static bool decompress_from_file(std::ifstream& ifs, const CompressedDataHeader& dataHeader, void* dst, u64 capacity) {
+		internal::InputPositionGuard position(ifs);
+		if (!position.valid() || !dst || dataHeader.uncompressedSize > capacity) return false;
+		u64 fileSize;
+		if (!internal::file_size(ifs, position.position(), fileSize)) return false;
 
 		niVector<u8> compressed;
-		if (dataHeader.compressedSize > std::numeric_limits<std::streamsize>::max() || dataHeader.compressedSize > compressed.max_size()) return false;
-		compressed.resize(dataHeader.compressedSize);
-		ifs.read(reinterpret_cast<char*>(compressed.data()), dataHeader.compressedSize);
-		if (ifs.gcount() != dataHeader.compressedSize) return false;
-		if (IOComp::Decompress(compressed.data(), dataHeader.compressedSize, dst, dataHeader.uncompressedSize, dataHeader.crc32, dataHeader.compressionMethod) != dataHeader.uncompressedSize) {
-			return false;
-		}
+		if (!internal::read_payload(ifs, dataHeader, fileSize, 0, compressed)) return false;
+		if (IOComp::Decompress(compressed.data(), dataHeader.compressedSize, dst, dataHeader.uncompressedSize, dataHeader.crc32, dataHeader.compressionMethod) != dataHeader.uncompressedSize) return false;
+		position.commit();
 		return true;
 	}
 
@@ -413,30 +438,18 @@ namespace iocomp {
 	/// <returns>if the read and decompression were successful</returns>
 	template<typename T>
 	[[nodiscard]] static bool decompress_from_file(std::ifstream& ifs, const CompressedDataHeader& dataHeader, niVector<T>& dst) {
-		u64 remsize = 0;
-		auto curr = ifs.tellg();
-		if (curr == -1) return false;
-		ifs.seekg(0, std::ios::beg);
-		auto start = ifs.tellg();
-		if (start == -1) return false;
-		ifs.seekg(0, std::ios::end);
-		auto end = ifs.tellg();
-		if (end == -1) return false;
-		remsize = end - start;
-		ifs.seekg(curr, std::ios::beg);
-
-		if (dataHeader.dataOffset > remsize || dataHeader.compressedSize > remsize - dataHeader.dataOffset) return false;
-		ifs.seekg(dataHeader.dataOffset);
-		if (!ifs.good() || ifs.eof()) return false;
+		static_assert(std::is_trivially_copyable_v<T>, "Decompressing into a vector requires trivially copyable elements");
+		internal::InputPositionGuard position(ifs);
+		if (!position.valid()) return false;
+		u64 fileSize;
+		if (!internal::file_size(ifs, position.position(), fileSize)) return false;
 
 		niVector<u8> compressed;
-		if (dataHeader.compressedSize > std::numeric_limits<std::streamsize>::max() || dataHeader.compressedSize > compressed.max_size()) return false;
-		compressed.resize(dataHeader.compressedSize);
-		ifs.read(reinterpret_cast<char*>(compressed.data()), dataHeader.compressedSize);
-		if (ifs.gcount() != dataHeader.compressedSize) return false;
-		if (IOComp::Decompress(compressed.data(), dataHeader.compressedSize, dst, dataHeader.uncompressedSize, dataHeader.crc32, dataHeader.compressionMethod) != dataHeader.uncompressedSize) {
-			return false;
-		}
+		if (!internal::read_payload(ifs, dataHeader, fileSize, 0, compressed)) return false;
+		niVector<T> decoded;
+		if (IOComp::Decompress(compressed.data(), dataHeader.compressedSize, decoded, dataHeader.uncompressedSize, dataHeader.crc32, dataHeader.compressionMethod) != dataHeader.uncompressedSize) return false;
+		position.commit();
+		dst.swap(decoded);
 		return true;
 	}
 
@@ -446,21 +459,15 @@ namespace iocomp {
 	/// <param name="ifs">file stream to the file</param>
 	/// <returns>if the seek ahead was successful</returns>
 	static bool seek_ahead_in_file(std::ifstream& ifs) {
-		auto curr = ifs.tellg();
-		if (curr == -1) return false;
+		internal::InputPositionGuard position(ifs);
+		if (!position.valid()) return false;
 
-		CompressedDataHeader cdh;
-		if (!podio::read_pod(ifs, cdh) || ifs.eof()) {
-			ifs.seekg(curr);
-			return false;
-		}
-
-		ifs.seekg(cdh.dataOffset + cdh.compressedSize);
-		if (!ifs.good() || ifs.eof()) {
-			ifs.seekg(curr);
-			return false;
-		}
-
+		CompressedDataHeader header;
+		std::streampos afterHeader;
+		u64 fileSize;
+		if (!internal::read_header(ifs, header, afterHeader, fileSize)
+			|| !internal::seek_payload_end(ifs, header, fileSize, static_cast<u64>(static_cast<std::streamoff>(afterHeader)))) return false;
+		position.commit();
 		return true;
 	}
 }

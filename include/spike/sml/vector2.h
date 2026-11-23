@@ -48,6 +48,8 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
+#include <cassert>
+
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
@@ -77,6 +79,8 @@ namespace sml {
 		vector2& operator=(vector2&& other) = default;
 
 		inline f32 operator[](i32 i) const noexcept {
+			assert(i < 2 && "Index Out of Range! vector2 data in range 0-1.");
+
 			switch (i) {
 			case 0: return x;
 			case 1: return y;
@@ -85,6 +89,8 @@ namespace sml {
 		}
 
 		inline f32& operator[](i32 i) noexcept {
+			assert(i < 2 && "Index Out of Range! vector2 data in range 0-1.");
+
 			switch (i) {
 			case 0: return x;
 			case 1: return y;

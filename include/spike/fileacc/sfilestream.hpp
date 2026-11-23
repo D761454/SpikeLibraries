@@ -54,8 +54,6 @@ File Summary:
 #include <vector>
 #include <algorithm>
 #include <fstream>
-#include <istream>
-#include <ostream>
 #include <string>
 #include <type_traits>
 
@@ -64,43 +62,43 @@ namespace fileacc {
 	concept IntegralType = std::is_integral_v<T> && !std::is_same_v<T, bool>;
 
 	template<typename T>
-	inline bool write(std::ostream& ofs, const T& obj) {
+	inline bool write(std::ofstream& ofs, const T& obj) {
 		ofs.write(reinterpret_cast<const char*>(&obj), static_cast<std::streamsize>(sizeof(obj)));
 		return ofs.good();
 	}
 
 	template<typename T, IntegralType U>
-	inline bool write(std::ostream& ofs, const T& obj, U size) {
+	inline bool write(std::ofstream& ofs, const T& obj, U size) {
 		ofs.write(reinterpret_cast<const char*>(&obj), static_cast<std::streamsize>(size));
 		return ofs.good();
 	}
 
 	template<typename T, IntegralType U>
-	inline bool write(std::ostream& ofs, const T* obj, U size) {
+	inline bool write(std::ofstream& ofs, const T* obj, U size) {
 		ofs.write(reinterpret_cast<const char*>(obj), static_cast<std::streamsize>(size));
 		return ofs.good();
 	}
 
 	template<typename T>
-	[[nodiscard]] inline bool read(std::istream& ifs, T& obj) {
+	[[nodiscard]] inline bool read(std::ifstream& ifs, T& obj) {
 		ifs.read(reinterpret_cast<char*>(&obj), static_cast<std::streamsize>(sizeof(obj)));
 		return ifs.good();
 	}
 
 	template<typename T, IntegralType U>
-	[[nodiscard]] inline bool read(std::istream& ifs, T& obj, U size) {
+	[[nodiscard]] inline bool read(std::ifstream& ifs, T& obj, U size) {
 		ifs.read(reinterpret_cast<char*>(&obj), static_cast<std::streamsize>(size));
 		return ifs.good();
 	}
 
 	template<typename T, IntegralType U>
-	[[nodiscard]] inline bool read(std::istream& ifs, T* obj, U size) {
+	[[nodiscard]] inline bool read(std::ifstream& ifs, T* obj, U size) {
 		ifs.read(reinterpret_cast<char*>(obj), static_cast<std::streamsize>(size));
 		return ifs.good();
 	}
 
 	template<>
-	inline bool write(std::ostream& ofs, const std::string& obj) {
+	inline bool write(std::ofstream& ofs, const std::string& obj) {
 		uint32_t len = std::min(static_cast<uint32_t>(obj.size()), std::numeric_limits<uint32_t>::max());
 		ofs.write(reinterpret_cast<const char*>(&len), sizeof(len));
 		ofs.write(obj.data(), static_cast<std::streamsize>(len));
@@ -108,7 +106,7 @@ namespace fileacc {
 	}
 
 	template<>
-	inline bool read(std::istream& ifs, std::string& obj) {
+	inline bool read(std::ifstream& ifs, std::string& obj) {
 		uint32_t len = 0;
 		ifs.read(reinterpret_cast<char*>(&len), sizeof(len));
 		if (!ifs.good()) return false;
@@ -144,7 +142,7 @@ namespace fileacc {
 	/// </summary>
 	/// <param name="ofs">file stream currently in use</param>
 	/// <param name="alignment">desired boundary to align with</param>
-	inline void pad_to_boundary(std::ostream& ofs, uint64_t alignment = 64) {
+	inline void pad_to_boundary(std::ofstream& ofs, uint64_t alignment = 64) {
 		uint64_t currentPos = ofs.tellp();
 		uint64_t namePadding = padding_needed(currentPos, alignment);
 		if (namePadding > 0) {
@@ -158,7 +156,7 @@ namespace fileacc {
 	/// </summary>
 	/// <param name="ifs">file stream currently in use</param>
 	/// <param name="alignment">desired boundary to align with</param>
-	inline void align_self(std::istream& ifs, uint64_t alignment = 64) {
+	inline void align_self(std::ifstream& ifs, uint64_t alignment = 64) {
 		ifs.seekg(align_to_boundary(ifs.tellg(), alignment), std::ios::beg);
 	}
 }
