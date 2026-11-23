@@ -35,27 +35,39 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/iocomp/iocomp.h"
 
-#include <string.h>
-#include <fstream>
+#include <algorithm>
+#include <cstring>
+#include <limits>
+#include <mutex>
+#include <vector>
 
 #include <zlib.h>
-#include <zconf.h>
 #define ZSTD_STATIC_LINKING_ONLY
 #include <zstd.h>
+#include <zstd_errors.h>
 
 #include "spike/def_aliases.h"
 #include "spike/nivector.h"
-#include "spike/stl_aliases.h"
 
 const u32 iocomp::crc32(const u8* data, usize len) {
-	return static_cast<u32>(::crc32(0UL, reinterpret_cast<const Bytef*>(data), static_cast<uInt>(len)));
+	if (!data && len != 0) return 0;
+
+	ulong crc = ::crc32(0L, Z_NULL, 0);
+	while (len != 0) {
+		const unsigned int chunkSize = static_cast<unsigned int>((std::min)(len, static_cast<usize>(std::numeric_limits<unsigned int>::max())));
+		crc = ::crc32(crc, reinterpret_cast<const byte*>(data), chunkSize);
+		data += chunkSize;
+		len -= chunkSize;
+	}
+	return static_cast<u32>(crc);
 }
 
 struct iocomp::IOComp::ContextZSTD {
 	ContextZSTD() : p_cctx(ZSTD_createCCtx()), p_dctx(ZSTD_createDCtx()) {
-		if (!p_cctx) return;
-		ZSTD_CCtx_setParameter(p_cctx, ZSTD_c_compressionLevel, 3);
-		ZSTD_CCtx_setParameter(p_cctx, ZSTD_c_checksumFlag, 1);
+		if (p_cctx && p_dctx) {
+			_ready = !ZSTD_isError(ZSTD_CCtx_setParameter(p_cctx, ZSTD_c_compressionLevel, 3))
+				&& !ZSTD_isError(ZSTD_CCtx_setParameter(p_cctx, ZSTD_c_checksumFlag, 1));
+		}
 	}
 
 	~ContextZSTD() {
@@ -63,21 +75,25 @@ struct iocomp::IOComp::ContextZSTD {
 		if (p_dctx) ZSTD_freeDCtx(p_dctx);
 	}
 
-	usize Compress(const void* src, const usize srcSize, void* dst, const usize dstSize, const i32 level) const {
+	usize Compress(const void* src, usize srcSize, void* dst, usize dstSize, i32 level) const {
+		if (!_ready) return ZSTD_error_memory_allocation;
+		std::lock_guard<std::mutex> lock(_mutex);
 		return ZSTD_compressCCtx(p_cctx, dst, dstSize, src, srcSize, level);
 	}
 
-	usize Decompress(const void* src, const usize srcSize, void* dst, const usize dstSize) const {
+	usize Decompress(const void* src, usize srcSize, void* dst, usize dstSize) const {
+		if (!_ready) return ZSTD_error_memory_allocation;
+		std::lock_guard<std::mutex> lock(_mutex);
 		return ZSTD_decompressDCtx(p_dctx, dst, dstSize, src, srcSize);
 	}
 
-	bool ok() const {
-		return p_cctx && p_dctx;
-	}
+	bool ok() const noexcept { return _ready; }
 
 private:
 	ZSTD_CCtx* const p_cctx;
 	ZSTD_DCtx* const p_dctx;
+	bool _ready = false;
+	mutable std::mutex _mutex;
 };
 
 iocomp::IOComp::ContextZSTD iocomp::IOComp::_zstdCtx = iocomp::IOComp::ContextZSTD();

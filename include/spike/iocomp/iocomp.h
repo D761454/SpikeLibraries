@@ -54,31 +54,26 @@ File Summary:
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 #include "spike/podio.hpp"
-#include "spike/warning.h"
 #include "spike/nivector.h"
 
 namespace iocomp {
 	enum CompressionMethod_ : u32 {
 		CompressionMethod_none = 0,	// raw text - YAML or uncompressed binary
 		CompressionMethod_zlib = 1,	// portable
-		CompressionMethod_lz4 = 2,	// v. fast + fast runtime
+		CompressionMethod_lz4 = 2,	// reserved; currently unsupported
 		CompressionMethod_zstd = 3	// best compromise speed / ratio - recommended for final builds
 	};
-}
 
-namespace std {
-	inline std::string to_string(const iocomp::CompressionMethod_& cm) {
-		switch (cm) {
-		case iocomp::CompressionMethod_none:  return "NONE";
-		case iocomp::CompressionMethod_zlib:  return "ZLIB";
-		case iocomp::CompressionMethod_lz4:   return "LZ4";
-		case iocomp::CompressionMethod_zstd:  return "ZSTD";
+	inline std::string to_string(CompressionMethod_ method) {
+		switch (method) {
+		case CompressionMethod_none: return "NONE";
+		case CompressionMethod_zlib: return "ZLIB";
+		case CompressionMethod_lz4: return "LZ4";
+		case CompressionMethod_zstd: return "ZSTD";
 		default: return "UNKNOWN";
 		}
 	}
-}
 
-namespace iocomp {
 	/// <summary>
 	/// Calculates a crc32 value from a data buffer
 	/// </summary>
@@ -86,9 +81,6 @@ namespace iocomp {
 	/// <param name="len">length of the byte buffer</param>
 	/// <returns>crc32 value corresponding with the buffer</returns>
 	const u32 crc32(const u8* data, usize len);
-	
-	DISABLE_WARNING_PUSH
-	DISABLE_WARNING_UNINITIALIZED_VARIABLE
 	
 	/// <summary>
 	/// Struct used to hold relevant data used to decompress and validate decompression of a compressed data blob
@@ -114,8 +106,6 @@ namespace iocomp {
 			compressedSize(compressedSize),
 			dataOffset(offset) {}
 	};
-	
-	DISABLE_WARNING_POP
 	
 	/// <summary>
 	/// Holding static class, contains methods for compression and decompressions using various compression algorithms
