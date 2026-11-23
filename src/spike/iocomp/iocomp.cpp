@@ -138,35 +138,32 @@ u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, niVector<u8>& 
 	}
 }
 
-u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, void* dst, const CompressionMethod_& compressionMethod) {
+u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, void* dst, const u64& dstCapacity, const CompressionMethod_& compressionMethod) {
+	if (!src || !dst || srcSize == 0 || dstCapacity == 0
+		|| srcSize > std::numeric_limits<usize>::max() || dstCapacity > std::numeric_limits<usize>::max()) return 0;
+
+	const usize sourceSize = static_cast<usize>(srcSize);
+	const usize destinationCapacity = static_cast<usize>(dstCapacity);
 	switch (compressionMethod) {
 	case CompressionMethod_zlib: {
-		uLong srcLen = static_cast<uLong>(srcSize);
-		uLongf bound = compressBound(srcLen);
-		int res = compress(reinterpret_cast<Bytef*>(dst), &bound, reinterpret_cast<const Bytef*>(src), srcLen);
-		if (res != Z_OK) {
-        	return 0;
-        }
-		return static_cast<usize>(bound);
+		if (srcSize > std::numeric_limits<ulong>::max() || dstCapacity > std::numeric_limits<ulong>::max()) return 0;
+		ulong compressedSize = static_cast<ulong>(dstCapacity);
+		if (compress(reinterpret_cast<byte*>(dst), &compressedSize, reinterpret_cast<const byte*>(src), static_cast<ulong>(srcSize)) != Z_OK) return 0;
+		return static_cast<u64>(compressedSize);
 	}
 	case CompressionMethod_zstd: {
-		usize bound = ZSTD_compressBound(static_cast<usize>(srcSize));
-		usize compressedSize = _zstdCtx.Compress(src, static_cast<usize>(srcSize), dst, bound, 3);
-		if (ZSTD_isError(compressedSize)) {
-			string err(ZSTD_getErrorName(compressedSize));
-			return 0;
-		}
-		return compressedSize;
+		const usize compressedSize = _zstdCtx.Compress(src, sourceSize, dst, destinationCapacity, 3);
+		return ZSTD_isError(compressedSize) ? 0 : static_cast<u64>(compressedSize);
 	}
-	case CompressionMethod_lz4:
 	case CompressionMethod_none:
-	default: {
-		std::memcpy(dst, src, static_cast<usize>(srcSize));
+		if (sourceSize > destinationCapacity) return 0;
+		std::memcpy(dst, src, sourceSize);
 		return srcSize;
-	}
+	case CompressionMethod_lz4:
+	default:
+		return 0;
 	}
 }
-
 
 u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
 	switch (compressionMethod) {

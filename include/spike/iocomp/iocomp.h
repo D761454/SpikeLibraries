@@ -127,9 +127,10 @@ namespace iocomp {
 		/// <param name="src">pointer to the data to compress</param>
 		/// <param name="srcSize">size of the data to compress (in bytes)</param>
 		/// <param name="dst">pointer to the destination to place the compressed data</param>
+		/// <param name="dstCapacity">available size of the destination buffer in bytes; use the codec's bound when compressing</param>
 		/// <param name="compressionMethod">compression method to use on the data</param>
-		/// <returns>size of the compressed data</returns>
-		static u64 Compress(const void* src, const u64& srcSize, void* dst, const CompressionMethod_& compressionMethod);
+		/// <returns>size of the compressed data, or 0 if the input, method, or destination is invalid or too small</returns>
+		static u64 Compress(const void* src, const u64& srcSize, void* dst, const u64& dstCapacity, const CompressionMethod_& compressionMethod);
 
 		/// <summary>
 		/// Compresses a chunk of memory to a byte array using the corresponding compression method
