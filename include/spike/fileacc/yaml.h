@@ -203,8 +203,9 @@ namespace fileacc {
 	/// Loads YAML data from file
 	/// </summary>
 	/// <param name="filePath">file path to read from</param>
-	/// <returns>YAML data if the read was successful, nullopt if not</returns>
-	std::optional<YAMLData> load_yaml(const string& filePath);
+	/// /// <param name="outData">YAML object to populate if read was a success</param>
+	/// <returns>if the read was successful</returns>
+	errlib::Error load_yaml(const string& filePath, YAMLData& outData);
 }
 
 #endif
