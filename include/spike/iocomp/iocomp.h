@@ -172,10 +172,91 @@ namespace iocomp {
 		}
 	};
 
-	template<>
-	u64 IOComp::Decompress(const void* src, const u64& srcSize, niVector<u8>& dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
-		dst.resize(expectedSize);
-		return Decompress(src, srcSize, reinterpret_cast<void*>(dst.data()), expectedSize, expectedCrc32, compressionMethod);
+	namespace internal {
+		inline bool is_supported_method(CompressionMethod_ method) noexcept {
+			return method == CompressionMethod_none || method == CompressionMethod_zlib || method == CompressionMethod_zstd;
+		}
+
+		class InputPositionGuard {
+		public:
+			explicit InputPositionGuard(std::ifstream& stream) : _stream(stream), _position(stream.tellg()) {}
+			~InputPositionGuard() { if (_active && _position != std::streampos(-1)) restore(_stream, _position); }
+
+			bool valid() const noexcept { return _position != std::streampos(-1); }
+			std::streampos position() const noexcept { return _position; }
+			void set_restore_position(std::streampos position) noexcept { _position = position; }
+			bool restore_position() noexcept {
+				if (_position == std::streampos(-1) || !restore(_stream, _position)) return false;
+				_active = false;
+				return true;
+			}
+			void commit() noexcept { _active = false; }
+
+		private:
+			static bool restore(std::ifstream& stream, std::streampos position) noexcept {
+				try {
+					stream.clear();
+					stream.seekg(position);
+					return stream.good();
+				}
+				catch (const std::ios_base::failure&) {
+					return false;
+				}
+			}
+
+			std::ifstream& _stream;
+			std::streampos _position;
+			bool _active = true;
+		};
+
+		inline bool file_size(std::ifstream& stream, std::streampos restorePosition, u64& size) {
+			stream.clear();
+			stream.seekg(0, std::ios::end);
+			if (!stream.good()) return false;
+			const std::streampos end = stream.tellg();
+			if (end == std::streampos(-1)) return false;
+			const std::streamoff endOffset = static_cast<std::streamoff>(end);
+			if (endOffset < 0) return false;
+			size = static_cast<u64>(endOffset);
+			stream.clear();
+			stream.seekg(restorePosition);
+			return stream.good();
+		}
+
+		inline bool read_header(std::ifstream& stream, CompressedDataHeader& header, std::streampos& afterHeader, u64& fileSize) {
+			if (!stream.good() || !podio::read_pod(stream, header)) return false;
+			afterHeader = stream.tellg();
+			if (afterHeader == std::streampos(-1)) return false;
+			return file_size(stream, afterHeader, fileSize);
+		}
+
+		inline bool validate_payload(const CompressedDataHeader& header, u64 fileSize, u64 minimumOffset) noexcept {
+			return is_supported_method(header.compressionMethod) && header.compressedSize > 0 && header.uncompressedSize > 0
+				&& header.dataOffset >= minimumOffset && header.dataOffset <= fileSize
+				&& header.compressedSize <= fileSize - header.dataOffset
+				&& header.dataOffset <= static_cast<u64>(std::numeric_limits<std::streamoff>::max())
+				&& header.compressedSize <= static_cast<u64>(std::numeric_limits<std::streamsize>::max());
+		}
+
+		inline bool read_payload(std::ifstream& stream, const CompressedDataHeader& header, u64 fileSize, u64 minimumOffset, niVector<u8>& compressed) {
+			if (!validate_payload(header, fileSize, minimumOffset) || header.compressedSize > compressed.max_size()) return false;
+
+			stream.clear();
+			stream.seekg(static_cast<std::streamoff>(header.dataOffset), std::ios::beg);
+			if (!stream.good()) return false;
+			compressed.resize(static_cast<usize>(header.compressedSize));
+			stream.read(reinterpret_cast<char*>(compressed.data()), static_cast<std::streamsize>(header.compressedSize));
+			return stream.good() && static_cast<u64>(stream.gcount()) == header.compressedSize;
+		}
+
+		inline bool seek_payload_end(std::ifstream& stream, const CompressedDataHeader& header, u64 fileSize, u64 minimumOffset) {
+			if (!validate_payload(header, fileSize, minimumOffset)) return false;
+			const u64 endOffset = header.dataOffset + header.compressedSize;
+			if (endOffset > static_cast<u64>(std::numeric_limits<std::streamoff>::max())) return false;
+			stream.clear();
+			stream.seekg(static_cast<std::streamoff>(endOffset), std::ios::beg);
+			return stream.good();
+		}
 	}
 
 	/// <summary>
