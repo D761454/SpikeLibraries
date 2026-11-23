@@ -8,7 +8,7 @@ Please refer to the [Wiki](https://github.com/D761454/SpikeLibraries/wiki) for d
 
 This is a much needed update that will reduce interdependency between all full spike libraries (header and source).
 
-Equally, all of the libraries have been updated with relevant safety checks to prevent accidental misuse and provide users with xontext on failure to 
+Equally, all of the libraries have been updated with relevant safety checks to prevent accidental misuse and provide users with context on failure to 
 allow for graceful error handling.
 
 In doing so, much of the internal functionality of the libraries has changed, however the public API remains mostly the same.
@@ -30,4 +30,4 @@ If you need the fbx importer, you can download the [fbx sdks](https://aps.autode
 FBXSDK_ROOT environment variable pointing to the sdks directory. Doing so will allow cmake to locate the sdks and generate the 
 asset importer project with the working fbx importer.
 
-**Full Changelog**: https://github.com/D761454/SpikeLibraries/commits/v1.1.1
+**Full Changelog**: https://github.com/D761454/SpikeLibraries/commits/v1.2.0
