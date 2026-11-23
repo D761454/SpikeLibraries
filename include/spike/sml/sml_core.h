@@ -50,7 +50,6 @@ File Summary:
 #include <algorithm>
 #include <initializer_list>
 #include <cmath>
-#include <cstdlib>
 #include <type_traits>
 
 #include "spike/def_aliases.h"
@@ -58,6 +57,12 @@ File Summary:
 #define SQUARE(x) ((x) * (x))
 
 namespace sml {
+	template<typename T>
+	concept ArithmeticType = std::is_arithmetic_v<T> && !std::is_same_v<T, bool>;
+
+	template<typename T>
+	concept DecimalType = std::is_floating_point_v<T> && !std::is_same_v<T, bool>;
+
 	/// <summary>
 	/// Degrees-to-radians conversion constant.
 	/// Multiply a degree value by this constant to convert to radians.
@@ -82,7 +87,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input value</param>
 	/// <returns>absolute value of input</returns>
-	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
+	template<ArithmeticType T>
 	inline T abs(T value) noexcept {
 		return static_cast<T>(std::abs(value));
 	}
@@ -94,7 +99,7 @@ namespace sml {
 	/// <param name="a">first value to compare</param>
 	/// <param name="b">second value to compare</param>
 	/// <returns>true if values are approximately equal, false otherwise</returns>
-	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
+	template<ArithmeticType T>
 	inline bool approx(T a, T b) noexcept {
 		return abs(a - b) < 0.0001;
 	}
@@ -104,7 +109,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the exponent</param>
 	/// <returns>e raised to the power of value</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T exp(T value) noexcept {
 		return static_cast<T>(std::exp(value));
 	}
@@ -114,7 +119,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input value</param>
 	/// <returns>ceiling of value in original type</returns>
-	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
+	template<ArithmeticType T>
 	inline T ceil(T value) noexcept {
 		return static_cast<T>(std::ceil(value));
 	}
@@ -124,7 +129,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input floating point value</param>
 	/// <returns>ceiling of value as int32</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline i32 ceil_to_int32(T value) noexcept {
 		return static_cast<i32>(std::ceil(value));
 	}
@@ -134,7 +139,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input floating point value</param>
 	/// <returns>ceiling of value as int64</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline i64 ceil_to_int64(T value) noexcept {
 		return static_cast<i64>(std::ceil(value));
 	}
@@ -144,7 +149,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input floating point value</param>
 	/// <returns>ceiling of value as native integer</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline i64 ceil_to_int(T value) noexcept {
 		return static_cast<i64>(std::ceil(value));
 	}
@@ -154,7 +159,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input value</param>
 	/// <returns>floor of value in original type</returns>
-	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
+	template<ArithmeticType T>
 	inline T floor(T value) noexcept {
 		return static_cast<T>(std::floor(value));
 	}
@@ -164,7 +169,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input floating point value</param>
 	/// <returns>floor of value as int32</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline i32 floor_to_int32(T value) noexcept {
 		return static_cast<i32>(std::floor(value));
 	}
@@ -174,7 +179,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input floating point value</param>
 	/// <returns>floor of value as int64</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline i64 floor_to_int64(T value) noexcept {
 		return static_cast<i64>(std::floor(value));
 	}
@@ -184,7 +189,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input floating point value</param>
 	/// <returns>floor of value as native integer</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline i64 floor_to_int(T value) noexcept {
 		return static_cast<i64>(std::floor(value));
 	}
@@ -194,7 +199,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">angle in radians</param>
 	/// <returns>sine of the angle</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T sin(T value) noexcept {
 		return static_cast<T>(std::sin(value));
 	}
@@ -204,7 +209,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">angle in radians</param>
 	/// <returns>cosine of the angle</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T cos(T value) noexcept {
 		return static_cast<T>(std::cos(value));
 	}
@@ -214,7 +219,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">angle in radians</param>
 	/// <returns>tangent of the angle</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T tan(T value) noexcept {
 		return static_cast<T>(std::tan(value));
 	}
@@ -225,7 +230,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">input value in range [-1, 1]</param>
 	/// <returns>arc-sine of value in radians</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T asin(T value) noexcept {
 		return static_cast<T>(std::asin(value));
 	}
@@ -236,7 +241,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">input value in range [-1, 1]</param>
 	/// <returns>arc-cosine of value in radians</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T acos(T value) noexcept {
 		return static_cast<T>(std::acos(value));
 	}
@@ -247,7 +252,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">input value</param>
 	/// <returns>arc-tangent of value in radians</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T atan(T value) noexcept {
 		return static_cast<T>(std::atan(value));
 	}
@@ -259,7 +264,7 @@ namespace sml {
 	/// <param name="a">numerator (y-coordinate)</param>
 	/// <param name="b">denominator (x-coordinate)</param>
 	/// <returns>angle in radians in the range [-π, π]</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T atan2(T a, T b) noexcept {
 		return static_cast<T>(std::atan2(a, b));
 	}
@@ -269,7 +274,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input value</param>
 	/// <returns>-1 if value is negative, 1 if positive, 0 if zero</returns>
-	template<typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
+	template<ArithmeticType T>
 	inline T sign(T value) noexcept {
 		return static_cast<T>(value < 0.0 ? -1.0 : (value >= 0.0 ? 1.0 : 0.0));
 	}
@@ -282,7 +287,7 @@ namespace sml {
 	/// <param name="min">minimum bound</param>
 	/// <param name="max">maximum bound</param>
 	/// <returns>clamped value within [min, max] range</returns>
-	template<typename T, typename T2, typename T3, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T2>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T3>>* = nullptr>
+	template<ArithmeticType T, ArithmeticType T2, ArithmeticType T3>
 	inline T clamp(T value, T2 min, T3 max) noexcept {
 		return value < min ? min : (value > max ? max : value);
 	}
@@ -292,7 +297,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the value to clamp</param>
 	/// <returns>value clamped within [0, 1] range</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T clamp01(T value) noexcept {
 		return static_cast<T>(value < 0 ? 0 : (value > 1 ? 1 : value));
 	}
@@ -305,7 +310,7 @@ namespace sml {
 	/// <param name="b">end value</param>
 	/// <param name="t">interpolation factor (typically in range [0, 1])</param>
 	/// <returns>interpolated value between a and b</returns>
-	template<typename T, typename T2, typename T3, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr, std::enable_if_t<std::is_floating_point_v<T2>>* = nullptr, std::enable_if_t<std::is_floating_point_v<T3>>* = nullptr>
+	template<DecimalType T, DecimalType T2, DecimalType T3>
 	inline T lerp(T a, T2 b, T3 t) noexcept {
 		return static_cast<T>(std::lerp(a, b, t));
 	}
@@ -316,7 +321,7 @@ namespace sml {
 	/// <param name="value">the input value (must be positive)</param>
 	/// <param name="base">the logarithm base (must be positive and not equal to 1)</param>
 	/// <returns>logarithm of value in the specified base</returns>
-	template<typename T, typename T2, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T2>>* = nullptr>
+	template<DecimalType T, ArithmeticType T2>
 	inline T log(T value, T2 base) noexcept {
 		return static_cast<T>(std::log(value)) / static_cast<T>(std::log(base));
 	}
@@ -326,7 +331,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input value (must be positive)</param>
 	/// <returns>base-10 logarithm of value</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T log10(T value) noexcept {
 		return static_cast<T>(std::log10(value));
 	}
@@ -337,7 +342,7 @@ namespace sml {
 	/// <param name="value">the base value</param>
 	/// <param name="p">the exponent</param>
 	/// <returns>value raised to power p</returns>
-	template<typename T, typename T2, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr, std::enable_if_t<std::is_arithmetic_v<T2>>* = nullptr>
+	template<DecimalType T, ArithmeticType T2>
 	inline T pow(T value, T2 p) noexcept {
 		return static_cast<T>(std::pow(value, p));
 	}
@@ -347,7 +352,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input value (must be non-negative)</param>
 	/// <returns>square root of value</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T sqrt(T value) noexcept {
 		return static_cast<T>(std::sqrt(value));
 	}
@@ -379,7 +384,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input value</param>
 	/// <returns>value rounded to nearest integer in original type</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline T round(T value) noexcept {
 		return static_cast<T>(std::round(value));
 	}
@@ -389,7 +394,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input floating point value</param>
 	/// <returns>value rounded to nearest integer as int32</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline i32 round_to_int32(T value) noexcept {
 		return static_cast<i32>(std::round(value));
 	}
@@ -399,7 +404,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input floating point value</param>
 	/// <returns>value rounded to nearest integer as int64</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline i64 round_to_int64(T value) noexcept {
 		return static_cast<i64>(std::round(value));
 	}
@@ -409,7 +414,7 @@ namespace sml {
 	/// </summary>
 	/// <param name="value">the input floating point value</param>
 	/// <returns>value rounded to nearest integer as native integer</returns>
-	template<typename T, std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+	template<DecimalType T>
 	inline i64 round_to_int(T value) noexcept {
 		return static_cast<i64>(std::round(value));
 	}
