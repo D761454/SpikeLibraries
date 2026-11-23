@@ -46,7 +46,6 @@ File Summary:
 ----------------------------------------------------------------------
 */
 
-#include <ostream>
 #include <fstream>
 #include <limits>
 #include <memory>
@@ -57,6 +56,7 @@ File Summary:
 #include "spike/stl_aliases.h"
 #include "spike/podio.hpp"
 #include "spike/nivector.h"
+#include <ios>
 
 namespace iocomp {
 	enum CompressionMethod_ : u32 {
@@ -288,7 +288,7 @@ namespace iocomp {
 	/// <param name="srcSize">size of the data to compress (in bytes)</param>
 	/// <param name="compressionMethod">compression method to use on the data</param>
 	/// <returns>if the write was successful</returns>
-	[[nodiscard]] static bool compress_to_file(std::ostream& ofs, const void* source, const usize& srcSize, CompressionMethod_& compressionMethod) {
+	[[nodiscard]] static bool compress_to_file(std::ofstream& ofs, const void* source, const usize& srcSize, CompressionMethod_& compressionMethod) {
 		if (!ofs.good() || !source || srcSize == 0 || !internal::is_supported_method(compressionMethod)) return false;
 		if (compressionMethod == CompressionMethod_zstd && !IOComp::ZSTD()) compressionMethod = CompressionMethod_zlib;
 
@@ -317,7 +317,7 @@ namespace iocomp {
 	/// <param name="compressionMethod">compression method to use on the data</param>
 	/// <returns>if the write was successful</returns>
 	template<typename T>
-	[[nodiscard]] static bool compress_to_file(std::ostream& ofs, const T* source, CompressionMethod_& compressionMethod) {
+	[[nodiscard]] static bool compress_to_file(std::ofstream& ofs, const T* source, CompressionMethod_& compressionMethod) {
 		static_assert(podio::is_pod_writable_v<T>, "CompressToFile requires a trivially copyable, standard-layout type");
 		if (!source) return false;
 		return compress_to_file(ofs, static_cast<const void*>(source), sizeof(T), compressionMethod);

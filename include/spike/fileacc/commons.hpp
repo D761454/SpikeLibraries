@@ -47,15 +47,12 @@ File Summary:
 */
 
 #include <set>
+#include <fstream>
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
-#include "spike/warning.h"
 
 namespace fileacc {
-	DISABLE_WARNING_PUSH
-	DISABLE_WARNING_UNINITIALIZED_VARIABLE
-
 	/* file header data used to verify file validity and type */
 	struct FileCheck {
 		/* denotes content structure for the file */
@@ -100,7 +97,7 @@ namespace fileacc {
 	/// <param name="expectedMagic">magic value that should be held within header</param>
 	/// <param name="expectedVer">version header that should be held in the header</param>
 	/// <returns>if the file exists and the headers match: 0 = good, -1 = magic error, -2 = version error, -3 = file error</returns>
-	i32 check_file(const string& path, const u32 expectedMagic, const u32 expectedVer) noexcept;
+	i32 check_file(const string& path, const u32 expectedMagic, const u32 expectedVer, std::istream& ifs) noexcept;
 
 	/// <summary>
 	/// Checks if a file exists and, if so, that the header data matches the expected data
@@ -109,9 +106,7 @@ namespace fileacc {
 	/// <param name="expectedMagicSet">a set of valid file magics that the header should use</param>
 	/// <param name="expectedVer">version header that should be held in the header</param>
 	/// <returns>if the file exists and the headers match: 0 = good, -1 = magic error, -2 = version error, -3 = file error</returns>
-	i32 check_file(const string& path, std::set<u32> expectedMagicSet, const u32 expectedVer) noexcept;
-
-	DISABLE_WARNING_POP
+	i32 check_file(const string& path, std::set<u32> expectedMagicSet, const u32 expectedVer, std::istream& ifs) noexcept;
 }
 
 #endif

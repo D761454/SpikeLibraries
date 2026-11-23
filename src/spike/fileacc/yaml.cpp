@@ -61,10 +61,6 @@ DISABLE_WARNING_POP
 #include "spike/error.hpp"
 #include "spike/debugl/debug.hpp"
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNINITIALIZED_VARIABLE
-DISABLE_WARNING_UNUSED_VARIABLE
-
 namespace YAML {
 	template<>
 	struct convert<uuids::uuid> {
@@ -259,5 +255,3 @@ std::optional<fileacc::YAMLData> fileacc::load_yaml(const string& filePath) {
 		return std::nullopt;
 	}
 }
-
-DISABLE_WARNING_POP
