@@ -47,16 +47,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/nivector.h"
 #include "spike/stl_aliases.h"
 
-const string iocomp::to_string(const CompressionMethod_& cm) {
-	switch (cm) {
-	case CompressionMethod_none:  return "0: NONE";
-	case CompressionMethod_zlib:  return "1: ZLIB";
-	case CompressionMethod_lz4:   return "2: LZ4";
-	case CompressionMethod_zstd:  return "3: ZSTD";
-	default: return "UNKNOWN";
-	}
-}
-
 const u32 iocomp::crc32(const u8* data, usize len) {
 	return static_cast<u32>(::crc32(0UL, reinterpret_cast<const Bytef*>(data), static_cast<uInt>(len)));
 }

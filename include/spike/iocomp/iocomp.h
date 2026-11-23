@@ -49,6 +49,7 @@ File Summary:
 #include <ostream>
 #include <fstream>
 #include <limits>
+#include <string>
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
@@ -61,16 +62,23 @@ namespace iocomp {
 		CompressionMethod_none = 0,	// raw text - YAML or uncompressed binary
 		CompressionMethod_zlib = 1,	// portable
 		CompressionMethod_lz4 = 2,	// v. fast + fast runtime
-		CompressionMethod_zstd = 3,	// best compromise speed / ratio - recommended for final builds
+		CompressionMethod_zstd = 3	// best compromise speed / ratio - recommended for final builds
 	};
+}
 
-	/// <summary>
-	/// Used to convert a compression method enum into a string
-	/// </summary>
-	/// <param name="cm">compression method enum</param>
-	/// <returns>string representation of the compression method</returns>
-	const string to_string(const CompressionMethod_& cm);
+namespace std {
+	inline std::string to_string(const iocomp::CompressionMethod_& cm) {
+		switch (cm) {
+		case iocomp::CompressionMethod_none:  return "NONE";
+		case iocomp::CompressionMethod_zlib:  return "ZLIB";
+		case iocomp::CompressionMethod_lz4:   return "LZ4";
+		case iocomp::CompressionMethod_zstd:  return "ZSTD";
+		default: return "UNKNOWN";
+		}
+	}
+}
 
+namespace iocomp {
 	/// <summary>
 	/// Calculates a crc32 value from a data buffer
 	/// </summary>
