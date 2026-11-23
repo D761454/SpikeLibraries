@@ -9,5 +9,4 @@ target_link_libraries(spike_iocomp
     PRIVATE
         zlibstatic
 		zstd_static
-		SpikeLibraries::debugl
 )

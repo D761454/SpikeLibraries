@@ -46,7 +46,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/def_aliases.h"
 #include "spike/nivector.h"
 #include "spike/stl_aliases.h"
-#include "spike/debugl/debug.hpp"
 
 const string iocomp::to_string(const CompressionMethod_& cm) {
 	switch (cm) {
@@ -106,7 +105,6 @@ u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, niVector<u8>& 
 		int res = compress(dst.data(), &bound, reinterpret_cast<const Bytef*>(src), srcLen);
 		if (res != Z_OK) {
 			dst.clear();
-			Debug::LogError("Zlib Compression Failed: {}", res);
 			return 0;
 		}
 		dst.resize(static_cast<usize>(bound));
@@ -119,7 +117,6 @@ u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, niVector<u8>& 
 		if (ZSTD_isError(compressedSize)) {
 			dst.clear();
 			string err(ZSTD_getErrorName(compressedSize));
-			Debug::LogError("Zstd Compression Failed: {}", err);
 			return 0;
 		}
 		dst.resize(compressedSize);
@@ -142,7 +139,6 @@ u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, void* dst, con
 		uLongf bound = compressBound(srcLen);
 		int res = compress(reinterpret_cast<Bytef*>(dst), &bound, reinterpret_cast<const Bytef*>(src), srcLen);
 		if (res != Z_OK) {
-          	Debug::LogError("Zlib Compression Failed: {}", res);
         	return 0;
         }
 		return static_cast<usize>(bound);
@@ -152,7 +148,6 @@ u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, void* dst, con
 		usize compressedSize = _zstdCtx.Compress(src, static_cast<usize>(srcSize), dst, bound, 3);
 		if (ZSTD_isError(compressedSize)) {
 			string err(ZSTD_getErrorName(compressedSize));
-			Debug::LogError("Zstd Compression Failed: {}", err);
 			return 0;
 		}
 		return compressedSize;
@@ -177,7 +172,6 @@ u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, c
 		}
 		const u32 crc = crc32(reinterpret_cast<const u8*>(dst), static_cast<usize>(destLen));
 		if (crc != expectedCrc32) {
-			Debug::LogError("Decompression error using zlib! CRC32 mismatch!");
 			return 0;
 		}
 		return static_cast<usize>(destLen);
@@ -186,18 +180,15 @@ u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, c
 		const usize rawSize = ZSTD_getFrameContentSize(src, static_cast<usize>(srcSize));
 		if (ZSTD_isError(rawSize)) {
 			string err(ZSTD_getErrorName(rawSize));
-			Debug::LogError("ZSTD_getFrameContentSize Failed: {}", err);
 			return 0;
 		}
 		const usize accRawSize = _zstdCtx.Decompress(src, static_cast<usize>(srcSize), dst, rawSize);
 		if (ZSTD_isError(accRawSize) || accRawSize != static_cast<usize>(expectedSize)) {
 			string err(ZSTD_getErrorName(accRawSize));
-			Debug::LogError("Zstd Decompression Failed: {}", err);
 			return false;
 		}
 		const u32 crc = crc32(reinterpret_cast<const u8*>(dst), accRawSize);
 		if (crc != expectedCrc32) {
-			Debug::LogError("Decompression error using zstd! CRC32 mismatch!");
 			return 0;
 		}
 		return accRawSize;
@@ -208,7 +199,6 @@ u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, c
 		if (srcSize != expectedSize) return 0;
 		const u32 crc = crc32(reinterpret_cast<const u8*>(src), static_cast<usize>(srcSize));
 		if (crc != expectedCrc32) {
-			Debug::LogError("Decompression error using lz4 or none! CRC32 mismatch!");
 			return 0;
 		}
 		std::memcpy(dst, src, static_cast<usize>(srcSize));
