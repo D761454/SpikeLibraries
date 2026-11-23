@@ -40,34 +40,53 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #elif defined(__APPLE__)
 #include <stdlib.h>
 #endif
-#include <cassert>
 #include <utility>
+#include <string>
+#include <cassert>
+#include <stdexcept>
 
 #include "spike/def_aliases.h"
-#include "spike/debugl/debug.hpp"
 
+#include "spike/memsys/Allocator.h"
 #include "spike/memsys/StackAllocator.h"
 
 namespace memsys {
 	MemoryManager::MemoryManager() {
 		_globalMemoryBase = malloc(kTotalSize);
 
-		assert(_globalMemoryBase != nullptr && "Failed to allocate global memory for MemoryManager!");
+		if (!_globalMemoryBase) {
+			_allocator = nullptr;
+			_start = 0;
+			_end = 0;
+			throw std::runtime_error("Global Memory Manager failed to malloc memory to its global memory base!");
+			return;
+		}
 
-		_allocator = new StackAllocator(_globalMemoryBase, kTotalSize);
-		assert(_allocator != nullptr && "Failed to create primary allocator for MemoryManager!");
+		try {
+			_allocator = new StackAllocator(_globalMemoryBase, kTotalSize);
+			_start = _allocator->GetStart();
+			_end = _allocator->GetEnd();
+		}
+		catch (...) {
+			_allocator = nullptr;
+			_start = 0;
+			_end = 0;
+			free(_globalMemoryBase);
+			_globalMemoryBase = nullptr;
+			throw;
+		}
 
 		_allocatedChunks.clear();
 		_freeChunks.clear();
 	}
 
 	MemoryManager::~MemoryManager() {
-		_allocator->Reset();
+		if (_allocator) _allocator->Reset();
 
 		delete _allocator;
 		_allocator = nullptr;
 
-		free(_globalMemoryBase);
+		if (_globalMemoryBase) free(_globalMemoryBase);
 		_globalMemoryBase = nullptr;
 
 		_allocatedChunks.clear();
@@ -75,49 +94,82 @@ namespace memsys {
 	}
 
 	void* MemoryManager::AllocateChunk(const usize size, const char* id) {
+		if (!_allocator) return nullptr;
 		void* chunk = _allocator->Allocate(size);
-		_allocatedChunks.push_back(std::pair<const char*, void*>(id, chunk));
+		if (!chunk) return nullptr;
+		try {
+			_allocatedChunks.push_back(std::pair<const char*, void*>(id, chunk));
+		}
+		catch (...) {
+			if (!_allocator->Free(chunk))
+				Report("MemoryManager.AllocateChunk: failed to roll back an allocation after bookkeeping failed.");
+			throw;
+		}
 
 		return chunk;
 	}
 
 	void MemoryManager::FreeChunk(void* ptr) {
 		if (!ptr) return;
+		if (!is_pointer_owned(ptr, _start, _end)) return;
+		assert(!_allocatedChunks.empty() && "MemoryManager.FreeChunk: Attempting to free a chunk with no allocated chunks! Double free or stale pointer!");
+		if (_allocatedChunks.empty()) return;
+
+		bool valid = false;
+		for (auto l : _allocatedChunks) {
+			if (ptr == l.second) valid = true;
+		}
+		assert(valid && "MemoryManager.FreeChunk: Attempting to free a pointer that does not point to a valid allocated chunk!");
+		if (!valid) return;
+
 		if (ptr == _allocatedChunks.back().second) {
-			_allocator->Free(ptr);
+			if (!_allocator) {
+				Report("MemoryManager.FreeChunk: allocator is unavailable for a tracked chunk.");
+				return;
+			}
+			if (!_allocator->Free(ptr)) {
+				Report("MemoryManager.FreeChunk: allocator rejected the most recently allocated chunk.");
+				return;
+			}
 			_allocatedChunks.pop_back();
 
-			bool toFree = true;
-			while (toFree) {
-				toFree = false;
-
-				for (void* freeChunk : _freeChunks) {
-					if (freeChunk == _allocatedChunks.back().second) {
-						_allocator->Free(freeChunk);
-						_allocatedChunks.pop_back();
-						_freeChunks.remove(freeChunk);
-
-						toFree = true;
-						break;
-					}
+			auto i = _freeChunks.begin();
+			while (i != _freeChunks.end()) {
+				if (_allocatedChunks.empty()) {
+					_freeChunks.clear();
+					break;
 				}
+				if ((*i) == _allocatedChunks.back().second) {
+					void* freeChunk = *i;
+					if (!_allocator->Free(freeChunk)) {
+						Report("MemoryManager.FreeChunk: failed to free a deferred chunk.");
+						++i;
+						continue;
+					}
+					_allocatedChunks.pop_back();
+					_freeChunks.erase(i);
+					i = _freeChunks.begin();
+				}
+				else ++i;
 			}
 		}
 		else {
+			for (auto f : _freeChunks) {
+				if (f == ptr) return;
+			}
+
 			_freeChunks.push_back(ptr);
 		}
 	}
 
 	void MemoryManager::LogMemoryUsage() const {
-		if (_allocator) {
-			Debug::Log("Current Memory Usage: {} / {}", _allocator->GetAllocatedMemory(), _allocator->GetMemorySize());
-		}
-		else Debug::LogError("WARNING! No primary allocator for memory manager!");
+		if (_allocator) Report("Current Memory Usage: " + std::to_string(_allocator->GetAllocatedMemory()) + " / " + std::to_string(_allocator->GetMemorySize()));
+		else Report("No allocator for the global memory manager!");
 	}
 
 	void MemoryManager::IntegrityCheck() const {
 		if (_allocatedChunks.size() > 0) {
-			Debug::LogError("!!! MEMORY LEAK !!!");
+			Report("!!! MEMORY LEAK !!!");
 
 			for (std::pair<const char*, const void*> chunk : _allocatedChunks) {
 				bool isFree = false;
@@ -129,9 +181,8 @@ namespace memsys {
 					}
 				}
 
-				if (!isFree) {
-					Debug::LogError("Leaked Chunk {} at address {}", chunk.first, chunk.second);
-				}
+				if (!isFree)
+					Report("Leaked Chunk " + (chunk.first ? std::string(chunk.first) : "null ID") + " at address " + std::to_string(reinterpret_cast<uptr>(chunk.second)));
 			}
 		}
 	}

@@ -35,14 +35,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/assetimp/Importer.hpp"
 
-#include <algorithm>
-#include <set>
-#include <vector>
+#include <new>
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 #include "spike/debugl/debug.hpp"
-#include "spike/error.hpp"
 
 #include "spike/assetimp/BaseImporter.h"
 #include "spike/assetimp/ImporterRegistry.h"

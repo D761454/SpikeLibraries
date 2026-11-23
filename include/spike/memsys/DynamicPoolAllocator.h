@@ -56,9 +56,9 @@ File Summary:
 #include <algorithm>
 #include <utility>
 #include <cassert>
+#include <memory>
 
 #include "spike/def_aliases.h"
-#include "spike/debugl/debug.hpp"
 
 #include "spike/memsys/Allocator.h"
 #include "spike/memsys/PoolAllocator.h"
@@ -71,12 +71,12 @@ namespace memsys {
     /// <typeparam name="T">Object type held within the pools</typeparam>
     /// <typeparam name="Capacity">The size of each dynamically allocated pool</typeparam>
     template<class T, usize Capacity>
-    class DynamicPoolAllocator : MemoryUser {
+    class DynamicPoolAllocator : MemoryUser, Allocator {
         static_assert(Capacity > 0);
 
         using PoolAlloc = PoolAllocator<T, Capacity>;
 
-        static constexpr usize poolSize = Capacity * align_up(sizeof(T), alignof(T));
+        inline static constexpr usize kPoolSize = Capacity * PoolAlloc::kChunkSize;
         const char* id = nullptr;
 
     public:
@@ -96,8 +96,30 @@ namespace memsys {
 
     public:
         explicit DynamicPoolAllocator(const char* id = nullptr) : id(id) {
-            PoolAlloc* newPoolAlloc = new PoolAlloc(RequestMemoryChunk(poolSize, id), poolSize);
-            pools.push_back(new Pool(newPoolAlloc));
+            void* memory = RequestMemoryChunk(kPoolSize, id);
+            if (!memory) {
+                Report("DynamicPoolAllocator: could not get memory chunk for the first pool!");
+                return;
+            }
+
+            try {
+                std::unique_ptr<PoolAlloc> allocator(new PoolAlloc(memory, kPoolSize));
+                if (!allocator->IsValid()) {
+                    Report("DynamicPoolAllocator: allocated memory is invalid for a pool!");
+                    allocator.reset();
+                    FreeMemoryChunk(memory);
+                    return;
+                }
+
+                std::unique_ptr<Pool> pool(new Pool(allocator.get()));
+                pools.push_back(pool.get());
+                pool.release();
+                allocator.release();
+            }
+            catch (...) {
+                FreeMemoryChunk(memory);
+                throw;
+            }
         }
 
         ~DynamicPoolAllocator();
@@ -114,7 +136,8 @@ namespace memsys {
         /// Used to destroy an object, if the object is found within any of the memory pools
         /// </summary>
         /// <param name="obj">pointer to the object to delete</param>
-        void Destroy(T* obj);
+        /// <returns>if destruction was successful</returns>
+        bool Destroy(T* obj);
 
         /// <summary>
         /// returns a vector of pointers to all created objects within each memory pool
@@ -136,29 +159,14 @@ namespace memsys {
         for (Pool* pool : pools) {
             if (!pool) continue;
 
-            PoolAlloc* pa = pool->allocator;
-            if (!pa) {
-                Debug::LogWarning("FATAL: DPA: PoolAllocator is nullptr, cannot free memory chunk!");
-                assert(0 && "FATAL: DPA: PoolAllocator is nullptr, cannot free memory chunk!");
-                continue;
+            void* memory = nullptr;
+            if (pool->allocator) {
+                memory = const_cast<void*>(pool->allocator->GetMemoryBase());
+                delete pool->allocator;
+                pool->allocator = nullptr;
             }
 
-            auto objects = pool->allocatedObjects;
-            for (T* obj : objects) {
-                if (obj) {
-                    pa->Destroy(obj);
-                }
-            }
-
-            pool->allocatedObjects.clear();
-
-            void* base = const_cast<void*>(pa->GetMemoryBase());
-
-            delete pa;
-            pool->allocator = nullptr;
-
-            FreeMemoryChunk(base);
-
+            if (memory) FreeMemoryChunk(memory);
             delete pool;
         }
 
@@ -171,39 +179,50 @@ namespace memsys {
             if (pool && pool->allocatedObjects.size() < Capacity) {
                 T* obj = pool->allocator->Create(std::forward<Args>(args)...);
 
-                if (!obj) {
-                    Debug::LogError("DynamicPoolAllocator: Failed to allocate memory for new object!");
-                    assert(obj != nullptr && "DynamicPoolAllocator: Failed to allocate memory for new object!");
-                    return nullptr;
-                }
+                if (!obj) return nullptr;
 
                 pool->allocatedObjects.push_back(obj);
                 return obj;
             }
         }
 
-        PoolAlloc* newPoolAlloc = new PoolAlloc(RequestMemoryChunk(poolSize, id), poolSize);
-        Pool* newPool = new Pool(newPoolAlloc);
-        pools.push_front(newPool);
-
-        T* obj = newPool->allocator->Create(std::forward<Args>(args)...);
-
-        if (!obj) {
-            Debug::LogError("DynamicPoolAllocator: Failed to allocate memory for new object!");
-            assert(obj != nullptr && "DynamicPoolAllocator: Failed to allocate memory for new object!");
+        void* pa = RequestMemoryChunk(kPoolSize, id);
+        if (!pa) {
+            Report("DynamicPoolAllocator.Create: could not get memory chunk for a new pool!");
             return nullptr;
         }
 
-        newPool->allocatedObjects.push_back(obj);
+        std::unique_ptr<PoolAlloc> newPoolAlloc;
+        std::unique_ptr<Pool> newPool;
+        try {
+            newPoolAlloc.reset(new PoolAlloc(pa, kPoolSize));
+            if (!newPoolAlloc->IsValid()) {
+                Report("DynamicPoolAllocator.Create: allocated memory is invalid for a pool!");
+                newPoolAlloc.reset();
+                FreeMemoryChunk(pa);
+                return nullptr;
+            }
+
+            newPool.reset(new Pool(newPoolAlloc.get()));
+            pools.push_front(newPool.get());
+        }
+        catch (...) {
+            FreeMemoryChunk(pa);
+            throw;
+        }
+
+        Pool* pool = newPool.release();
+        newPoolAlloc.release();
+        T* obj = pool->allocator->Create(std::forward<Args>(args)...);
+        if (!obj) return nullptr;
+
+        pool->allocatedObjects.push_back(obj);
         return obj;
     }
 
     template<class T, usize Capacity>
-    void DynamicPoolAllocator<T, Capacity>::Destroy(T* obj) {
-        if (!obj) {
-            Debug::LogWarning("DynamicPoolAllocator: DestroyObject called with nullptr.");
-            return;
-        }
+    bool DynamicPoolAllocator<T, Capacity>::Destroy(T* obj) {
+        if (!obj) return true; // not technically an error
 
         for (Pool* pool : pools) {
             if (!pool) continue;
@@ -211,18 +230,21 @@ namespace memsys {
 
             if (is_pointer_owned(obj, pool->allocator->GetStart(), pool->allocator->GetEnd())) {
                 auto it = std::find(pool->allocatedObjects.begin(), pool->allocatedObjects.end(), obj);
+                assert(it != pool->allocatedObjects.end() && "DynamicPoolAllocator.Destroy: pointer is within a pools bounds but does not point to an allocated chunk! Double free or stale pointer!");
+
                 if (it == pool->allocatedObjects.end()) {
-                    Debug::LogError("DynamicPoolAllocator: Attempted to free stale pointer or double-free detected.");
-                    return;
+                    Report("DynamicPoolAllocator.Destroy: pointer is within a pools bounds but does not point to an allocated chunk! Double free or stale pointer!");
+                    return false;
                 }
 
-                pool->allocatedObjects.erase(it);
-                pool->allocator->Destroy(obj);
-                return;
+                if (pool->allocator->Destroy(obj)) {
+                    pool->allocatedObjects.erase(it);
+                    return true;
+                }
             }
         }
-
-        Debug::LogError("DynamicPoolAllocator: Failed to find pool for object to destroy. Pointer is likely stale or corrupted.");
+        Report("DynamicPoolAllocator.Destroy: pointer is valid but does not exist within any pools of this dpa!");
+        return false;
     }
 
     template<class T, usize Capacity>

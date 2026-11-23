@@ -7,7 +7,7 @@ target_include_directories(spike_iocomp
 
 target_link_libraries(spike_iocomp
     PRIVATE
-        SpikeLibraries::debugl
         zlibstatic
 		zstd_static
+		SpikeLibraries::debugl
 )

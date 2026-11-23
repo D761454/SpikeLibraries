@@ -223,7 +223,7 @@ errlib::Error fileacc::save_yaml(const string& filePath, const YAMLData& data) {
 		std::ofstream ofs(filePath, std::ios::binary);
 		if (!ofs) {
 			Debug::LogError("YAMLFileIO::SaveToFile - failed to open: {}", filePath);
-			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, filePath);
+			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, "failed to open: " + filePath);
 		}
 
 		ofs << emitter.c_str();
@@ -235,8 +235,8 @@ errlib::Error fileacc::save_yaml(const string& filePath, const YAMLData& data) {
 		return errlib::Error::FromCode(errlib::ErrorCode_IOerror, string(ex.what()));
 	}
 	catch (...) {
-		Debug::LogError("YAMLFileIO::SaveToFile - unknown exception writing {}", filePath);
-		return errlib::Error::FromCode(errlib::ErrorCode_unknown, filePath);
+		Debug::LogError("YAMLFileIO::SaveToFile - unknown exception writing to: {}", filePath);
+		return errlib::Error::FromCode(errlib::ErrorCode_unknown, "unknown exception writing to: " + filePath);
 	}
 }
 

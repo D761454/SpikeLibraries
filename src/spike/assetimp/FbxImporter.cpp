@@ -48,9 +48,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/stl_aliases.h"
 #include "spike/error.hpp"
 #include "spike/debugl/debug.hpp"
-#include "spike/sml/vector2.h"
-#include "spike/sml/vector3.h"
-#include "spike/sml/sml_core.h"
 
 DISABLE_WARNING_PUSH
 DISABLE_WARNING(4099)
@@ -70,6 +67,8 @@ DISABLE_WARNING(4099)
 #include <fbxsdk/utils/fbxgeometryconverter.h>
 DISABLE_WARNING_POP
 
+#include "spike/assetimp/aivector2.h"
+#include "spike/assetimp/aivector3.h"
 #include "spike/assetimp/aimesh.h"
 #include "spike/assetimp/BaseImporter.h"
 #include "spike/assetimp/PostProcessing.h"
@@ -121,7 +120,7 @@ namespace {
 	umap<assimp::VertexP3N3T2, u32, assimp::VertexHash> vertexCache;
 }
 
-static void read_normal(FbxMesh* inMesh, i32 ctrlPtIdx, i32 vertCounter, sml::vector3& outNormal) {
+static void read_normal(FbxMesh* inMesh, i32 ctrlPtIdx, i32 vertCounter, assimp::vector3& outNormal) {
 	if (inMesh->GetElementNormalCount() < 1) throw std::exception("Invalid Normal Number");
 
 	FbxGeometryElementNormal* vertNormal = inMesh->GetElementNormal(0);
@@ -161,7 +160,7 @@ static void read_normal(FbxMesh* inMesh, i32 ctrlPtIdx, i32 vertCounter, sml::ve
 	}
 }
 
-static void read_texture_coordinate(FbxMesh* inMesh, i32 ctrlPtIdx, i32 uvIndex, sml::vector2& outTC) {
+static void read_texture_coordinate(FbxMesh* inMesh, i32 ctrlPtIdx, i32 uvIndex, assimp::vector2& outTC) {
 	if (inMesh->GetElementUVCount() < 1) throw std::exception("Invalid UV Number");
 
 	FbxGeometryElementUV* vertUV = inMesh->GetElementUV(0);
@@ -217,10 +216,10 @@ static void process_ctrl_points(FbxMesh* mesh, assimp::Mesh& model) {
 		for (u32 j = 0; j < polySize; j++) {
 			i32 ctrlPtIdx = mesh->GetPolygonVertex(i, j);
 			FbxVector4& currCtrlPoint = mesh->mControlPoints[ctrlPtIdx];
-			sml::vector3 normal; read_normal(mesh, ctrlPtIdx, vertexCounter, normal);
+			assimp::vector3 normal; read_normal(mesh, ctrlPtIdx, vertexCounter, normal);
 			// edit in future to allow many UV layers (8 uv layers) and tangents + bitangents
-			sml::vector2 uv; read_texture_coordinate(mesh, ctrlPtIdx, mesh->GetTextureUVIndex(i, j), uv);
-			sml::vector3 position(
+			assimp::vector2 uv; read_texture_coordinate(mesh, ctrlPtIdx, mesh->GetTextureUVIndex(i, j), uv);
+			assimp::vector3 position(
 				static_cast<f32>(currCtrlPoint.mData[0]),
 				static_cast<f32>(currCtrlPoint.mData[1]),
 				static_cast<f32>(currCtrlPoint.mData[2]));
@@ -293,7 +292,7 @@ errlib::Error assimp::FbxImporter::InternReadFile(const string& file, Collection
 			if (nodeMap[i]->GetNodeAttributeByIndex(j)->GetAttributeType() == fbxsdk::FbxNodeAttribute::eMesh) meshCount++;
 		}
 		scene->models[i].subMeshes.reserve(meshCount);
-		scene->models[i].materialCount = sml::max(1, meshCount);
+		scene->models[i].materialCount = std::max((u32)1, meshCount);
 		scene->models[i].name = primaryMeshes[i]->GetNameOnly();
 	}
 

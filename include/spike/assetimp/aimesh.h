@@ -53,19 +53,20 @@ File Summary:
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
-#include "spike/sml/vector2.h"
-#include "spike/sml/vector3.h"
-#include "spike/sml/vector4.h"
+
+#include "spike/assetimp/aivector2.h"
+#include "spike/assetimp/aivector3.h"
+#include "spike/assetimp/aivector4.h"
 
 namespace assimp {
 	/*default layout*/
 	struct VertexP3N3T2 {
-		sml::vector3 position;
-		sml::vector3 normal;
-		sml::vector2 texCoord;
+		vector3 position;
+		vector3 normal;
+		vector2 texCoord;
 
 		VertexP3N3T2() noexcept = default;
-		VertexP3N3T2(sml::vector3 p, sml::vector3 n, sml::vector2 uv) : position(p), normal(n), texCoord(uv) {}
+		VertexP3N3T2(vector3 p, vector3 n, vector2 uv) : position(p), normal(n), texCoord(uv) {}
 
 		bool operator==(const VertexP3N3T2& other) const {
 			return position == other.position && normal == other.normal && texCoord == other.texCoord;
@@ -74,14 +75,14 @@ namespace assimp {
 
 	/*mesh layout for normal mapping*/
 	struct VertexP3N3T2T4 {
-		sml::vector3 position;
-		sml::vector3 normal;
-		sml::vector2 texCoord;
-		sml::vector4 tangent = { 1, 0, 0, 1 };
+		vector3 position;
+		vector3 normal;
+		vector2 texCoord;
+		vector4 tangent = { 1, 0, 0, 1 };
 
 		VertexP3N3T2T4() noexcept = default;
-		VertexP3N3T2T4(sml::vector3 p, sml::vector3 n, sml::vector2 uv) : position(p), normal(n), texCoord(uv) {}
-		VertexP3N3T2T4(sml::vector3 p, sml::vector3 n, sml::vector2 uv, sml::vector4 tan) : position(p), normal(n), texCoord(uv), tangent(tan) {}
+		VertexP3N3T2T4(vector3 p, vector3 n, vector2 uv) : position(p), normal(n), texCoord(uv) {}
+		VertexP3N3T2T4(vector3 p, vector3 n, vector2 uv, vector4 tan) : position(p), normal(n), texCoord(uv), tangent(tan) {}
 		VertexP3N3T2T4(const VertexP3N3T2& vert) : position(vert.position), normal(vert.normal), texCoord(vert.texCoord) {}
 
 		bool operator==(const VertexP3N3T2T4& other) const {
@@ -90,7 +91,7 @@ namespace assimp {
 	};
 
 	struct SubMesh {
-		sml::vector3 min, max;
+		vector3 min, max;
 
 		u32 indexOffset = 0;
 		u32 indexCount = 0;
@@ -181,7 +182,7 @@ namespace assimp {
 		const usize end = std::min(start + subMesh.indexCount, indices.size());
 		bool hasBounds = false;
 		for (usize i = start; i < end; ++i) {
-			const sml::vector3& position = vertices[indices[i]].position;
+			const assimp::vector3& position = vertices[indices[i]].position;
 			if (!hasBounds) {
 				subMesh.min = position;
 				subMesh.max = position;

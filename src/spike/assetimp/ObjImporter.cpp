@@ -56,18 +56,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 #include <fstream>
+#include <cstdlib>
+#include <exception>
 
 #include "spike/debugl/debug.hpp"
 #include "spike/error.hpp"
 #include "spike/warning.h"
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
-#include "spike/sml/vector2.h"
-#include "spike/sml/vector3.h"
-#include "spike/sml/vector4.h"
 
 #include "spike/assetimp/PostProcessing.h"
 #include "spike/assetimp/aicollection.h"
+#include "spike/assetimp/aivector2.h"
+#include "spike/assetimp/aivector3.h"
+#include "spike/assetimp/aivector4.h"
 #include "spike/assetimp/aimesh.h"
 #include "spike/assetimp/BaseImporter.h"
 
@@ -104,11 +106,11 @@ assimp::ObjImporter::ObjImporter() : BaseImporter(), sourcePath() {
 assimp::ObjImporter::~ObjImporter() {}
 
 namespace {
-	inline f32 dot(const sml::vector3& lhs, const sml::vector3& rhs) {
+	inline f32 dot(const assimp::vector3& lhs, const assimp::vector3& rhs) {
 		return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
 	}
 
-	inline sml::vector3 cross(const sml::vector3& lhs, const sml::vector3& rhs) {
+	inline assimp::vector3 cross(const assimp::vector3& lhs, const assimp::vector3& rhs) {
 		return {
 			lhs.y * rhs.z - lhs.z * rhs.y,
 			lhs.z * rhs.x - lhs.x * rhs.z,
@@ -116,7 +118,7 @@ namespace {
 		};
 	}
 
-	inline sml::vector3 normalize(const sml::vector3& v) {
+	inline assimp::vector3 normalize(const assimp::vector3& v) {
 		f32 lenSq = dot(v, v);
 		if (lenSq > 1e-8f) {
 			f32 invLen = 1.0f / std::sqrt(lenSq);
@@ -153,10 +155,10 @@ static bool parse_face(const std::vector<string>& verts, std::vector<ObjTuple>& 
 
 /*Generates raw data buffers and sub-mesh offsets (pre validation)*/
 static errlib::Error raw_import(const string& file,
-	std::vector<sml::vector3>& positionBuffer,
-	std::vector<sml::vector3>& normalBuffer,
-	std::vector<sml::vector2>& uvBuffer,
-	std::vector<sml::vector4>& tangentBuffer,
+	std::vector<assimp::vector3>& positionBuffer,
+	std::vector<assimp::vector3>& normalBuffer,
+	std::vector<assimp::vector2>& uvBuffer,
+	std::vector<assimp::vector4>& tangentBuffer,
 	std::vector<Poly>& faceBuffer,
 	assimp::Mesh& model)
 {
@@ -184,17 +186,17 @@ static errlib::Error raw_import(const string& file,
 			if (pref == "v") {
 				f32 x, y, z;
 				iss >> x >> y >> z;
-				positionBuffer.emplace_back(sml::vector3(x, y, z));
+				positionBuffer.emplace_back(assimp::vector3(x, y, z));
 			}
 			else if (pref == "vn") {
 				f32 x, y, z;
 				iss >> x >> y >> z;
-				normalBuffer.emplace_back(sml::vector3(x, y, z));
+				normalBuffer.emplace_back(assimp::vector3(x, y, z));
 			}
 			else if (pref == "vt") {
 				f32 u, v;
 				iss >> u >> v;
-				uvBuffer.emplace_back(sml::vector2(u, v));
+				uvBuffer.emplace_back(assimp::vector2(u, v));
 			}
 			else if (pref == "f") {
 				std::vector<string> face;
@@ -293,10 +295,10 @@ static void generate_normals(std::vector<Poly>& faces) {
 
 template<typename T, typename U>
 void generate_buffer(
-	std::vector<sml::vector3>& positionBuffer,
-	std::vector<sml::vector3>& normalBuffer,
-	std::vector<sml::vector2>& uvBuffer,
-	std::vector<sml::vector4>& tangentBuffer,
+	std::vector<assimp::vector3>& positionBuffer,
+	std::vector<assimp::vector3>& normalBuffer,
+	std::vector<assimp::vector2>& uvBuffer,
+	std::vector<assimp::vector4>& tangentBuffer,
 	std::vector<Poly>& faceBuffer,
 	assimp::Mesh& model, std::vector<T>& vertexBuffer, std::vector<U>& indexBuffer)
 {
@@ -319,8 +321,8 @@ void generate_buffer(
 					tupleToIndex.emplace(tup, s);
 					indexBuffer.emplace_back(s);
 					vertexBuffer.emplace_back(positionBuffer[tup.posIdx],
-						tup.normIdx == kMaxU32 ? sml::vector3() : normalBuffer[tup.normIdx],
-						tup.tcIdx == kMaxU32 ? sml::vector2() : uvBuffer[tup.tcIdx]);
+						tup.normIdx == kMaxU32 ? assimp::vector3() : normalBuffer[tup.normIdx],
+						tup.tcIdx == kMaxU32 ? assimp::vector2() : uvBuffer[tup.tcIdx]);
 				}
 			}
 		}
@@ -330,10 +332,10 @@ void generate_buffer(
 
 template<typename T>
 inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
-	std::vector<sml::vector3> tan1, tan2;
+	std::vector<assimp::vector3> tan1, tan2;
 	tan1.resize(model.vertices48.size()); tan2.resize(model.vertices48.size());
 
-	for (u32 i = 0; i < static_cast<u32>(idxBuff.size()); i += 3) {
+	for (usize i = 0; i < idxBuff.size(); i += 3) {
 		T i1 = idxBuff[i];
 		T i2 = idxBuff[i + 1];
 		T i3 = idxBuff[i + 2];
@@ -357,13 +359,13 @@ inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 		f32 r = (s1 * t2 - s2 * t1);
 		r = (std::abs(r) < 1e-8f) ? 1.0f : (1.0f / r);
 
-		sml::vector3 sdir = { // tangent dir
+		assimp::vector3 sdir = { // tangent dir
 			(t2 * x1 - t1 * x2) * r,
 			(t2 * y1 - t1 * y2) * r,
 			(t2 * z1 - t1 * z2) * r
 		};
 
-		sml::vector3 tdir = { // bitangent dir
+		assimp::vector3 tdir = { // bitangent dir
 			(s1 * x2 - s2 * x1) * r,
 			(s1 * y2 - s2 * y1) * r,
 			(s1 * z2 - s2 * z1) * r
@@ -378,29 +380,29 @@ inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 		tan2[i3] += tdir;
 	}
 
-	for (u32 i = 0; i < static_cast<u32>(idxBuff.size()); ++i) {
-		const sml::vector3& norm = model.vertices48[i].normal;
-		const sml::vector3& t = tan1[i];
-		const sml::vector3& b = tan2[i];
+	for (usize i = 0; i < idxBuff.size(); ++i) {
+		const assimp::vector3& norm = model.vertices48[i].normal;
+		const assimp::vector3& t = tan1[i];
+		const assimp::vector3& b = tan2[i];
 
-		sml::vector3 tanXYZ = normalize(t - norm * dot(norm, t)); // Gram-Schmidt orthogonalize
+		assimp::vector3 tanXYZ = normalize(t - norm * dot(norm, t)); // Gram-Schmidt orthogonalize
 		f32 h = (dot(cross(norm, t), b) < 0.f) ? -1.f : 1.f;
-		model.vertices48[i].tangent.Set(tanXYZ.x, tanXYZ.y, tanXYZ.z, h);
+		model.vertices48[i].tangent = { tanXYZ.x, tanXYZ.y, tanXYZ.z, h };
 	}
 }
 
 template<typename T>
 inline void flip_winding_order(std::vector<T>& indexBuffer) {
-	for (u32 i = 0; i < static_cast<u32>(indexBuffer.size()); i += 3) {
+	for (usize i = 0; i < indexBuffer.size(); i += 3) {
 		std::swap(indexBuffer[i + 1], indexBuffer[i + 2]);
 	}
 }
 
 errlib::Error assimp::ObjImporter::InternReadFile(const string& file, Collection* scene) {
-	std::vector<sml::vector3> tmpPos;
-	std::vector<sml::vector3> tmpNorm;
-	std::vector<sml::vector2> tmpUV;
-	std::vector<sml::vector4> tmpTang;
+	std::vector<assimp::vector3> tmpPos;
+	std::vector<assimp::vector3> tmpNorm;
+	std::vector<assimp::vector2> tmpUV;
+	std::vector<assimp::vector4> tmpTang;
 	std::vector<Poly> faces;
 
 	Mesh model;
