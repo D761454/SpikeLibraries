@@ -525,21 +525,15 @@ namespace iocomp {
 	/// <param name="ifs">file stream to the file</param>
 	/// <returns>if the seek ahead was successful</returns>
 	static bool seek_ahead_in_file(std::ifstream& ifs) {
-		auto curr = ifs.tellg();
-		if (curr == -1) return false;
+		internal::InputPositionGuard position(ifs);
+		if (!position.valid()) return false;
 
-		CompressedDataHeader cdh;
-		if (!podio::read_pod(ifs, cdh) || ifs.eof()) {
-			ifs.seekg(curr);
-			return false;
-		}
-
-		ifs.seekg(cdh.dataOffset + cdh.compressedSize);
-		if (!ifs.good() || ifs.eof()) {
-			ifs.seekg(curr);
-			return false;
-		}
-
+		CompressedDataHeader header;
+		std::streampos afterHeader;
+		u64 fileSize;
+		if (!internal::read_header(ifs, header, afterHeader, fileSize)
+			|| !internal::seek_payload_end(ifs, header, fileSize, static_cast<u64>(static_cast<std::streamoff>(afterHeader)))) return false;
+		position.commit();
 		return true;
 	}
 }
