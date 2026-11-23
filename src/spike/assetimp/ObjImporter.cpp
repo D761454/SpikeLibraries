@@ -56,10 +56,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 #include <fstream>
-#include <cstdlib>
 #include <exception>
 
-#include "spike/debugl/debug.hpp"
 #include "spike/error.hpp"
 #include "spike/warning.h"
 #include "spike/def_aliases.h"
@@ -72,8 +70,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/assetimp/aivector4.h"
 #include "spike/assetimp/aimesh.h"
 #include "spike/assetimp/BaseImporter.h"
-
-DISABLE_WARNING_UNUSED_VARIABLE
 
 namespace {
 	struct ObjTuple {
@@ -245,8 +241,7 @@ static errlib::Error raw_import(const string& file,
 		faceBuffer.shrink_to_fit();
 	}
 	catch (std::ifstream::failure e) {
-		Debug::LogError("Error reading file at path: {} \nError: {}, Code: {}: {}", file, e.what(), e.code().value(), e.code().message());
-		return errlib::Error(errlib::ErrorCode_IOerror, file);
+		return errlib::Error(errlib::ErrorCode_IOerror, "Error reading file at path: " + file + " Error: " + e.what());
 	}
 
 	return errlib::Error{};

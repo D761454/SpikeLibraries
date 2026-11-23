@@ -62,14 +62,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <cstdlib>
 
 #include "spike/nivector.h"
 #include "spike/warning.h"
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 #include "spike/error.hpp"
-#include "spike/debugl/debug.hpp"
 
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_PDB_NOT_FOUND
@@ -325,7 +323,6 @@ static niVector<u8> LoadBuffer(const string& path) {
 		binFile.close();
 	}
 	catch (std::ifstream::failure e) {
-		Debug::LogError("Error reading bin file at path: {} \nError: {}, Code: {}: {}", path, e.what(), e.code().value(), e.code().message());
 		return {};
 	}
 	return binData;
@@ -362,11 +359,9 @@ static void load_glb(std::ifstream& inFile, GLTFData& gltf, const string& path) 
 	Json::Reader reader;
 	Json::Value json;
 	if (!reader.parse(jsonStr, json)) {
-		Debug::LogError("Problem parsing assetData: {}", jsonStr);
 		return;
 	}
 	else if (json.isNull()) {
-		Debug::LogError("Json Root is NULL");
 		return;
 	}
 
@@ -422,7 +417,6 @@ static u32 get_component_count(const string& type) {
 	else if (type == "MAT2") return 4;
 	else if (type == "MAT3") return 9;
 	else if (type == "MAT4") return 16;
-	Debug::LogError("Invalid Accessor Type: {}", type);
 	return 0;
 }
 
@@ -475,7 +469,6 @@ void read_to_nivector(const niVector<u8>& bufferData, const u32 byteOffset, cons
 		}
 	} break;
 	default:
-		Debug::LogError("Unsupported index component size: {}", componentSize);
 		for (u32 i = 0; i < count; ++i) out[i] = 0;
 		return;
 	}
@@ -741,8 +734,9 @@ errlib::Error assimp::GltfImporter::InternReadFile(const string& file, Collectio
 
 			try { fileStream >> json; }
 			catch (const std::exception& e) {
-				Debug::LogError("Json parsing error: {}", string(e.what()));
+				fileStream.close();
 				throw std::ifstream::failure("Json parsing error", { 1, std::iostream_category() });
+				return errlib::Error(errlib::ErrorCode_unknown, "Json parsing error: " + string(e.what()));
 			}
 			fileStream.close();
 			load_gltf(json, gltf, file);
@@ -755,10 +749,9 @@ errlib::Error assimp::GltfImporter::InternReadFile(const string& file, Collectio
 		construct_meshes(gltf, file, scene, ppFlags);
 	}
 	catch (std::ifstream::failure e) {
-		Debug::LogError("Error reading file at path: {} \nError: {}, Code: {}: {}", file, e.what(), e.code().value(), e.code().message());
 		scene->models.clear();
 		scene->textures.clear();
-		return errlib::Error(errlib::ErrorCode_IOerror, file);
+		return errlib::Error(errlib::ErrorCode_IOerror, "Error reading file at path: " + file + "Error: " + e.what());
 	}
 
 	scene->name = std::filesystem::path(file).filename().stem().string();

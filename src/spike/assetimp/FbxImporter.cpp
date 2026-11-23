@@ -42,15 +42,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <filesystem>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 #include "spike/warning.h"
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 #include "spike/error.hpp"
-#include "spike/debugl/debug.hpp"
 
 DISABLE_WARNING_PUSH
-DISABLE_WARNING(4099)
+DISABLE_WARNING_FBX
 #include <fbxsdk.h>
 #include <fbxsdk/core/fbxmanager.h>
 #include <fbxsdk/core/fbxobject.h>
@@ -73,8 +73,6 @@ DISABLE_WARNING_POP
 #include "spike/assetimp/BaseImporter.h"
 #include "spike/assetimp/PostProcessing.h"
 #include "spike/assetimp/aicollection.h"
-
-DISABLE_WARNING_UNUSED_VARIABLE
 
 assimp::FbxImporter::FbxImporter() : BaseImporter(), sourcePath() {
 	extensions = { ".fbx" };
@@ -251,8 +249,7 @@ errlib::Error assimp::FbxImporter::InternReadFile(const string& file, Collection
 
 	fbxsdk::FbxImporter* lImporter = fbxsdk::FbxImporter::Create(lSdkManager, "");
 	if (!lImporter->Initialize(file.c_str(), -1, lSdkManager->GetIOSettings())) {
-		Debug::LogError("Call to FbxImporter::Initialize() failed. Error {}", string(lImporter->GetStatus().GetErrorString()));
-		return errlib::Error(errlib::ErrorCode_unknown, "FbxImporter::Initialize() failed.");
+		return errlib::Error(errlib::ErrorCode_unknown, "FbxImporter::Initialize() failed. Error: " + string(lImporter->GetStatus().GetErrorString()));
 	}
 
 	fbxsdk::FbxScene* lScene = fbxsdk::FbxScene::Create(lSdkManager, "myScene");

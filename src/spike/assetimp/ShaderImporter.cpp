@@ -42,7 +42,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <utility>
 
-#include "spike/debugl/debug.hpp"
 #include "spike/error.hpp"
 #include "spike/warning.h"
 #include "spike/def_aliases.h"
@@ -51,8 +50,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/assetimp/aicollection.h"
 #include "spike/assetimp/aishader.h"
 #include "spike/assetimp/BaseImporter.h"
-
-DISABLE_WARNING_UNUSED_VARIABLE
 
 namespace {
 	const assimp::ShaderType_ get_stage_type(string& str) {
@@ -112,7 +109,6 @@ errlib::Error assimp::ShaderImporter::InternReadFile(const string& file, Collect
 		content = stream.str();
 	}
 	catch (std::ifstream::failure e) {
-		Debug::LogError("Could not read file at path: {}", file);
 		return errlib::Error(errlib::ErrorCode_notFound, "Could not read shader file: " + file);
 	}
 

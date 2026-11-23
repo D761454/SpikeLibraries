@@ -40,7 +40,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <new>
 
 #include "spike/stl_aliases.h"
-#include "spike/debugl/debug.hpp"
 #include "spike/error.hpp"
 
 #include "spike/assetimp/aicollection.h"
@@ -59,7 +58,6 @@ assimp::Collection* assimp::BaseImporter::ReadFile(const string& file) {
 	errlib::Error err = InternReadFile(file, sc.get());
 
 	if (!err.ok()) {
-		Debug::LogError("Issue Importing Asset: {}: {}", errlib::to_string_view(err.code), err.message);
 		return nullptr;
 	}
 

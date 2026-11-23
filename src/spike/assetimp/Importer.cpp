@@ -39,7 +39,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
-#include "spike/debugl/debug.hpp"
 
 #include "spike/assetimp/BaseImporter.h"
 #include "spike/assetimp/ImporterRegistry.h"
@@ -65,8 +64,6 @@ const assimp::Collection* assimp::Importer::ReadFile(const string& path, u32 ppS
 		bi->SetFlags(ppSteps);
 		if (Collection* s = bi->ReadFile(path); s) return s;
 	}
-
-	Debug::LogError("Asset file format not supported! Try exporting the asset as a gltf/glb or fbx file instead if importing a mesh or animations, and a png or jpg if importing a texture!");
 
 	return nullptr;
 }
