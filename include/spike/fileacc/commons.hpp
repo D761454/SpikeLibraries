@@ -97,7 +97,7 @@ namespace fileacc {
 	/// <param name="expectedMagic">magic value that should be held within header</param>
 	/// <param name="expectedVer">version header that should be held in the header</param>
 	/// <returns>if the file exists and the headers match: 0 = good, -1 = magic error, -2 = version error, -3 = file error</returns>
-	i32 check_file(const string& path, const u32 expectedMagic, const u32 expectedVer, std::istream& ifs) noexcept;
+	i32 check_file(const string& path, const u32 expectedMagic, const u32 expectedVer, std::ifstream& ifs) noexcept;
 
 	/// <summary>
 	/// Checks if a file exists and, if so, that the header data matches the expected data
@@ -106,7 +106,7 @@ namespace fileacc {
 	/// <param name="expectedMagicSet">a set of valid file magics that the header should use</param>
 	/// <param name="expectedVer">version header that should be held in the header</param>
 	/// <returns>if the file exists and the headers match: 0 = good, -1 = magic error, -2 = version error, -3 = file error</returns>
-	i32 check_file(const string& path, std::set<u32> expectedMagicSet, const u32 expectedVer, std::istream& ifs) noexcept;
+	i32 check_file(const string& path, std::set<u32> expectedMagicSet, const u32 expectedVer, std::ifstream& ifs) noexcept;
 }
 
 #endif
