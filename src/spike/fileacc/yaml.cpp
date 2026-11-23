@@ -59,7 +59,6 @@ DISABLE_WARNING_POP
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 #include "spike/error.hpp"
-#include "spike/debugl/debug.hpp"
 
 namespace YAML {
 	template<>
@@ -211,47 +210,37 @@ errlib::Error fileacc::save_yaml(const string& filePath, const YAMLData& data) {
 		YAML::Emitter emitter;
 		emitter << root;
 
-		if (!emitter.good()) {
-			Debug::LogError("YAMLFileIO::SaveToFile - emitter error: {}", emitter.GetLastError());
+		if (!emitter.good())
 			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, emitter.GetLastError());
-		}
 
 		std::ofstream ofs(filePath, std::ios::binary);
-		if (!ofs) {
-			Debug::LogError("YAMLFileIO::SaveToFile - failed to open: {}", filePath);
-			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, "failed to open: " + filePath);
-		}
+		if (!ofs)
+			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, "save_yaml: failed to open: " + filePath);
 
 		ofs << emitter.c_str();
 		ofs.close();
 		return errlib::ErrorCode_{};
 	}
 	catch (const std::exception& ex) {
-		Debug::LogError("YAMLFileIO::SaveToFile - exception writing {}: {}", filePath, ex.what());
 		return errlib::Error::FromCode(errlib::ErrorCode_IOerror, string(ex.what()));
 	}
 	catch (...) {
-		Debug::LogError("YAMLFileIO::SaveToFile - unknown exception writing to: {}", filePath);
 		return errlib::Error::FromCode(errlib::ErrorCode_unknown, "unknown exception writing to: " + filePath);
 	}
 }
 
 std::optional<fileacc::YAMLData> fileacc::load_yaml(const string& filePath) {
 	try {
-		if (!std::filesystem::exists(std::filesystem::path(filePath))) {
-			Debug::LogError("YAMLFileIO::LoadFromFile - file not found: {}", filePath);
+		if (!std::filesystem::exists(std::filesystem::path(filePath)))
 			return std::nullopt;
-		}
 
 		YAML::Node root = YAML::LoadFile(filePath);
 		return node_to_yaml_data(root);
 	}
 	catch (const std::exception& ex) {
-		Debug::LogError("YAMLFileIO::LoadFromFile - exception loading {}: {}", filePath, ex.what());
 		return std::nullopt;
 	}
 	catch (...) {
-		Debug::LogError("YAMLFileIO::LoadFromFile - unknown exception loading {}", filePath);
 		return std::nullopt;
 	}
 }
