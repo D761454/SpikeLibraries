@@ -172,46 +172,34 @@ u64 iocomp::IOComp::Compress(const void* src, const u64& srcSize, void* dst, con
 }
 
 u64 iocomp::IOComp::Decompress(const void* src, const u64& srcSize, void* dst, const u64& expectedSize, const u32& expectedCrc32, const CompressionMethod_& compressionMethod) {
+	if (!src || !dst || srcSize == 0 || expectedSize == 0
+		|| srcSize > std::numeric_limits<usize>::max() || expectedSize > std::numeric_limits<usize>::max()) return 0;
+
+	const usize sourceSize = static_cast<usize>(srcSize);
+	const usize outputSize = static_cast<usize>(expectedSize);
 	switch (compressionMethod) {
 	case CompressionMethod_zlib: {
-		uLongf destLen = static_cast<uLongf>(expectedSize);
-		int res = uncompress(reinterpret_cast<Bytef*>(dst), &destLen, reinterpret_cast<const Bytef*>(src), static_cast<uLong>(srcSize));
-		if (res != Z_OK || static_cast<usize>(destLen) != expectedSize) {
-			return 0;
-		}
-		const u32 crc = crc32(reinterpret_cast<const u8*>(dst), static_cast<usize>(destLen));
-		if (crc != expectedCrc32) {
-			return 0;
-		}
-		return static_cast<usize>(destLen);
+		if (srcSize > std::numeric_limits<ulong>::max() || expectedSize > std::numeric_limits<ulong>::max()) return 0;
+		ulong decompressedSize = static_cast<ulong>(expectedSize);
+		if (uncompress(reinterpret_cast<byte*>(dst), &decompressedSize, reinterpret_cast<const byte*>(src), static_cast<ulong>(srcSize)) != Z_OK
+			|| static_cast<u64>(decompressedSize) != expectedSize) return 0;
+		if (crc32(reinterpret_cast<const u8*>(dst), static_cast<usize>(decompressedSize)) != expectedCrc32) return 0;
+		return static_cast<u64>(decompressedSize);
 	}
 	case CompressionMethod_zstd: {
-		const usize rawSize = ZSTD_getFrameContentSize(src, static_cast<usize>(srcSize));
-		if (ZSTD_isError(rawSize)) {
-			string err(ZSTD_getErrorName(rawSize));
-			return 0;
-		}
-		const usize accRawSize = _zstdCtx.Decompress(src, static_cast<usize>(srcSize), dst, rawSize);
-		if (ZSTD_isError(accRawSize) || accRawSize != static_cast<usize>(expectedSize)) {
-			string err(ZSTD_getErrorName(accRawSize));
-			return false;
-		}
-		const u32 crc = crc32(reinterpret_cast<const u8*>(dst), accRawSize);
-		if (crc != expectedCrc32) {
-			return 0;
-		}
-		return accRawSize;
+		const unsigned long long frameSize = ZSTD_getFrameContentSize(src, sourceSize);
+		if (frameSize == ZSTD_CONTENTSIZE_ERROR || (frameSize != ZSTD_CONTENTSIZE_UNKNOWN && frameSize != expectedSize)) return 0;
+		const usize decompressedSize = _zstdCtx.Decompress(src, sourceSize, dst, outputSize);
+		if (ZSTD_isError(decompressedSize) || decompressedSize != outputSize) return 0;
+		if (crc32(reinterpret_cast<const u8*>(dst), decompressedSize) != expectedCrc32) return 0;
+		return static_cast<u64>(decompressedSize);
 	}
-	case CompressionMethod_lz4:
 	case CompressionMethod_none:
-	default: {
-		if (srcSize != expectedSize) return 0;
-		const u32 crc = crc32(reinterpret_cast<const u8*>(src), static_cast<usize>(srcSize));
-		if (crc != expectedCrc32) {
-			return 0;
-		}
-		std::memcpy(dst, src, static_cast<usize>(srcSize));
+		if (srcSize != expectedSize || crc32(reinterpret_cast<const u8*>(src), sourceSize) != expectedCrc32) return 0;
+		std::memcpy(dst, src, sourceSize);
 		return srcSize;
-	}
+	case CompressionMethod_lz4:
+	default:
+		return 0;
 	}
 }
