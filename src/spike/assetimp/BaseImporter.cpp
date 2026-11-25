@@ -35,6 +35,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/assetimp/BaseImporter.h"
 
+#include <algorithm>
+#include <cassert>
+#include <cctype>
+#include <exception>
 #include <filesystem>
 #include <memory>
 #include <new>
@@ -44,22 +48,49 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/assetimp/aicollection.h"
 
-assimp::BaseImporter::BaseImporter() noexcept : extensions(), ppFlags(0) {}
+namespace {
+	string normalize_extension(string extension) {
+		std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char ch) {
+			return static_cast<char>(std::tolower(ch));
+		});
+		return extension;
+	}
+}
+
+assimp::BaseImporter::BaseImporter() noexcept : extensions(), lastError(), ppFlags(0) {}
 
 bool assimp::BaseImporter::CanParse(const string& file) const {
-	std::filesystem::path p(file);
+	const std::filesystem::path path(file);
+	return path.has_extension() && SupportsExtension(path.extension().string());
+}
 
-	return p.has_extension() ? extensions.contains(p.extension().string()) : false;
+bool assimp::BaseImporter::SupportsExtension(const string& extn) const {
+	return extensions.contains(normalize_extension(extn));
 }
 
 assimp::Collection* assimp::BaseImporter::ReadFile(const string& file) {
-	std::unique_ptr<Collection> sc(new Collection());
-
-	errlib::Error err = InternReadFile(file, sc.get());
-
-	if (!err.ok()) {
+	lastError = {};
+	if (file.empty()) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_invalidArgument, "The import path is empty.");
 		return nullptr;
 	}
 
-	return sc.release();
+	try {
+		std::unique_ptr<Collection> collection = std::make_unique<Collection>();
+		assert(collection && "BaseImporter::ReadFile must allocate a collection.");
+		lastError = InternReadFile(file, collection.get());
+		if (!lastError.ok()) return nullptr;
+		return collection.release();
+	}
+	catch (const std::bad_alloc&) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "Could not allocate the imported collection.");
+	}
+	catch (const std::exception& exception) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_unknown, exception.what());
+	}
+	catch (...) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_unknown, "Importer failed with an unknown exception.");
+	}
+
+	return nullptr;
 }

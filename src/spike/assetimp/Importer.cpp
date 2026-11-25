@@ -35,6 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/assetimp/Importer.hpp"
 
+#include <cassert>
+#include <exception>
 #include <new>
 
 #include "spike/def_aliases.h"
@@ -44,7 +46,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/assetimp/ImporterRegistry.h"
 #include "spike/assetimp/aicollection.h"
 
-assimp::Importer::Importer() : importers(), scene(nullptr) {
+assimp::Importer::Importer() : importers(), scene(nullptr), lastError(), pp(0) {
 	get_importer_instances(importers);
 }
 
@@ -54,21 +56,57 @@ assimp::Importer::~Importer() {
 	scene = nullptr;
 }
 
+const assimp::Collection* assimp::Importer::ReadFile(const string& path) {
+	return ReadFile(path, pp);
+}
+
 const assimp::Collection* assimp::Importer::ReadFile(const string& path, u32 ppSteps) {
-	if (path.empty()) return nullptr;
-
 	FreeCollection();
-
-	for (auto& bi : importers) {
-		if (!bi->CanParse(path)) continue;
-		bi->SetFlags(ppSteps);
-		if (Collection* s = bi->ReadFile(path); s) return s;
+	lastError = {};
+	if (path.empty()) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_invalidArgument, "The import path is empty.");
+		return nullptr;
 	}
 
+	bool foundImporter = false;
+	try {
+		for (BaseImporter* importer : importers) {
+			assert(importer && "Importer registry contains a null importer.");
+			if (!importer || !importer->CanParse(path)) continue;
+			foundImporter = true;
+			importer->SetFlags(ppSteps);
+			scene = importer->ReadFile(path);
+			if (scene) {
+				lastError = {};
+				return scene;
+			}
+			lastError = importer->GetLastError();
+		}
+	}
+	catch (const std::bad_alloc&) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "Could not allocate importer data.");
+	}
+	catch (const std::exception& exception) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_unknown, exception.what());
+	}
+	catch (...) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_unknown, "Import failed with an unknown exception.");
+	}
+
+	if (!foundImporter && lastError.ok()) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_notFound, "No importer supports the file extension.");
+	}
+	else if (lastError.ok()) {
+		lastError = errlib::Error::FromCode(errlib::ErrorCode_unknown, "The importer returned no collection and no error.");
+	}
 	return nullptr;
 }
 
 const assimp::Collection* assimp::Importer::GetCollection() {
+	return scene;
+}
+
+const assimp::Collection* assimp::Importer::GetCollection() const noexcept {
 	return scene;
 }
 
@@ -78,8 +116,8 @@ void assimp::Importer::FreeCollection() {
 }
 
 bool assimp::Importer::IsExtensionSupported(const string& extn) const {
-	for (auto& bi : importers) {
-		if (bi->SupportsExtension(extn)) return true;
+	for (auto* bi : importers) {
+		if (bi && bi->SupportsExtension(extn)) return true;
 	}
 
 	return false;

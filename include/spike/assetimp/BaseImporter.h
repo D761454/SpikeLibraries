@@ -51,10 +51,7 @@ File Summary:
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
-
-namespace errlib {
-	struct Error;
-}
+#include "spike/error.hpp"
 
 namespace assimp {
 	struct Collection;
@@ -78,25 +75,23 @@ namespace assimp {
 		bool CanParse(const string& file) const;
 
 		/// <summary>
-		/// Called to import assets from a file, returnign the result as an asset collection
+		/// Called to import assets from a file, returning the result as an asset collection.
 		/// </summary>
 		/// <param name="file">path to file to read</param>
-		/// <returns>asset collection holding all imported assets</returns>
+		/// <returns>asset collection holding all imported assets, or nullptr on failure</returns>
 		Collection* ReadFile(const string& file);
 
-		/// <summary>
-		/// checks if this importer can parse a file with the provided extension
-		/// </summary>
-		/// <param name="extn"></param>
-		/// <returns></returns>
-		inline bool SupportsExtension(const string& extn) const {
-			return extensions.contains(extn);
-		}
+		/// <summary>Returns the error from the most recent read attempt.</summary>
+		const errlib::Error& GetLastError() const noexcept { return lastError; }
+
+		/// <summary>Checks whether this importer supports the provided extension.</summary>
+		bool SupportsExtension(const string& extn) const;
 
 	protected:
 		virtual errlib::Error InternReadFile(const string& file, Collection* scene) = 0;
 
 		std::set<string> extensions;
+		errlib::Error lastError;
 
 		u32 ppFlags;
 	};

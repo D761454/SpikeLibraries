@@ -51,10 +51,7 @@ File Summary:
 
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
-
-namespace errlib {
-	struct Error;
-}
+#include "spike/error.hpp"
 
 namespace assimp {
 	class BaseImporter;
@@ -77,19 +74,18 @@ namespace assimp {
 
 		inline void SetFlags(u32 flags) { pp = flags; }
 
-		/// <summary>
-		/// reads in an asset file using the provided flags, parsing the asset(s) to create an asset colelction for use
-		/// </summary>
-		/// <param name="path">file path to the asset file</param>
-		/// <param name="flags">processing flags that modify the importers behaviour</param>
-		/// <returns>a pointer to the asset collection if import was successful, nullptr if not</returns>
-		const Collection* ReadFile(const string& path, u32 flags = 0);
+		/// <summary>Reads an asset file using the currently configured flags.</summary>
+		const Collection* ReadFile(const string& path);
 
-		/// <summary>
-		/// retrieve the last imported asset collection
-		/// </summary>
-		/// <returns>pointer to the held asset collection</returns>
+		/// <summary>Reads an asset file using the provided post-processing flags.</summary>
+		const Collection* ReadFile(const string& path, u32 flags);
+
+		/// <summary>Returns the error from the most recent read attempt.</summary>
+		const errlib::Error& GetLastError() const noexcept { return lastError; }
+
+		/// <summary>Retrieves the last imported asset collection.</summary>
 		const Collection* GetCollection();
+		const Collection* GetCollection() const noexcept;
 
 		/// <summary>
 		/// deletes the last imported asset collection
@@ -108,6 +104,7 @@ namespace assimp {
 	protected:
 		std::vector<BaseImporter*> importers;
 		Collection* scene;
+		errlib::Error lastError;
 		u32 pp = 0;
 	};
 }

@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/assetimp/ImporterRegistry.h"
 
+#include <memory>
 #include <vector>
 
 #include "spike/assetimp/BaseImporter.h"
@@ -49,14 +50,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/assetimp/ShaderImporter.h"
 
 void assimp::get_importer_instances(std::vector<BaseImporter*>& out) {
-	out.reserve(5);
-	out.push_back(new ObjImporter());
-	out.push_back(new GltfImporter());
+	std::vector<std::unique_ptr<BaseImporter>> instances;
+	instances.reserve(5);
+	instances.push_back(std::make_unique<ObjImporter>());
+	instances.push_back(std::make_unique<GltfImporter>());
 #if defined(_USING_FBX)
-	out.push_back(new FbxImporter());
+	instances.push_back(std::make_unique<FbxImporter>());
 #endif
-	out.push_back(new BTexImporter());
-	out.push_back(new ShaderImporter());
+	instances.push_back(std::make_unique<BTexImporter>());
+	instances.push_back(std::make_unique<ShaderImporter>());
+
+	out.reserve(out.size() + instances.size());
+	for (auto& instance : instances) out.push_back(instance.release());
 }
 
 void assimp::delete_importer_instances(std::vector<BaseImporter*>& del) {
