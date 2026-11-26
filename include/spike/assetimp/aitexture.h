@@ -65,8 +65,8 @@ namespace assimp {
 	using StbImagePtr = std::unique_ptr<T, STBImageDeleter<T>>;
 
 	struct Texture {
-		u32 width;
-		u32 height;
+		i32 width;
+		i32 height;
 		i32 depth;
 		i32 channels;
 		i32 mipLevels;

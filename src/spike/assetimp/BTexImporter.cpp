@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/assetimp/BTexImporter.h"
 
 #include <filesystem>
+#include <mutex>
 #include <utility>
 
 #define STBI_NO_PIC
@@ -48,7 +49,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "external/stb/stb_image.h"
 
 #include "spike/error.hpp"
-#include "spike/warning.h"
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
@@ -57,7 +57,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spike/assetimp/aitexture.h"
 #include "spike/assetimp/BaseImporter.h"
 
-DISABLE_WARNING_UNUSED_VARIABLE
+namespace {
+	std::mutex imageDecodeMutex;
+}
 
 assimp::BTexImporter::BTexImporter() : BaseImporter(), sourcePath() {
 	extensions = { ".png", ".jpg", ".jpeg", ".tga", ".bmp", ".hdr" };
@@ -84,37 +86,38 @@ void assimp::STBImageDeleter<f32>::release(void* ptr) const {
 }
 
 errlib::Error assimp::BTexImporter::InternReadFile(const string& file, Collection* scene) {
-	if (ppFlags & PostProcessingFlags_flipTextureYOnImport) stbi_set_flip_vertically_on_load(false);
-	else stbi_set_flip_vertically_on_load(true);
+	std::lock_guard<std::mutex> imageDecodeLock(imageDecodeMutex);
+	const bool flipY = (ppFlags & PostProcessingFlags_flipTextureYOnImport) != 0;
+	stbi_set_flip_vertically_on_load(flipY ? 1 : 0);
 
-	Texture tex; tex.fileName = std::filesystem::path(file).filename().string();
+	Texture tex;
+	tex.fileName = std::filesystem::path(file).filename().string();
+	tex.flippedY = flipY;
 
 	if (stbi_is_hdr(file.c_str())) {
-		f32* data = stbi_loadf(file.c_str(), reinterpret_cast<i32*>(&tex.width), reinterpret_cast<i32*>(&tex.height), &tex.channels, 4);
+		f32* data = stbi_loadf(file.c_str(), &tex.width, &tex.height, &tex.channels, 4);
 		if (!data) {
-			stbi_image_free(data); data = nullptr;
-			errlib::Error(errlib::ErrorCode_unknown, stbi_failure_reason());
+			const char* reason = stbi_failure_reason();
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, reason ? reason : "Image decoder failed.");
+		}
+		if (tex.width <= 0 || tex.height <= 0) {
+			stbi_image_free(data);
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Image has invalid dimensions.");
 		}
 		tex.pixelDataHDR.reset(data);
-
-		tex.sRGB = true;
 	}
 	else {
-		uchar* data = stbi_load(file.c_str(), reinterpret_cast<i32*>(&tex.width), reinterpret_cast<i32*>(&tex.height), &tex.channels, 4);
+		uchar* data = stbi_load(file.c_str(), &tex.width, &tex.height, &tex.channels, 4);
 		if (!data) {
-			stbi_image_free(data); data = nullptr;
-			errlib::Error(errlib::ErrorCode_unknown, stbi_failure_reason());
+			const char* reason = stbi_failure_reason();
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, reason ? reason : "Image decoder failed.");
+		}
+		if (tex.width <= 0 || tex.height <= 0) {
+			stbi_image_free(data);
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Image has invalid dimensions.");
 		}
 		tex.pixelDataSDR.reset(data);
-
-		switch (tex.channels) {
-		case 1:
-			break;
-		case 2:
-			break;
-		default:
-			tex.sRGB = true;
-		}
+		tex.sRGB = tex.channels > 2;
 	}
 
 	scene->textures.push_back(std::move(tex));
