@@ -132,7 +132,7 @@ struct GLTFData {
 		string name = "";
 		struct Primitive {
 			umap<string, u32> attributeIndices;
-			u32 indices = 0;
+			u32 indices = kMaxU32;
 			u32 material = 0;
 			u32 mode = 4;
 		};
@@ -141,13 +141,14 @@ struct GLTFData {
 	std::vector<Mesh> meshes;
 
 	struct Accessor {
-		ushort bufferView = 0;
-		ushort componentType = 0;
+		u32 bufferView = kMaxU32;
+		u32 componentType = 0;
 		u32 count = 0;
 		std::vector<f32> max;
 		std::vector<f32> min;
 		string type = "";
 		u32 byteOffset = 0;
+		bool normalized = false;
 	};
 	std::vector<Accessor> accessors;
 
@@ -155,6 +156,7 @@ struct GLTFData {
 		u32 buffer = 0;
 		u32 byteLength = 0;
 		u32 byteOffset = 0;
+		u32 byteStride = 0;
 		u32 target = 0;
 	};
 	std::vector<BufferView> bufferViews;
@@ -261,8 +263,10 @@ static bool LoadAccessors(GLTFData& gltf, Json::Value& json) {
 		Json::Value val;
 		if (parse_variable(val, it, "bufferView")) acc.bufferView = val.asInt();
 		if (parse_variable(val, it, "componentType")) acc.componentType = val.asInt();
-		if (parse_variable(val, it, "count")) acc.count = val.asInt();
+		if (parse_variable(val, it, "count")) acc.count = val.asUInt();
 		if (parse_variable(val, it, "type")) acc.type = val.asString();
+		if (parse_variable(val, it, "byteOffset")) acc.byteOffset = val.asUInt();
+		if (parse_variable(val, it, "normalized")) acc.normalized = val.asBool();
 
 		// dont need min / max
 
@@ -281,8 +285,9 @@ static bool LoadBufferViews(GLTFData& gltf, Json::Value& json) {
 		Json::Value val;
 		if (parse_variable(val, it, "buffer")) bv.buffer = val.asInt();
 		if (parse_variable(val, it, "byteLength")) bv.byteLength = val.asInt();
-		if (parse_variable(val, it, "byteOffset")) bv.byteOffset = val.asInt();
-		if (parse_variable(val, it, "target")) bv.target = val.asInt();
+		if (parse_variable(val, it, "byteOffset")) bv.byteOffset = val.asUInt();
+		if (parse_variable(val, it, "byteStride")) bv.byteStride = val.asUInt();
+		if (parse_variable(val, it, "target")) bv.target = val.asUInt();
 		gltf.bufferViews.push_back(bv);
 	}
 
@@ -477,17 +482,18 @@ void read_to_nivector(const niVector<u8>& bufferData, const u32 byteOffset, cons
 #pragma endregion
 
 static inline const GLTFData::Accessor* get_accessor(const GLTFData& gltf, const GLTFData::Mesh::Primitive& primitiveData, const string& name) {
-	if (auto it = primitiveData.attributeIndices.find(name); it != primitiveData.attributeIndices.end()) return &gltf.accessors[it->second];
+	if (auto it = primitiveData.attributeIndices.find(name); it != primitiveData.attributeIndices.end() && it->second < gltf.accessors.size())
+		return &gltf.accessors[it->second];
 	return nullptr;
 }
 
-static inline const GLTFData::BufferView* get_buffer_views(const GLTFData& gltf, const GLTFData::Accessor* acc) {
-	if (acc) return &gltf.bufferViews[acc->bufferView];
+static inline const GLTFData::BufferView* get_buffer_views(const GLTFData& gltf, const GLTFData::Accessor* accessor) {
+	if (accessor && accessor->bufferView < gltf.bufferViews.size()) return &gltf.bufferViews[accessor->bufferView];
 	return nullptr;
 }
 
-static inline const niVector<u8>* get_buffer_data(const GLTFData& gltf, const GLTFData::BufferView* bv) {
-	if (bv) return &gltf.bufferData[bv->buffer];
+static inline const niVector<u8>* get_buffer_data(const GLTFData& gltf, const GLTFData::BufferView* bufferView) {
+	if (bufferView && bufferView->buffer < gltf.bufferData.size()) return &gltf.bufferData[bufferView->buffer];
 	return nullptr;
 }
 
