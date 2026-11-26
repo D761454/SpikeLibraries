@@ -35,6 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spike/assetimp/ShaderImporter.h"
 
+#include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <filesystem>
 #include <ios>
@@ -53,30 +55,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace {
 	const assimp::ShaderType_ get_stage_type(string& str) {
-		if (str == "VERTEX") {
+		if (str == "VERTEX")
 			return assimp::ShaderType_::ShaderType_vertex;
-		}
-		else if (str == "FRAGMENT") {
+		else if (str == "FRAGMENT")
 			return assimp::ShaderType_::ShaderType_fragment;
-		}
-		else if (str == "GEOMETRY") {
+		else if (str == "GEOMETRY")
 			return assimp::ShaderType_::ShaderType_geometry;
-		}
-		else if (str == "TESS_CONTROL") {
+		else if (str == "TESS_CONTROL")
 			return assimp::ShaderType_::ShaderType_tesc;
-		}
-		else if (str == "TESS_EVAL") {
+		else if (str == "TESS_EVAL")
 			return assimp::ShaderType_::ShaderType_tese;
-		}
-		else if (str == "COMPUTE") {
+		else if (str == "COMPUTE")
 			return assimp::ShaderType_::ShaderType_compute;
-		}
-		else if (str == "MESH") {
+		else if (str == "MESH")
 			return assimp::ShaderType_::ShaderType_mesh;
-		}
-		else if (str == "TASK") {
+		else if (str == "TASK")
 			return assimp::ShaderType_::ShaderType_task;
-		}
 		return assimp::ShaderType_::ShaderType_unknown;
 	}
 }
@@ -88,55 +82,66 @@ assimp::ShaderImporter::ShaderImporter() : BaseImporter(), sourcePath() {
 assimp::ShaderImporter::~ShaderImporter() {}
 
 errlib::Error assimp::ShaderImporter::InternReadFile(const string& file, Collection* scene) {
+	std::ifstream ifs(file, std::ios::in | std::ios::binary);
+	if (!ifs.is_open()) {
+		return errlib::Error::FromCode(errlib::ErrorCode_missingFile, "Could not open shader file: " + file);
+	}
+
+	std::ostringstream stream;
+	stream << ifs.rdbuf();
+	if (ifs.bad()) {
+		return errlib::Error::FromCode(errlib::ErrorCode_IOerror, "Failed while reading shader file: " + file);
+	}
+
 	ShaderProgram sp;
-
-	// parse over file, grabbing each stage and adding to program
-
-	// Extract version + common code
-	// Scan for "// STAGE:" markers
-	// Extract each stage section
-
-	string content;
-
-	std::ifstream ifs;
-	ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
-	try {
-		ifs.open(file, std::ios::in);
-		std::stringstream stream;
-		stream << ifs.rdbuf();
-		ifs.close();
-		content = stream.str();
-	}
-	catch (std::ifstream::failure e) {
-		return errlib::Error(errlib::ErrorCode_notFound, "Could not read shader file: " + file);
+	sp.source = stream.str();
+	if (sp.source.empty()) {
+		return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Shader source is empty: " + file);
 	}
 
-	sp.source = content;
-
-	string stageStartMarker = "// STAGE:";
+	const string stageStartMarker = "// STAGE:";
 	string::size_type pos = 0;
-
-	while ((pos = content.find(stageStartMarker, pos)) != string::npos) {
+	while ((pos = sp.source.find(stageStartMarker, pos)) != string::npos) {
 		pos += stageStartMarker.size();
+		const usize start = sp.source.find_first_not_of(" \t", pos);
+		if (start == string::npos) {
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Shader stage marker has no stage name.");
+		}
+		const usize end = sp.source.find_first_of("\r\n", start);
 
-		usize p1 = content.find_first_not_of(" ", pos);
-		if (p1 == string::npos) continue;
-		usize p2 = content.find_first_of("\n", p1);
-
-		string type = content.substr(p1, p2 - p1);
-
-		ShaderStage stage;
-		stage.type = get_stage_type(type);
-
+		string type = sp.source.substr(start, end == string::npos ? string::npos : end - start);
+		const usize last = type.find_last_not_of(" \t");
+		if (last != string::npos) type.resize(last + 1);
+		ShaderStage stage{ get_stage_type(type) };
+		if (stage.type == ShaderType_unknown) {
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Unsupported shader stage: " + type);
+		}
 		sp.shaders.push_back(stage);
+		pos = end == string::npos ? sp.source.size() : end;
 	}
 
-	scene->shaders.push_back(std::move(sp));
-	std::filesystem::path fp(file);
-	sp.name = fp.filename().string();
-	scene->name = fp.filename().stem().string();
-	sourcePath = std::filesystem::absolute(file).string();
+	const std::filesystem::path path(file);
+	if (sp.shaders.empty()) { // no markers found
+		string extension = path.extension().string();
+		std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+		ShaderType_ stage = ShaderType_unknown;
+		if (extension == ".vert") stage = ShaderType_vertex;
+		else if (extension == ".frag") stage = ShaderType_fragment;
+		else if (extension == ".geom") stage = ShaderType_geometry;
+		else if (extension == ".tesc") stage = ShaderType_tesc;
+		else if (extension == ".tese") stage = ShaderType_tese;
+		else if (extension == ".comp") stage = ShaderType_compute;
+		else if (extension == ".mesh") stage = ShaderType_mesh;
+		else if (extension == ".task") stage = ShaderType_task;
+		if (stage == ShaderType_unknown) {
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Shader source does not identify a shader stage.");
+		}
+		sp.shaders.push_back(ShaderStage{ stage });
+	}
 
+	sp.name = path.filename().string();
+	scene->shaders.push_back(std::move(sp));
+	scene->name = path.filename().stem().string();
+	sourcePath = std::filesystem::absolute(path).string();
 	return errlib::Error{};
 }
