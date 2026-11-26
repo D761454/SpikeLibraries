@@ -195,7 +195,7 @@ namespace memsys {
 
 	std::pair<void*, errlib::Error> LinearAllocator::CheckedAllocate(usize size, usize alignment) {
 		if (!_memoryBase || size <= 0)
-			return { nullptr, !_memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "LinearAllocator.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "LinearAllocator.CheckedAllocate: allocation size must be > 0!") };
+			return { nullptr, !_memoryBase ? errlib::Error::FromCode(errlib::ErrorCode_attemptingUseOfNullptr, "LinearAllocator.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "LinearAllocator.CheckedAllocate: allocation size must be > 0!") };
 
 		byte* currentAddress = reinterpret_cast<byte*>(const_cast<void*>(_memoryBase)) + _allocatedMemory;
 
@@ -205,7 +205,7 @@ namespace memsys {
 
 		usize allocationSize;
 		if (!checked_add(size, adjustment, allocationSize) || allocationSize > _memorySize - _allocatedMemory)
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "LinearAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " would overflow the allocators memory!") };
+			return { nullptr, errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "LinearAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " would overflow the allocators memory!") };
 
 		currentAddress += adjustment;
 
@@ -218,7 +218,7 @@ namespace memsys {
 	template<typename T, typename... Args>
 	std::pair<T*, errlib::Error> LinearAllocator::CheckedAllocate(Args&&... args) {
 		if (!_memoryBase)
-			return { nullptr, errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "LinearAllocator.CheckedAllocate: memory base is nullptr!") };
+			return { nullptr, errlib::Error::FromCode(errlib::ErrorCode_attemptingUseOfNullptr, "LinearAllocator.CheckedAllocate: memory base is nullptr!") };
 
 		const usize size = sizeof(T);
 
@@ -230,7 +230,7 @@ namespace memsys {
 
 		usize allocationSize;
 		if (!checked_add(size, adjustment, allocationSize) || allocationSize > _memorySize - _allocatedMemory)
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "LinearAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " would overflow the allocators memory!") };
+			return { nullptr, errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "LinearAllocator.CheckedAllocate: attempting allocation of size: " + std::to_string(size) + " would overflow the allocators memory!") };
 
 		currentAddress += adjustment;
 
@@ -244,7 +244,7 @@ namespace memsys {
 			--_allocationCount;
 			_allocatedMemory -= allocationSize;
 
-			return { nullptr, errlib::Error(errlib::ErrorCode_unknown, "LinearAllocator.CheckedAllocate: objects construction failed!") };
+			return { nullptr, errlib::Error::FromCode(errlib::ErrorCode_unknown, "LinearAllocator.CheckedAllocate: objects construction failed!") };
 		}
 	}
 

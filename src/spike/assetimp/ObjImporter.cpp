@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <sstream>
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <deque>
 #include <filesystem>
@@ -57,9 +58,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <fstream>
 #include <exception>
+#include <algorithm>
+#include <cstdlib>
+#include <istream>
 
 #include "spike/error.hpp"
-#include "spike/warning.h"
 #include "spike/def_aliases.h"
 #include "spike/stl_aliases.h"
 
@@ -124,27 +127,49 @@ namespace {
 	}
 }
 
-static bool parse_face_tuple(const string& tuple, ObjTuple& face) {
-	std::istringstream iss(tuple);
-	string p;
+static bool parse_obj_index(const string& text, usize count, u32& index, bool optional) {
+	if (text.empty()) {
+		index = kMaxU32;
+		return optional;
+	}
 
-	std::getline(iss, p, '/');
-	if (p.empty()) return false;
-	face.posIdx = std::stoi(p) - 1;
-
-	if (std::getline(iss, p, '/') && !p.empty()) face.tcIdx = std::stoi(p) - 1;
-	else face.tcIdx = kMaxU32;
-	if (std::getline(iss, p, '/') && !p.empty()) face.normIdx = std::stoi(p) - 1;
-	else face.normIdx = kMaxU32;
-	return true;
+	try {
+		usize parsed = 0;
+		const ll raw = std::stoll(text, &parsed);
+		if (parsed != text.size() || raw == 0) return false;
+		const ll resolved = raw > 0 ? raw - 1 : static_cast<ll>(count) + raw;
+		if (resolved < 0 || static_cast<ull>(resolved) >= count || resolved >= kMaxU32) return false;
+		index = static_cast<u32>(resolved);
+		return true;
+	}
+	catch (const std::exception&) {
+		return false;
+	}
 }
 
-static bool parse_face(const std::vector<string>& verts, std::vector<ObjTuple>& vertices) {
+static bool parse_face_tuple(const string& tuple, ObjTuple& face, usize positionCount, usize uvCount, usize normalCount) {
+	std::array<string, 3> fields;
+	usize field = 0;
+	usize start = 0;
+	for (usize i = 0; i <= tuple.size(); ++i) {
+		if (i == tuple.size() || tuple[i] == '/') {
+			if (field >= fields.size()) return false;
+			fields[field++] = tuple.substr(start, i - start);
+			start = i + 1;
+		}
+	}
+	return field >= 1
+		&& parse_obj_index(fields[0], positionCount, face.posIdx, false)
+		&& parse_obj_index(fields[1], uvCount, face.tcIdx, true)
+		&& parse_obj_index(fields[2], normalCount, face.normIdx, true);
+}
+
+static bool parse_face(const std::vector<string>& verts, std::vector<ObjTuple>& vertices, usize positionCount, usize uvCount, usize normalCount) {
 	if (verts.size() < 3) return false;
 	for (const auto& vert : verts) {
-		ObjTuple fv;
-		if (!parse_face_tuple(vert, fv)) return false;
-		vertices.emplace_back(fv);
+		ObjTuple face;
+		if (!parse_face_tuple(vert, face, positionCount, uvCount, normalCount)) return false;
+		vertices.emplace_back(face);
 	}
 	return true;
 }
@@ -171,27 +196,44 @@ static errlib::Error raw_import(const string& file,
 		faceBuffer.reserve(100);
 
 		assimp::SubMesh sm;
+		auto finishSubMesh = [&]() {
+			if (model.subMeshes.size() > 0) {
+				const auto& last = model.subMeshes[model.subMeshes.size() - 1];
+				sm.indexCount = static_cast<u32>(faceBuffer.size()) - (last.indexCount + last.indexOffset);
+			}
+			else sm.indexCount = static_cast<u32>(faceBuffer.size());
+
+			model.subMeshes.push_back(std::move(sm));
+			sm = assimp::SubMesh();
+			sm.indexOffset = static_cast<u32>(faceBuffer.size());
+		};
 
 		umap<string, u32> materialMap;
 
 		for (string tmp; std::getline(fileStream, tmp);) {
+			const usize comment = tmp.find('#');
+			if (comment != string::npos) tmp.resize(comment);
 			std::istringstream iss(tmp);
 			string pref;
 			iss >> pref;
+			if (pref.empty()) continue;
 
 			if (pref == "v") {
-				f32 x, y, z;
-				iss >> x >> y >> z;
+				f32 x = 0, y = 0, z = 0;
+				if (!(iss >> x >> y >> z) || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z))
+					return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Invalid position record in " + file);
 				positionBuffer.emplace_back(assimp::vector3(x, y, z));
 			}
 			else if (pref == "vn") {
-				f32 x, y, z;
-				iss >> x >> y >> z;
+				f32 x = 0, y = 0, z = 0;
+				if (!(iss >> x >> y >> z) || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z))
+					return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Invalid normal record in " + file);
 				normalBuffer.emplace_back(assimp::vector3(x, y, z));
 			}
 			else if (pref == "vt") {
-				f32 u, v;
-				iss >> u >> v;
+				f32 u = 0, v = 0;
+				if (!(iss >> u >> v) || !std::isfinite(u) || !std::isfinite(v))
+					return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Invalid texture-coordinate record in " + file);
 				uvBuffer.emplace_back(assimp::vector2(u, v));
 			}
 			else if (pref == "f") {
@@ -199,40 +241,39 @@ static errlib::Error raw_import(const string& file,
 				string tuple;
 				while (iss >> tuple) face.push_back(tuple);
 				Poly p;
-				if (!parse_face(face, p.indices)) return errlib::Error(errlib::ErrorCode_invalidArgument, file);
+				if (!parse_face(face, p.indices, positionBuffer.size(), uvBuffer.size(), normalBuffer.size()))
+					return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Invalid or out-of-range face in " + file);
 				faceBuffer.push_back(std::move(p));
-				sm.indexCount++; // face count atm
 			}
 			else if (pref == "o") {
-				if (sm.indexCount > 0) {
-					u32 offset = sm.indexOffset + sm.indexCount;
-					model.subMeshes.push_back(std::move(sm));
-					sm = assimp::SubMesh();
-					sm.indexOffset = offset;
-				}
+				finishSubMesh();
 				string name;
-				iss >> name;
-
-				if (model.name.empty()) {
-					model.name = name;
-				}
+				std::getline(iss >> std::ws, name);
+				if (model.name.empty()) model.name = name;
 			}
 			else if (pref == "usemtl") {
-				string mat;
-				iss >> mat;
-				if (auto it = materialMap.find(mat); it != materialMap.end()) {
-					sm.materialIdx = materialMap[mat];
+				string material;
+				if (!(iss >> material))
+					return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Missing material name in " + file);
+				finishSubMesh();
+				if (auto it = materialMap.find(material); it != materialMap.end()) {
+					sm.materialIdx = static_cast<u8>(it->second);
 				}
 				else {
-					sm.materialIdx = static_cast<u8>(materialMap.size());
-					materialMap.insert(std::pair<string, u32>(mat, static_cast<u32>(materialMap.size())));
-					model.materialCount++;
+					if (materialMap.size() >= kMaxU8)
+						return errlib::Error::FromCode(errlib::ErrorCode_outOfBounds, "OBJ exceeds the supported material count");
+					const u32 materialIndex = static_cast<u32>(materialMap.size());
+					materialMap.emplace(material, materialIndex);
+					sm.materialIdx = static_cast<u8>(materialIndex);
 				}
 			}
 		}
+		model.materialCount = static_cast<u8>(materialMap.size());
 		fileStream.close();
 
-		model.subMeshes.push_back(std::move(sm));
+		finishSubMesh();
+		if (positionBuffer.empty() || faceBuffer.empty())
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "OBJ contains no mesh faces: " + file);
 
 		positionBuffer.shrink_to_fit();
 		normalBuffer.shrink_to_fit();
@@ -241,7 +282,7 @@ static errlib::Error raw_import(const string& file,
 		faceBuffer.shrink_to_fit();
 	}
 	catch (std::ifstream::failure e) {
-		return errlib::Error(errlib::ErrorCode_IOerror, "Error reading file at path: " + file + " Error: " + e.what());
+		return errlib::Error::FromCode(errlib::ErrorCode_IOerror, "Error reading file at path: " + file + " Error: " + e.what());
 	}
 
 	return errlib::Error{};
@@ -272,18 +313,36 @@ static void validate_faces(std::vector<Poly>& faces) {
 	}
 }
 
-/*very basic fixer, parses missing data from nearby vertices in same face struct*/
-static void generate_normals(std::vector<Poly>& faces) {
+static void generate_normals(std::vector<Poly>& faces, const std::vector<assimp::vector3>& positions, std::vector<assimp::vector3>& normals) {
 	for (auto& face : faces) {
-		u32 idx = kMaxU32;
-		for (u32 i = 0; i < face.indices.size(); i++) {
-			idx = face.indices[i].normIdx;
-			if (idx != kMaxU32) {
-				for (auto& tup : face.indices) {
-					tup.normIdx = idx;
-				}
-				break;
-			}
+		if (face.indices.size() < 3 || std::all_of(face.indices.begin(), face.indices.end(), [](const ObjTuple& vertex) { return vertex.normIdx != kMaxU32; })) continue;
+		const assimp::vector3& a = positions[face.indices[0].posIdx];
+		const assimp::vector3& b = positions[face.indices[1].posIdx];
+		const assimp::vector3& c = positions[face.indices[2].posIdx];
+		const assimp::vector3 normal = normalize(cross(b - a, c - a));
+		const u32 normalIndex = static_cast<u32>(normals.size());
+		normals.push_back(normal);
+		for (auto& vertex : face.indices) {
+			if (vertex.normIdx == kMaxU32) vertex.normIdx = normalIndex;
+		}
+	}
+}
+
+static void generate_missing_uvs(std::vector<Poly>& faces, const std::vector<assimp::vector3>& positions, std::vector<assimp::vector2>& uvs) {
+	for (auto& face : faces) {
+		if (face.indices.size() < 3 || std::all_of(face.indices.begin(), face.indices.end(), [](const ObjTuple& vertex) { return vertex.tcIdx != kMaxU32; })) continue;
+		const assimp::vector3& a = positions[face.indices[0].posIdx];
+		const assimp::vector3& b = positions[face.indices[1].posIdx];
+		const assimp::vector3& c = positions[face.indices[2].posIdx];
+		const assimp::vector3 normal = cross(b - a, c - a);
+		const f32 absX = std::abs(normal.x), absY = std::abs(normal.y), absZ = std::abs(normal.z);
+		for (auto& vertex : face.indices) {
+			if (vertex.tcIdx != kMaxU32) continue;
+			const assimp::vector3& position = positions[vertex.posIdx];
+			const assimp::vector2 uv = absX >= absY && absX >= absZ ? assimp::vector2(position.y, position.z)
+				: absY >= absZ ? assimp::vector2(position.x, position.z) : assimp::vector2(position.x, position.y);
+			vertex.tcIdx = static_cast<u32>(uvs.size());
+			uvs.push_back(uv);
 		}
 	}
 }
@@ -327,13 +386,14 @@ void generate_buffer(
 
 template<typename T>
 inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
-	std::vector<assimp::vector3> tan1, tan2;
-	tan1.resize(model.vertices48.size()); tan2.resize(model.vertices48.size());
+	std::vector<assimp::vector3> tan1(model.vertices48.size()), tan2(model.vertices48.size());
 
-	for (usize i = 0; i < idxBuff.size(); i += 3) {
-		T i1 = idxBuff[i];
-		T i2 = idxBuff[i + 1];
-		T i3 = idxBuff[i + 2];
+	for (usize i = 0; i + 2 < idxBuff.size(); i += 3) {
+		const usize i1 = idxBuff[i];
+		const usize i2 = idxBuff[i + 1];
+		const usize i3 = idxBuff[i + 2];
+		assert(i1 < model.vertices48.size() && i2 < model.vertices48.size() && i3 < model.vertices48.size());
+		if (i1 >= model.vertices48.size() || i2 >= model.vertices48.size() || i3 >= model.vertices48.size()) return;
 
 		assimp::VertexP3N3T2T4& v1 = model.vertices48[i1];
 		assimp::VertexP3N3T2T4& v2 = model.vertices48[i2];
@@ -375,14 +435,14 @@ inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 		tan2[i3] += tdir;
 	}
 
-	for (usize i = 0; i < idxBuff.size(); ++i) {
+	for (usize i = 0; i < model.vertices48.size(); ++i) {
 		const assimp::vector3& norm = model.vertices48[i].normal;
-		const assimp::vector3& t = tan1[i];
-		const assimp::vector3& b = tan2[i];
+		const assimp::vector3& tangent = tan1[i];
+		const assimp::vector3& bitangent = tan2[i];
 
-		assimp::vector3 tanXYZ = normalize(t - norm * dot(norm, t)); // Gram-Schmidt orthogonalize
-		f32 h = (dot(cross(norm, t), b) < 0.f) ? -1.f : 1.f;
-		model.vertices48[i].tangent = { tanXYZ.x, tanXYZ.y, tanXYZ.z, h };
+		const assimp::vector3 tangentXYZ = normalize(tangent - norm * dot(norm, tangent));
+		const f32 handedness = dot(cross(norm, tangent), bitangent) < 0.f ? -1.f : 1.f;
+		model.vertices48[i].tangent = { tangentXYZ.x, tangentXYZ.y, tangentXYZ.z, handedness };
 	}
 }
 
@@ -406,16 +466,23 @@ errlib::Error assimp::ObjImporter::InternReadFile(const string& file, Collection
 		return e;
 	}
 
+	const bool generateTangents = (ppFlags & PostProcessingFlags_importTangents) || (ppFlags & PostProcessingFlags_pbrImport);
 	const bool index32 = tmpPos.size() > static_cast<usize>(kMaxU16);
 
-	if (ppFlags & PostProcessingFlags_triangulateFaces) validate_faces(faces);
-	if (ppFlags & PostProcessingFlags_generateMissingNormals) generate_normals(faces);
+	if ((ppFlags & PostProcessingFlags_triangulateFaces) || generateTangents || (ppFlags & PostProcessingFlags_flipWindingOrder))
+		validate_faces(faces);
+	if ((ppFlags & PostProcessingFlags_generateMissingNormals) || generateTangents)
+		generate_normals(faces, tmpPos, tmpNorm);
+	if ((ppFlags & PostProcessingFlags_generateMissingUVs) || generateTangents)
+		generate_missing_uvs(faces, tmpPos, tmpUV);
 
 	if (ppFlags & PostProcessingFlags_flipUVs) {
 		for (auto& uv : tmpUV) uv.y *= -1;
 	}
 
-	if (ppFlags & PostProcessingFlags_importTangents || ppFlags & PostProcessingFlags_pbrImport) {
+	if (model.name.empty()) model.name = std::filesystem::path(file).filename().stem().string();
+
+	if (generateTangents) {
 		if (index32) generate_buffer(tmpPos, tmpNorm, tmpUV, tmpTang, faces, model, model.vertices48, model.indexBuffer32);
 		else generate_buffer(tmpPos, tmpNorm, tmpUV, tmpTang, faces, model, model.vertices48, model.indexBuffer16);
 	}

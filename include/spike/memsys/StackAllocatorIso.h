@@ -369,7 +369,7 @@ namespace memsys {
 
 	std::pair<void*, errlib::Error> StackAllocatorIso::CheckedAllocate(usize size, usize alignment) {
 		if (!_memoryBase || size <= 0)
-			return { nullptr, !_memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocatorIso.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocatorIso.CheckedAllocate: allocation size must be > 0!") };
+			return { nullptr, !_memoryBase ? errlib::Error::FromCode(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocatorIso.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocatorIso.CheckedAllocate: allocation size must be > 0!") };
 
 		const usize headerSize = sizeof(MemoryHeader);
 		const usize offsetStorageSize = sizeof(uptr);
@@ -393,9 +393,9 @@ namespace memsys {
 
 		usize totalSize;
 		if (!CalculateAllocationSize(headerAdjustment, headerSize, offsetStorageSize, objectAdjustment, size, totalSize))
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: allocation size plus allocator overhead exceeds available memory.") };
+			return { nullptr, errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: allocation size plus allocator overhead exceeds available memory.") };
 		if (!ReserveStackEntry())
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed due to insufficient memory.") };
+			return { nullptr, errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed due to insufficient memory.") };
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
@@ -413,7 +413,7 @@ namespace memsys {
 	template<typename T, typename... Args>
 	std::pair<T*, errlib::Error> StackAllocatorIso::CheckedAllocate(Args&&... args) {
 		if (!_memoryBase)
-			return { nullptr, !_memoryBase ? errlib::Error(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocatorIso.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedAllocate: allocation size must be > 0!") };
+			return { nullptr, !_memoryBase ? errlib::Error::FromCode(errlib::ErrorCode_attemptingUseOfNullptr, "StackAllocatorIso.CheckedAllocate: memory base is nullptr!") : errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedAllocate: allocation size must be > 0!") };
 
 		const usize objectSize = sizeof(T);
 		const usize headerSize = sizeof(MemoryHeader);
@@ -439,9 +439,9 @@ namespace memsys {
 
 		usize totalSize;
 		if (!CalculateAllocationSize(headerAdjustment, headerSize, offsetStorageSize, objectAdjustment, objectSize, totalSize))
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: allocation size plus allocator overhead exceeds available memory.") };
+			return { nullptr, errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: allocation size plus allocator overhead exceeds available memory.") };
 		if (!ReserveStackEntry())
-			return { nullptr, errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed due to insufficient memory.") };
+			return { nullptr, errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedAllocate: stack state update failed due to insufficient memory.") };
 
 		MemoryHeader* mH = std::construct_at(reinterpret_cast<MemoryHeader*>(headerAddress), totalSize);
 
@@ -461,7 +461,7 @@ namespace memsys {
 
 			_stack.pop_back();
 
-			return { nullptr, errlib::Error(errlib::ErrorCode_unknown, "StackAllocatorIso.CheckedAllocate: objects construction failed!") };
+			return { nullptr, errlib::Error::FromCode(errlib::ErrorCode_unknown, "StackAllocatorIso.CheckedAllocate: objects construction failed!") };
 		}
 	}
 
@@ -470,18 +470,18 @@ namespace memsys {
 			return errlib::Error(); // not technically an error
 
 		if (!is_pointer_owned(ptr, _start, _end)) {
-			return errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not owned by this allocator! " + std::to_string(reinterpret_cast<uptr>(ptr)));
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not owned by this allocator! " + std::to_string(reinterpret_cast<uptr>(ptr)));
 		}
 
 		if (_stack.empty()) {
-			return errlib::Error(errlib::ErrorCode_emptyContainer, "StackAllocator.CheckedFree: attempting to free from an empty stack!");
+			return errlib::Error::FromCode(errlib::ErrorCode_emptyContainer, "StackAllocator.CheckedFree: attempting to free from an empty stack!");
 		}
 
 		bool valid = false;
 		for (auto l : _stack) {
 			if (ptr == l) valid = true;
 		}
-		if (!valid) return errlib::Error(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not to an active object!");
+		if (!valid) return errlib::Error::FromCode(errlib::ErrorCode_invalidArgument, "StackAllocator.CheckedFree: pointer is not to an active object!");
 
 		const usize offsetStorageSize = sizeof(uptr);
 		uptr offsetToHeader = *reinterpret_cast<uptr*>(reinterpret_cast<byte*>(ptr) - offsetStorageSize);
@@ -505,7 +505,7 @@ namespace memsys {
 			}
 
 			if (!ReserveDeferredFreeEntry())
-				return errlib::Error(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedFree: to free vector update failed due to insufficient memory.");
+				return errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "StackAllocatorIso.CheckedFree: to free vector update failed due to insufficient memory.");
 			_toFree.push_back(ptr);
 			return errlib::Error();
 		}

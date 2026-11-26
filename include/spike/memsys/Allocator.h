@@ -83,7 +83,7 @@ namespace memsys {
 	/// <returns>if the adjustment was valid</returns>
 	[[nodiscard]] inline errlib::Error get_adjustment(uptr ptr, usize alignment, usize& outSize) {
 		if (!is_power_of_two(alignment))
-			return errlib::Error(errlib::ErrorCode_invalidArgument, "Alignment must be a power of 2, or 1");
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidArgument, "Alignment must be a power of 2, or 1");
 
 		usize adjustment = alignment - (ptr & (alignment - 1));
 		if (adjustment == alignment) outSize = 0;
@@ -100,7 +100,7 @@ namespace memsys {
 	/// <returns>if the alignment was valid</returns>
 	[[nodiscard]] inline errlib::Error align_forward(uptr ptr, usize alignment, uptr& outPtr) {
 		if (!is_power_of_two(alignment))
-			return errlib::Error(errlib::ErrorCode_invalidArgument, "Alignment must be a power of 2, or 1");
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidArgument, "Alignment must be a power of 2, or 1");
 
 		usize adjustment = alignment - (ptr & (alignment - 1));
 		if (adjustment == alignment) outPtr = ptr;

@@ -770,6 +770,7 @@ using ll		= long long;
 using ull		= unsigned long long;
 using usize		= std::size_t;
 
+inline constexpr u16 kMaxU8 = std::numeric_limits<u8>::max();
 inline constexpr u16 kMaxU16 = std::numeric_limits<u16>::max();
 inline constexpr u32 kMaxU32 = std::numeric_limits<u32>::max();
 inline constexpr u64 kMaxU64 = std::numeric_limits<u64>::max();

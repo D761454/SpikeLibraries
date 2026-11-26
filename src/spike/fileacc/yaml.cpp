@@ -205,37 +205,37 @@ errlib::Error fileacc::save_yaml(const string& filePath, const YAMLData& data) {
 		emitter << root;
 
 		if (!emitter.good())
-			return errlib::Error(errlib::ErrorCode_IOerror, emitter.GetLastError());
+			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, emitter.GetLastError());
 
 		std::ofstream ofs(filePath, std::ios::binary);
 		if (!ofs)
-			return errlib::Error(errlib::ErrorCode_IOerror, "save_yaml: failed to open: " + filePath);
+			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, "save_yaml: failed to open: " + filePath);
 
 		ofs << emitter.c_str();
 		ofs.close();
 		return errlib::Error();
 	}
 	catch (const std::exception& ex) {
-		return errlib::Error(errlib::ErrorCode_IOerror, string(ex.what()));
+		return errlib::Error::FromCode(errlib::ErrorCode_IOerror, string(ex.what()));
 	}
 	catch (...) {
-		return errlib::Error(errlib::ErrorCode_unknown, "unknown exception writing to: " + filePath);
+		return errlib::Error::FromCode(errlib::ErrorCode_unknown, "unknown exception writing to: " + filePath);
 	}
 }
 
 errlib::Error fileacc::load_yaml(const string& filePath, YAMLData& outData) {
 	try {
 		if (!std::filesystem::exists(std::filesystem::path(filePath)))
-			return errlib::Error(errlib::ErrorCode_missingFile, "load_yaml: file does not exist: " + filePath);
+			return errlib::Error::FromCode(errlib::ErrorCode_missingFile, "load_yaml: file does not exist: " + filePath);
 
 		YAML::Node root = YAML::LoadFile(filePath);
 		outData = node_to_yaml_data(root);
 		return errlib::Error();
 	}
 	catch (const std::exception& ex) {
-		return errlib::Error(errlib::ErrorCode_IOerror, string(ex.what()));
+		return errlib::Error::FromCode(errlib::ErrorCode_IOerror, string(ex.what()));
 	}
 	catch (...) {
-		return errlib::Error(errlib::ErrorCode_unknown, "unknown exception reading from: " + filePath);
+		return errlib::Error::FromCode(errlib::ErrorCode_unknown, "unknown exception reading from: " + filePath);
 	}
 }
