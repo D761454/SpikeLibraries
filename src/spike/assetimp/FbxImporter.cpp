@@ -40,9 +40,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <exception>
 #include <filesystem>
+#include <memory>
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <cmath>
+#include <limits>
+#include <stdexcept>
+#include <cstdlib>
 
 #include "spike/warning.h"
 #include "spike/def_aliases.h"
@@ -69,10 +74,40 @@ DISABLE_WARNING_POP
 
 #include "spike/assetimp/aivector2.h"
 #include "spike/assetimp/aivector3.h"
+#include "spike/assetimp/aivector4.h"
 #include "spike/assetimp/aimesh.h"
 #include "spike/assetimp/BaseImporter.h"
 #include "spike/assetimp/PostProcessing.h"
 #include "spike/assetimp/aicollection.h"
+
+namespace {
+	struct FbxManagerDeleter {
+		void operator()(fbxsdk::FbxManager* manager) const noexcept {
+			if (manager) manager->Destroy();
+		}
+	};
+
+	inline f32 dot(const assimp::vector3& lhs, const assimp::vector3& rhs) {
+		return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
+	}
+
+	inline assimp::vector3 cross(const assimp::vector3& lhs, const assimp::vector3& rhs) {
+		return {
+			lhs.y * rhs.z - lhs.z * rhs.y,
+			lhs.z * rhs.x - lhs.x * rhs.z,
+			lhs.x * rhs.y - lhs.y * rhs.x
+		};
+	}
+
+	inline assimp::vector3 normalize(const assimp::vector3& v) {
+		f32 lenSq = dot(v, v);
+		if (lenSq > 1e-8f) {
+			f32 invLen = 1.0f / std::sqrt(lenSq);
+			return v * invLen;
+		}
+		return { 0.0f, 0.0f, 0.0f };
+	}
+}
 
 assimp::FbxImporter::FbxImporter() : BaseImporter(), sourcePath() {
 	extensions = { ".fbx" };
@@ -159,8 +194,6 @@ static void read_normal(FbxMesh* inMesh, i32 ctrlPtIdx, i32 vertCounter, assimp:
 }
 
 static void read_texture_coordinate(FbxMesh* inMesh, i32 ctrlPtIdx, i32 uvIndex, assimp::vector2& outTC) {
-	if (inMesh->GetElementUVCount() < 1) throw std::exception("Invalid UV Number");
-
 	FbxGeometryElementUV* vertUV = inMesh->GetElementUV(0);
 	switch (vertUV->GetMappingMode()) {
 	case FbxGeometryElement::eByControlPoint:
@@ -190,14 +223,9 @@ static void read_texture_coordinate(FbxMesh* inMesh, i32 ctrlPtIdx, i32 uvIndex,
 	}
 }
 
-static void process_ctrl_points(FbxMesh* mesh, assimp::Mesh& model) {
-	// removed poly stuff as mesh pre tri'd
-
-	//std::vector<Poly> faces;
-
+static void process_ctrl_points(FbxMesh* mesh, assimp::Mesh& model, bool flipUV, bool generateUV) {
 	u32 vertexCounter = 0;
 	const u32 polyCount = mesh->GetPolygonCount();
-	//faces.reserve(polyCount);
 
 	u32 polySizeTotal = 0;
 	for (u32 i = 0; i < polyCount; i++) {
@@ -208,15 +236,18 @@ static void process_ctrl_points(FbxMesh* mesh, assimp::Mesh& model) {
 
 	for (u32 i = 0; i < polyCount; i++) {
 		const u32 polySize = mesh->GetPolygonSize(i);
-		//Poly face;
-		//face.indices.reserve(polySize);
 
 		for (u32 j = 0; j < polySize; j++) {
 			i32 ctrlPtIdx = mesh->GetPolygonVertex(i, j);
+			if (ctrlPtIdx < 0 || ctrlPtIdx >= mesh->GetControlPointsCount())
+				throw std::runtime_error("FBX polygon references an invalid control point.");
 			FbxVector4& currCtrlPoint = mesh->mControlPoints[ctrlPtIdx];
-			assimp::vector3 normal; read_normal(mesh, ctrlPtIdx, vertexCounter, normal);
-			// edit in future to allow many UV layers (8 uv layers) and tangents + bitangents
-			assimp::vector2 uv; read_texture_coordinate(mesh, ctrlPtIdx, mesh->GetTextureUVIndex(i, j), uv);
+			assimp::vector3 normal;
+			if (mesh->GetElementNormalCount() > 0) read_normal(mesh, ctrlPtIdx, vertexCounter, normal);
+			assimp::vector2 uv;
+			if (mesh->GetElementUVCount() > 0) read_texture_coordinate(mesh, ctrlPtIdx, mesh->GetTextureUVIndex(i, j), uv);
+			if (generateUV && mesh->GetElementUVCount() == 0) uv = assimp::vector2(static_cast<f32>(currCtrlPoint.mData[0]), static_cast<f32>(currCtrlPoint.mData[1]));
+			if (flipUV) uv.y *= -1.0f;
 			assimp::vector3 position(
 				static_cast<f32>(currCtrlPoint.mData[0]),
 				static_cast<f32>(currCtrlPoint.mData[1]),
@@ -236,31 +267,33 @@ static void process_ctrl_points(FbxMesh* mesh, assimp::Mesh& model) {
 			
 			++vertexCounter;
 		}
-		//faces.emplace_back(face);
 	}
-
-	// turn faces into index buffers
 }
 
 errlib::Error assimp::FbxImporter::InternReadFile(const string& file, Collection* scene) {
-	fbxsdk::FbxManager* lSdkManager = fbxsdk::FbxManager::Create();
+	std::unique_ptr<fbxsdk::FbxManager, FbxManagerDeleter> manager(fbxsdk::FbxManager::Create());
+	if (!manager) return errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "Could not create the FBX manager.");
+	fbxsdk::FbxManager* lSdkManager = manager.get();
 	fbxsdk::FbxIOSettings* ios = fbxsdk::FbxIOSettings::Create(lSdkManager, IOSROOT);
+	if (!ios) return errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "Could not create FBX IO settings.");
 	lSdkManager->SetIOSettings(ios);
 
 	fbxsdk::FbxImporter* lImporter = fbxsdk::FbxImporter::Create(lSdkManager, "");
+	if (!lImporter) return errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "Could not create the FBX importer.");
 	if (!lImporter->Initialize(file.c_str(), -1, lSdkManager->GetIOSettings())) {
-		return errlib::Error(errlib::ErrorCode_unknown, "FbxImporter::Initialize() failed. Error: " + string(lImporter->GetStatus().GetErrorString()));
+		return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "FBX initialization failed: " + string(lImporter->GetStatus().GetErrorString()));
 	}
 
 	fbxsdk::FbxScene* lScene = fbxsdk::FbxScene::Create(lSdkManager, "myScene");
-	lImporter->Import(lScene);
+	if (!lScene) return errlib::Error::FromCode(errlib::ErrorCode_outOfMemory, "Could not create the FBX scene.");
+	if (!lImporter->Import(lScene))
+		return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "FBX import failed: " + string(lImporter->GetStatus().GetErrorString()));
 	lImporter->Destroy();
 
 	fbxsdk::FbxGeometryConverter converter(lSdkManager);
 	converter.Triangulate(lScene, true); // ensure all meshes are triangulated
 
-	std::vector<fbxsdk::FbxNode*> nodeMap; // holds all nodes with a mesh in the scene
-
+	std::vector<fbxsdk::FbxNode*> nodeMap;
 	auto findNode = [&](fbxsdk::FbxNode* node) {
 		for (i32 i = 0; i < nodeMap.size(); ++i) { if (nodeMap[i] == node) return i; }
 		return -1;
@@ -274,9 +307,14 @@ errlib::Error assimp::FbxImporter::InternReadFile(const string& file, Collection
 	scene->models.reserve(geometryCount);
 	for (i32 i = 0; i < geometryCount; ++i) {
 		if (fbxsdk::FbxGeometry* geo = lScene->GetGeometry(i); geo && geo->GetAttributeType() == fbxsdk::FbxNodeAttribute::eMesh) {
-			if (fbxsdk::FbxMesh* mesh = fbxsdk::FbxCast<fbxsdk::FbxMesh>(geo); geo) {
-				primaryMeshes.push_back(mesh); scene->models.emplace_back();
-				nodeMap.push_back(mesh->GetNode());
+			if (fbxsdk::FbxMesh* mesh = fbxsdk::FbxCast<fbxsdk::FbxMesh>(geo); mesh) {
+				fbxsdk::FbxNode* node = mesh->GetNode();
+				if (!node) return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "FBX mesh is missing its scene node.");
+				if (findNode(node) < 0) {
+					nodeMap.push_back(node);
+					scene->models.emplace_back();
+				}
+				primaryMeshes.push_back(mesh);
 			}
 		}
 	}
@@ -286,40 +324,112 @@ errlib::Error assimp::FbxImporter::InternReadFile(const string& file, Collection
 	for (u32 i = 0; i < nodeMap.size(); ++i) {
 		u32 meshCount = 0;
 		for (i32 j = 0; j < nodeMap[i]->GetNodeAttributeCount(); ++j) {
-			if (nodeMap[i]->GetNodeAttributeByIndex(j)->GetAttributeType() == fbxsdk::FbxNodeAttribute::eMesh) meshCount++;
+			fbxsdk::FbxNodeAttribute* attribute = nodeMap[i]->GetNodeAttributeByIndex(j);
+			if (attribute && attribute->GetAttributeType() == fbxsdk::FbxNodeAttribute::eMesh) meshCount++;
 		}
 		scene->models[i].subMeshes.reserve(meshCount);
-		scene->models[i].materialCount = std::max((u32)1, meshCount);
-		scene->models[i].name = primaryMeshes[i]->GetNameOnly();
+		scene->models[i].materialCount = static_cast<u8>(std::min<u32>(std::max<u32>(1, meshCount), std::numeric_limits<u8>::max()));
+		scene->models[i].name = nodeMap[i]->GetNameOnly();
 	}
 
 #pragma endregion
 
 	// must edit to enable submeshing per fbx model
 
+	const bool useTangents = (ppFlags & PostProcessingFlags_importTangents) || (ppFlags & PostProcessingFlags_pbrImport);
+	const bool generateUV = (ppFlags & PostProcessingFlags_generateMissingUVs) || useTangents;
 	const i32 geometryCountPS = lScene->GetGeometryCount();
 	for (i32 i = 0; i < geometryCountPS; ++i) {
 		fbxsdk::FbxMesh* mesh = fbxsdk::FbxCast<fbxsdk::FbxMesh>(lScene->GetGeometry(i));
 		if (!mesh) continue;
 
 		const i32 idx = findNode(mesh->GetNode());
-		Mesh& model = scene->models[idx];
+		if (idx < 0 || static_cast<usize>(idx) >= scene->models.size())
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "FBX mesh is not associated with an imported node.");
+		Mesh& model = scene->models[static_cast<usize>(idx)];
 
 		SubMesh sm;
 		sm.indexOffset = static_cast<u32>(model.indexBuffer32.size());
 
 		vertexCache.clear();
 
-		process_ctrl_points(mesh, model);
+		process_ctrl_points(mesh, model, (ppFlags & PostProcessingFlags_flipUVs) != 0, generateUV);
 
 		sm.indexCount = static_cast<u32>(model.indexBuffer32.size()) - sm.indexOffset;
 		calculate_submesh_bounds(sm, model.vertices32, model.indexBuffer32);
 		model.subMeshes.push_back(std::move(sm));
 	}
 
-	// can parse hierarchy once done but not important
+	const bool generateNormals = (ppFlags & PostProcessingFlags_generateMissingNormals) || useTangents;
+	for (Mesh& model : scene->models) {
+		if (ppFlags & PostProcessingFlags_flipWindingOrder) {
+			for (usize i = 0; i + 2 < model.indexBuffer32.size(); i += 3)
+				std::swap(model.indexBuffer32[i + 1], model.indexBuffer32[i + 2]);
+		}
+		if (generateNormals) {
+			for (usize i = 0; i + 2 < model.indexBuffer32.size(); i += 3) {
+				const u32 i1 = model.indexBuffer32[i], i2 = model.indexBuffer32[i + 1], i3 = model.indexBuffer32[i + 2];
+				if (i1 >= model.vertices32.size() || i2 >= model.vertices32.size() || i3 >= model.vertices32.size())
+					return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "FBX index exceeds the vertex buffer.");
+				const vector3& a = model.vertices32[i1].position;
+				const vector3& b = model.vertices32[i2].position;
+				const vector3& c = model.vertices32[i3].position;
+				const vector3 normal = normalize(cross(b - a, c - a));
+				if (model.vertices32[i1].normal == vector3()) model.vertices32[i1].normal = normal;
+				if (model.vertices32[i2].normal == vector3()) model.vertices32[i2].normal = normal;
+				if (model.vertices32[i3].normal == vector3()) model.vertices32[i3].normal = normal;
+			}
+		}
+		if (useTangents) {
+			model.vertices48.reserve(model.vertices32.size());
+			for (const VertexP3N3T2& vertex : model.vertices32) model.vertices48.emplace_back(vertex);
+			model.vertices32.clear();
+			std::vector<vector3> tangent(model.vertices48.size()), bitangent(model.vertices48.size());
 
-	lSdkManager->Destroy();
+			for (usize i = 0; i + 2 < model.indexBuffer32.size(); i += 3) {
+				const u32 i1 = model.indexBuffer32[i], i2 = model.indexBuffer32[i + 1], i3 = model.indexBuffer32[i + 2];
+				if (i1 >= model.vertices48.size() || i2 >= model.vertices48.size() || i3 >= model.vertices48.size())
+					return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "FBX index exceeds the vertex buffer.");
+				const VertexP3N3T2T4& a = model.vertices48[i1];
+				const VertexP3N3T2T4& b = model.vertices48[i2];
+				const VertexP3N3T2T4& c = model.vertices48[i3];
+
+				const f32 x1 = b.position.x - a.position.x, x2 = c.position.x - a.position.x;
+				const f32 y1 = b.position.y - a.position.y, y2 = c.position.y - a.position.y;
+				const f32 z1 = b.position.z - a.position.z, z2 = c.position.z - a.position.z;
+				const f32 s1 = b.texCoord.x - a.texCoord.x, s2 = c.texCoord.x - a.texCoord.x;
+				const f32 t1 = b.texCoord.y - a.texCoord.y, t2 = c.texCoord.y - a.texCoord.y;
+
+				f32 r = s1 * t2 - s2 * t1;
+				r = (std::abs(r) < 1e-8f) ? 1.0f : (1.0f / r);
+
+				assimp::vector3 sdir = { // tangent dir
+					(t2 * x1 - t1 * x2) * r,
+					(t2 * y1 - t1 * y2) * r,
+					(t2 * z1 - t1 * z2) * r
+				};
+
+				assimp::vector3 tdir = { // bitangent dir
+					(s1 * x2 - s2 * x1) * r,
+					(s1 * y2 - s2 * y1) * r,
+					(s1 * z2 - s2 * z1) * r
+				};
+
+				tangent[i1] += sdir; tangent[i2] += sdir; tangent[i3] += sdir;
+				bitangent[i1] += tdir; bitangent[i2] += tdir; bitangent[i3] += tdir;
+			}
+
+			for (usize i = 0; i < model.vertices48.size(); ++i) {
+				const vector3& norm = model.vertices48[i].normal;
+				const vector3& tan = tangent[i];
+				const vector3& bit = bitangent[i];
+
+				const vector3 tangentXYZ = normalize(tan - norm * dot(norm, tan));
+				const f32 handedness = dot(cross(norm, tan), bit) < 0.f ? -1.f : 1.f;
+				model.vertices48[i].tangent = { tangentXYZ.x, tangentXYZ.y, tangentXYZ.z, handedness };
+			}
+		}
+	}
 
 	scene->name = std::filesystem::path(file).filename().stem().string();
 	sourcePath = std::filesystem::absolute(file).string();

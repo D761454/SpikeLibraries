@@ -395,21 +395,21 @@ inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 		assert(i1 < model.vertices48.size() && i2 < model.vertices48.size() && i3 < model.vertices48.size());
 		if (i1 >= model.vertices48.size() || i2 >= model.vertices48.size() || i3 >= model.vertices48.size()) return;
 
-		assimp::VertexP3N3T2T4& v1 = model.vertices48[i1];
-		assimp::VertexP3N3T2T4& v2 = model.vertices48[i2];
-		assimp::VertexP3N3T2T4& v3 = model.vertices48[i3];
+		const assimp::VertexP3N3T2T4& v1 = model.vertices48[i1];
+		const assimp::VertexP3N3T2T4& v2 = model.vertices48[i2];
+		const assimp::VertexP3N3T2T4& v3 = model.vertices48[i3];
 
-		f32 x1 = v2.position.x - v1.position.x;
-		f32 x2 = v3.position.x - v1.position.x;
-		f32 y1 = v2.position.y - v1.position.y;
-		f32 y2 = v3.position.y - v1.position.y;
-		f32 z1 = v2.position.z - v1.position.z;
-		f32 z2 = v3.position.z - v1.position.z;
+		const f32 x1 = v2.position.x - v1.position.x;
+		const f32 x2 = v3.position.x - v1.position.x;
+		const f32 y1 = v2.position.y - v1.position.y;
+		const f32 y2 = v3.position.y - v1.position.y;
+		const f32 z1 = v2.position.z - v1.position.z;
+		const f32 z2 = v3.position.z - v1.position.z;
 
-		f32 s1 = v2.texCoord.x - v1.texCoord.x;
-		f32 s2 = v3.texCoord.x - v1.texCoord.x;
-		f32 t1 = v2.texCoord.y - v1.texCoord.y;
-		f32 t2 = v3.texCoord.y - v1.texCoord.y;
+		const f32 s1 = v2.texCoord.x - v1.texCoord.x;
+		const f32 s2 = v3.texCoord.x - v1.texCoord.x;
+		const f32 t1 = v2.texCoord.y - v1.texCoord.y;
+		const f32 t2 = v3.texCoord.y - v1.texCoord.y;
 
 		f32 r = (s1 * t2 - s2 * t1);
 		r = (std::abs(r) < 1e-8f) ? 1.0f : (1.0f / r);
