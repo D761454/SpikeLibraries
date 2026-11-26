@@ -521,30 +521,31 @@ namespace {
 }
 
 template<typename T>
-inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
-	std::vector<assimp::vector3> tan1, tan2;
-	tan1.resize(model.vertices48.size()); tan2.resize(model.vertices48.size());
+inline void generate_tangents(assimp::Mesh& model, const std::vector<T>& idxBuff) {
+	std::vector<assimp::vector3> tan1(model.vertices48.size()), tan2(model.vertices48.size());
 
-	for (usize i = 0; i < idxBuff.size(); i += 3) {
-		T i1 = idxBuff[i];
-		T i2 = idxBuff[i + 1];
-		T i3 = idxBuff[i + 2];
+	for (usize i = 0; i + 2 < idxBuff.size(); i += 3) {
+		const usize i1 = idxBuff[i];
+		const usize i2 = idxBuff[i + 1];
+		const usize i3 = idxBuff[i + 2];
+		if (i1 >= model.vertices48.size() || i2 >= model.vertices48.size() || i3 >= model.vertices48.size())
+			throw std::runtime_error("glTF index exceeds the vertex buffer.");
 
-		assimp::VertexP3N3T2T4& v1 = model.vertices48[i1];
-		assimp::VertexP3N3T2T4& v2 = model.vertices48[i2];
-		assimp::VertexP3N3T2T4& v3 = model.vertices48[i3];
+		const assimp::VertexP3N3T2T4& v1 = model.vertices48[i1];
+		const assimp::VertexP3N3T2T4& v2 = model.vertices48[i2];
+		const assimp::VertexP3N3T2T4& v3 = model.vertices48[i3];
 
-		f32 x1 = v2.position.x - v1.position.x;
-		f32 x2 = v3.position.x - v1.position.x;
-		f32 y1 = v2.position.y - v1.position.y;
-		f32 y2 = v3.position.y - v1.position.y;
-		f32 z1 = v2.position.z - v1.position.z;
-		f32 z2 = v3.position.z - v1.position.z;
+		const f32 x1 = v2.position.x - v1.position.x;
+		const f32 x2 = v3.position.x - v1.position.x;
+		const f32 y1 = v2.position.y - v1.position.y;
+		const f32 y2 = v3.position.y - v1.position.y;
+		const f32 z1 = v2.position.z - v1.position.z;
+		const f32 z2 = v3.position.z - v1.position.z;
 
-		f32 s1 = v2.texCoord.x - v1.texCoord.x;
-		f32 s2 = v3.texCoord.x - v1.texCoord.x;
-		f32 t1 = v2.texCoord.y - v1.texCoord.y;
-		f32 t2 = v3.texCoord.y - v1.texCoord.y;
+		const f32 s1 = v2.texCoord.x - v1.texCoord.x;
+		const f32 s2 = v3.texCoord.x - v1.texCoord.x;
+		const f32 t1 = v2.texCoord.y - v1.texCoord.y;
+		const f32 t2 = v3.texCoord.y - v1.texCoord.y;
 
 		f32 r = (s1 * t2 - s2 * t1);
 		r = (std::abs(r) < 1e-8f) ? 1.0f : (1.0f / r);
@@ -570,14 +571,14 @@ inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 		tan2[i3] += tdir;
 	}
 
-	for (usize i = 0; i < idxBuff.size(); ++i) {
+	for (usize i = 0; i < model.vertices48.size(); ++i) {
 		const assimp::vector3& norm = model.vertices48[i].normal;
-		const assimp::vector3& t = tan1[i];
-		const assimp::vector3& b = tan2[i];
+		const assimp::vector3& tangent = tan1[i];
+		const assimp::vector3& bitangent = tan2[i];
 
-		assimp::vector3 tanXYZ = normalize(t - norm * dot(norm, t)); // Gram-Schmidt orthogonalize
-		f32 h = (dot(cross(norm, t), b) < 0.f) ? -1.f : 1.f;
-		model.vertices48[i].tangent = { tanXYZ.x, tanXYZ.y, tanXYZ.z, h };
+		const assimp::vector3 tangentXYZ = normalize(tangent - norm * dot(norm, tangent));
+		const f32 handedness = dot(cross(norm, tangent), bitangent) < 0.f ? -1.f : 1.f;
+		model.vertices48[i].tangent = { tangentXYZ.x, tangentXYZ.y, tangentXYZ.z, handedness };
 	}
 }
 
