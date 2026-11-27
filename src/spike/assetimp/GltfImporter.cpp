@@ -422,39 +422,76 @@ static bool load_gltf(Json::Value& json, GLTFData& gltf, const string& path) {
 	return true;
 }
 
-static void load_glb(std::ifstream& inFile, GLTFData& gltf, const string& path) {
-	inFile.seekg(12);
-	u32 jsonSize = 0;
-	inFile.read(reinterpret_cast<char*>(&jsonSize), sizeof(u32));
+static bool load_glb(std::ifstream& inFile, GLTFData& gltf, const string& path) {
+	inFile.seekg(0, std::ios::end);
+	const std::streamoff fileLength = inFile.tellg();
+	if (fileLength < 12 || static_cast<ull>(fileLength) > kMaxU32) return false;
+	inFile.seekg(0, std::ios::beg);
 
-	string jsonStr;
-	jsonStr.resize(jsonSize);
-	inFile.seekg(20);
-	inFile.read(jsonStr.data(), jsonSize);
+	auto read_u32 = [&inFile](u32& value) {
+		inFile.read(reinterpret_cast<char*>(&value), sizeof(value));
+		if (!inFile) return false;
+		return true;
+	};
+
+	u32 magic = 0, version = 0, totalLength = 0;
+	if (!read_u32(magic) || !read_u32(version) || !read_u32(totalLength)
+		|| magic != 0x46546C67 || version != 2 || totalLength != static_cast<u32>(fileLength)) return false;
+
+	string jsonText;
+	niVector<u8> binaryChunk;
+	bool hasJsonChunk = false;
+	bool hasBinaryChunk = false;
+	usize remaining = static_cast<usize>(totalLength) - 12;
+	while (remaining != 0) {
+		if (remaining < 8) return false;
+		u32 chunkLength = 0, chunkType = 0;
+		if (!read_u32(chunkLength) || !read_u32(chunkType)) return false;
+		remaining -= 8;
+		if (chunkLength > remaining) return false;
+		if (chunkType == 0x4E4F534A) {
+			if (hasJsonChunk || chunkLength > jsonText.max_size()) return false;
+			jsonText.resize(chunkLength);
+			if (chunkLength != 0) inFile.read(jsonText.data(), chunkLength);
+			if (!inFile) return false;
+			hasJsonChunk = true;
+		}
+		else if (chunkType == 0x004E4942) {
+			if (hasBinaryChunk || chunkLength > binaryChunk.max_size()) return false;
+			binaryChunk.resize(chunkLength);
+			if (chunkLength != 0) inFile.read(reinterpret_cast<char*>(binaryChunk.data()), chunkLength);
+			if (!inFile) return false;
+			hasBinaryChunk = true;
+		}
+		else {
+			inFile.seekg(chunkLength, std::ios::cur);
+			if (!inFile) return false;
+		}
+		remaining -= chunkLength;
+	}
+	while (!jsonText.empty() && (jsonText.back() == '\0' || jsonText.back() == ' ')) jsonText.pop_back();
+	if (!hasJsonChunk || jsonText.empty()) return false;
 
 	Json::Reader reader;
 	Json::Value json;
-	if (!reader.parse(jsonStr, json)) {
-		return;
+	if (!reader.parse(jsonText, json) || !load_document(json, gltf)) return false;
+
+	const std::filesystem::path directory = std::filesystem::path(path).parent_path();
+	gltf.bufferData.resize(gltf.buffers.size());
+	bool usedBinaryChunk = false;
+	for (usize i = 0; i < gltf.buffers.size(); ++i) {
+		const GLTFData::Buffer& buffer = gltf.buffers[i];
+		if (buffer.uri.empty()) {
+			if (usedBinaryChunk || !hasBinaryChunk || binaryChunk.size() < buffer.byteLength) return false;
+			gltf.bufferData[i] = std::move(binaryChunk);
+			usedBinaryChunk = true;
+		}
+		else if (!LoadBufferUri(buffer.uri, directory, gltf.bufferData[i])) {
+			return false;
+		}
+		if (gltf.bufferData[i].size() < buffer.byteLength) return false;
 	}
-	else if (json.isNull()) {
-		return;
-	}
-
-	LoadScenes(gltf, json);
-	LoadNodes(gltf, json);
-	LoadMeshes(gltf, json);
-	LoadAccessors(gltf, json);
-	LoadBufferViews(gltf, json);
-	LoadBuffers(gltf, json);
-
-	gltf.bufferData.resize(1);
-
-	u32 binLength = 0;
-	inFile.read(reinterpret_cast<char*>(&binLength), sizeof(binLength));
-	gltf.bufferData[0].reserve(binLength);
-	inFile.seekg(sizeof(u32), std::ios_base::cur);
-	inFile.read(reinterpret_cast<char*>(gltf.bufferData[0].data()), binLength);
+	return true;
 }
 
 #pragma region helpers
