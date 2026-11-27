@@ -333,19 +333,15 @@ static bool LoadBuffer(const string& path, niVector<u8>& data) {
 
 #pragma endregion
 
-static void load_gltf(Json::Value& json, GLTFData& gltf, const string& path) {
+static bool load_document(Json::Value& json, GLTFData& gltf) {
+	if (!json.isObject()) return false;
 	LoadScenes(gltf, json);
 	LoadNodes(gltf, json);
-	LoadMeshes(gltf, json);
-	LoadAccessors(gltf, json);
-	LoadBufferViews(gltf, json);
-	LoadBuffers(gltf, json);
-
-	string binPath = path.substr(0, path.find_last_of("\\/") + 1); // assume bin in same dir as gltf
-	gltf.bufferData.reserve(gltf.buffers.size());
-	for (u32 i = 0; i < gltf.buffers.size(); i++) {
-		string bfp = binPath + gltf.buffers[i].uri;
-		gltf.bufferData.push_back(LoadBuffer(bfp));
+	return LoadMeshes(gltf, json)
+		&& LoadAccessors(gltf, json)
+		&& LoadBufferViews(gltf, json)
+		&& LoadBuffers(gltf, json);
+}
 	}
 }
 
