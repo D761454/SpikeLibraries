@@ -605,7 +605,57 @@ static inline const niVector<u8>* get_buffer_data(const GLTFData& gltf, const GL
 	return nullptr;
 }
 
+static bool read_accessor_values(const GLTFData& gltf, const GLTFData::Accessor* accessor, u32 expectedComponents, std::vector<f32>& values) {
+	if (!accessor || get_component_count(accessor->type) != expectedComponents || accessor->count == 0) return false;
+	const GLTFData::BufferView* bufferView = get_buffer_views(gltf, accessor);
+	const niVector<u8>* buffer = get_buffer_data(gltf, bufferView);
+	const u32 componentSize = get_component_size(static_cast<ushort>(accessor->componentType));
+	if (!bufferView || !buffer || componentSize == 0 || accessor->count > values.max_size() / expectedComponents) return false;
+
+	const usize packedSize = static_cast<usize>(componentSize) * expectedComponents;
+	const usize stride = bufferView->byteStride == 0 ? packedSize : bufferView->byteStride;
+	if (stride < packedSize || accessor->byteOffset > bufferView->byteLength) return false;
+	const usize viewAvailable = static_cast<usize>(bufferView->byteLength) - accessor->byteOffset;
+	if (packedSize > viewAvailable || static_cast<usize>(accessor->count - 1) > (viewAvailable - packedSize) / stride) return false;
+	const usize start = static_cast<usize>(bufferView->byteOffset) + accessor->byteOffset;
+	if (start > buffer->size()) return false;
+	const usize available = buffer->size() - start;
+	if (packedSize > available || static_cast<usize>(accessor->count - 1) > (available - packedSize) / stride) return false;
+
+	values.resize(static_cast<usize>(accessor->count) * expectedComponents);
+	const u8* base = buffer->data() + start;
+	for (u32 row = 0; row < accessor->count; ++row) {
+		for (u32 column = 0; column < expectedComponents; ++column) {
+			const u8* source = base + static_cast<usize>(row) * stride + static_cast<usize>(column) * componentSize;
+			f32 value = 0;
+			switch (accessor->componentType) {
+			case kGltfComponentTypeByte: {
+				u8 raw = 0; std::memcpy(&raw, source, sizeof(raw));
+				value = accessor->normalized ? std::max(-1.0f, static_cast<f32>(raw) / kMaxI8) : static_cast<f32>(raw);
+			} break;
+			case kGltfComponentTypeUByte: {
+				u8 raw = 0; std::memcpy(&raw, source, sizeof(raw));
+				value = accessor->normalized ? static_cast<f32>(raw) / kMaxU8 : static_cast<f32>(raw);
+			} break;
+			case kGltfComponentTypeShort: {
+				u16 raw = 0; std::memcpy(&raw, source, sizeof(raw));
+				value = accessor->normalized ? std::max(-1.0f, static_cast<f32>(raw) / kMaxI16) : static_cast<f32>(raw);
+			} break;
+			case kGltfComponentTypeUShort: {
+				u16 raw = 0; std::memcpy(&raw, source, sizeof(raw));
+				value = accessor->normalized ? static_cast<f32>(raw) / kMaxUshort : static_cast<f32>(raw);
+			} break;
+			case kGltfComponentTypeFloat:
+				std::memcpy(&value, source, sizeof(value));
+				break;
+			default:
+				return false;
+			}
+			values[static_cast<usize>(row) * expectedComponents + column] = value;
+		}
 	}
+	return true;
+}
 
 		}
 	}
