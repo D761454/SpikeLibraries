@@ -680,9 +680,28 @@ inline void flip_winding_order(std::vector<T>& indexBuffer) {
 	}
 }
 
-static void construct_mesh(const GLTFData& gltf, const u32 idx, const string& path, assimp::Collection* scene, const u32 ppSteps) {
-	assimp::Mesh model = assimp::Mesh();
+static void triangulate_primitive(std::vector<u32>& indices, u32 mode) {
+	if (mode == 4) return;
+	if (mode != 5 && mode != 6) throw std::runtime_error("Only triangle, triangle-strip, and triangle-fan glTF primitives are supported.");
+	std::vector<u32> triangles;
+	if (mode == 5) {
+		if (indices.size() >= 3) triangles.reserve((indices.size() - 2) * 3);
+		for (usize i = 0; i + 2 < indices.size(); ++i) {
+			if ((i & 1) == 0) triangles.insert(triangles.end(), { indices[i], indices[i + 1], indices[i + 2] });
+			else triangles.insert(triangles.end(), { indices[i + 1], indices[i], indices[i + 2] });
+		}
+	}
+	else {
+		if (indices.size() >= 3) triangles.reserve((indices.size() - 2) * 3);
+		for (usize i = 1; i + 1 < indices.size(); ++i)
+			triangles.insert(triangles.end(), { indices[0], indices[i], indices[i + 1] });
+	}
+	indices.swap(triangles);
+}
 
+static void construct_mesh(const GLTFData& gltf, const u32 idx, const string&, assimp::Collection* scene, const u32 ppSteps) {
+	if (idx >= gltf.meshes.size()) throw std::runtime_error("glTF mesh index is out of range.");
+	assimp::Mesh model;
 	const GLTFData::Mesh& meshData = gltf.meshes[idx];
 	model.name = meshData.name;
 
