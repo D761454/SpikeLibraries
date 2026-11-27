@@ -326,9 +326,76 @@ static bool LoadBuffer(const string& path, niVector<u8>& data) {
 	return true;
 }
 
+static bool LoadBufferUri(const string& uri, const std::filesystem::path& directory, niVector<u8>& data) {
+	if (uri.rfind("data:", 0) != 0) {
+		string decodedUri;
+		for (usize i = 0; i < uri.size(); ++i) {
+			if (uri[i] == '%') {
+				if (i + 2 >= uri.size()) return false;
+				auto hex_value = [](char ch) -> i32 {
+					if (ch >= '0' && ch <= '9') return ch - '0';
+					if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+					if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+					return -1;
+				};
+				const i32 high = hex_value(uri[i + 1]), low = hex_value(uri[i + 2]);
+				if (high < 0 || low < 0) return false;
+				decodedUri.push_back(static_cast<char>((high << 4) | low));
+				i += 2;
+			}
+			else decodedUri.push_back(uri[i]);
 		}
+		return LoadBuffer((directory / std::filesystem::path(decodedUri)).string(), data);
 	}
+	const usize comma = uri.find(',');
+	if (comma == string::npos) return false;
+	const string metadata = uri.substr(0, comma);
+	const string payload = uri.substr(comma + 1);
+	data.clear();
+	if (metadata.find(";base64") != string::npos) {
+		u32 accumulator = 0;
+		i32 bits = 0;
+		usize paddingCount = 0;
+		bool padding = false;
+		for (uchar ch : payload) {
+			if (ch == '=') { padding = true; if (++paddingCount > 2) return false; continue; }
+			if (padding) return false;
+			i32 value = ch >= 'A' && ch <= 'Z' ? ch - 'A'
+				: ch >= 'a' && ch <= 'z' ? ch - 'a' + 26
+				: ch >= '0' && ch <= '9' ? ch - '0' + 52
+				: ch == '+' ? 62 : ch == '/' ? 63 : -1;
+			if (value < 0) return false;
+			accumulator = ((accumulator << 6) | static_cast<u32>(value)) & 0xFFFFFFu;
+			bits += 6;
+			if (bits >= 8) {
+				bits -= 8;
+				data.push_back(static_cast<u8>((accumulator >> bits) & 0xFF));
+			}
+		}
+		const bool validPadding = paddingCount == 0 ? (bits == 0 || bits == 2 || bits == 4)
+			: paddingCount == 1 ? bits == 2 : bits == 4;
+		const u32 unusedMask = bits == 0 ? 0u : (1u << bits) - 1u;
+		return validPadding && (accumulator & unusedMask) == 0;
 	}
+
+	auto hex_value = [](char ch) -> i32 {
+		if (ch >= '0' && ch <= '9') return ch - '0';
+		if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+		if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+		return -1;
+	};
+	for (usize i = 0; i < payload.size(); ++i) {
+		if (payload[i] == '%') {
+			if (i + 2 >= payload.size()) return false;
+			const i32 high = hex_value(payload[i + 1]);
+			const i32 low = hex_value(payload[i + 2]);
+			if (high < 0 || low < 0) return false;
+			data.push_back(static_cast<u8>((high << 4) | low));
+			i += 2;
+		}
+		else data.push_back(static_cast<u8>(payload[i]));
+	}
+	return true;
 }
 
 #pragma endregion
@@ -342,7 +409,17 @@ static bool load_document(Json::Value& json, GLTFData& gltf) {
 		&& LoadBufferViews(gltf, json)
 		&& LoadBuffers(gltf, json);
 }
+
+static bool load_gltf(Json::Value& json, GLTFData& gltf, const string& path) {
+	if (!load_document(json, gltf)) return false;
+	const std::filesystem::path directory = std::filesystem::path(path).parent_path();
+	gltf.bufferData.resize(gltf.buffers.size());
+	for (usize i = 0; i < gltf.buffers.size(); ++i) {
+		const GLTFData::Buffer& buffer = gltf.buffers[i];
+		if (buffer.uri.empty() || !LoadBufferUri(buffer.uri, directory, gltf.bufferData[i])) return false;
+		if (gltf.bufferData[i].size() < buffer.byteLength) return false;
 	}
+	return true;
 }
 
 static void load_glb(std::ifstream& inFile, GLTFData& gltf, const string& path) {
