@@ -44,7 +44,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <stdexcept>
 #include <cstdlib>
@@ -86,27 +85,6 @@ namespace {
 			if (manager) manager->Destroy();
 		}
 	};
-
-	inline f32 dot(const assimp::vector3& lhs, const assimp::vector3& rhs) {
-		return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
-	}
-
-	inline assimp::vector3 cross(const assimp::vector3& lhs, const assimp::vector3& rhs) {
-		return {
-			lhs.y * rhs.z - lhs.z * rhs.y,
-			lhs.z * rhs.x - lhs.x * rhs.z,
-			lhs.x * rhs.y - lhs.y * rhs.x
-		};
-	}
-
-	inline assimp::vector3 normalize(const assimp::vector3& v) {
-		f32 lenSq = dot(v, v);
-		if (lenSq > 1e-8f) {
-			f32 invLen = 1.0f / std::sqrt(lenSq);
-			return v * invLen;
-		}
-		return { 0.0f, 0.0f, 0.0f };
-	}
 }
 
 assimp::FbxImporter::FbxImporter() : BaseImporter(), sourcePath() {

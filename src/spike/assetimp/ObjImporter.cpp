@@ -104,29 +104,6 @@ assimp::ObjImporter::ObjImporter() : BaseImporter(), sourcePath() {
 
 assimp::ObjImporter::~ObjImporter() {}
 
-namespace {
-	inline f32 dot(const assimp::vector3& lhs, const assimp::vector3& rhs) {
-		return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
-	}
-
-	inline assimp::vector3 cross(const assimp::vector3& lhs, const assimp::vector3& rhs) {
-		return {
-			lhs.y * rhs.z - lhs.z * rhs.y,
-			lhs.z * rhs.x - lhs.x * rhs.z,
-			lhs.x * rhs.y - lhs.y * rhs.x
-		};
-	}
-
-	inline assimp::vector3 normalize(const assimp::vector3& v) {
-		f32 lenSq = dot(v, v);
-		if (lenSq > 1e-8f) {
-			f32 invLen = 1.0f / std::sqrt(lenSq);
-			return v * invLen;
-		}
-		return { 0.0f, 0.0f, 0.0f };
-	}
-}
-
 static bool parse_obj_index(const string& text, usize count, u32& index, bool optional) {
 	if (text.empty()) {
 		index = kMaxU32;
@@ -319,7 +296,7 @@ static void generate_normals(std::vector<Poly>& faces, const std::vector<assimp:
 		const assimp::vector3& a = positions[face.indices[0].posIdx];
 		const assimp::vector3& b = positions[face.indices[1].posIdx];
 		const assimp::vector3& c = positions[face.indices[2].posIdx];
-		const assimp::vector3 normal = normalize(cross(b - a, c - a));
+		const assimp::vector3 normal = assimp::normalize(assimp::cross(b - a, c - a));
 		const u32 normalIndex = static_cast<u32>(normals.size());
 		normals.push_back(normal);
 		for (auto& vertex : face.indices) {
@@ -334,7 +311,7 @@ static void generate_missing_uvs(std::vector<Poly>& faces, const std::vector<ass
 		const assimp::vector3& a = positions[face.indices[0].posIdx];
 		const assimp::vector3& b = positions[face.indices[1].posIdx];
 		const assimp::vector3& c = positions[face.indices[2].posIdx];
-		const assimp::vector3 normal = cross(b - a, c - a);
+		const assimp::vector3 normal = assimp::cross(b - a, c - a);
 		const f32 absX = std::abs(normal.x), absY = std::abs(normal.y), absZ = std::abs(normal.z);
 		for (auto& vertex : face.indices) {
 			if (vertex.tcIdx != kMaxU32) continue;
@@ -440,8 +417,8 @@ inline void generate_tangents(assimp::Mesh& model, std::vector<T>& idxBuff) {
 		const assimp::vector3& tangent = tan1[i];
 		const assimp::vector3& bitangent = tan2[i];
 
-		const assimp::vector3 tangentXYZ = normalize(tangent - norm * dot(norm, tangent));
-		const f32 handedness = dot(cross(norm, tangent), bitangent) < 0.f ? -1.f : 1.f;
+		const assimp::vector3 tangentXYZ = assimp::normalize(tangent - norm * assimp::dot(norm, tangent));
+		const f32 handedness = assimp::dot(assimp::cross(norm, tangent), bitangent) < 0.f ? -1.f : 1.f;
 		model.vertices48[i].tangent = { tangentXYZ.x, tangentXYZ.y, tangentXYZ.z, handedness };
 	}
 }
