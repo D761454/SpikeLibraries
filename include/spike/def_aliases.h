@@ -75,7 +75,7 @@ struct float16_t {
 
 	inline float16_t(const float16_t& other) : bits(other.GetBits()) {}
 
-	inline float16_t(uint16_t _m, uint16_t _e, uint16_t _s);
+	inline constexpr float16_t(uint16_t _m, uint16_t _e, uint16_t _s);
 
 	inline float16_t(float other);
 	inline float16_t(const double);
@@ -221,11 +221,11 @@ namespace std {
 		static const bool tinyness_before = false;
 		static const float_round_style round_style = round_to_nearest;
 
-		static float16_t min() {
+		static constexpr float16_t min() {
 			return float16_t(0, 1, 0);
 		}
 
-		static float16_t max() {
+		static constexpr float16_t max() {
 			return float16_t(~0, float16_t::kMaxExponentValue - 1, 0);
 		}
 
@@ -375,7 +375,7 @@ inline float16_t::float16_t(const double p_Reference) {
 	}; // else usual number
 }
 
-inline float16_t::float16_t(uint16_t _m, uint16_t _e, uint16_t _s) {
+inline constexpr float16_t::float16_t(uint16_t _m, uint16_t _e, uint16_t _s) {
 	IEEE.Frac = _m;
 	IEEE.Exp = _e;
 	IEEE.Sign = _s;
@@ -774,16 +774,26 @@ inline constexpr u16 kMaxU8 = std::numeric_limits<u8>::max();
 inline constexpr u16 kMaxU16 = std::numeric_limits<u16>::max();
 inline constexpr u32 kMaxU32 = std::numeric_limits<u32>::max();
 inline constexpr u64 kMaxU64 = std::numeric_limits<u64>::max();
+inline constexpr ushort kMaxUchar = std::numeric_limits<uchar>::max();
 inline constexpr ushort kMaxUshort = std::numeric_limits<ushort>::max();
 inline constexpr ull kMaxUlong = std::numeric_limits<ulong>::max();
 inline constexpr ull kMaxUll = std::numeric_limits<ull>::max();
 inline constexpr usize kMaxUsize = std::numeric_limits<usize>::max();
+
+inline constexpr i8 kMaxI8 = std::numeric_limits<i8>::max();
+inline constexpr i8 kMinI8 = std::numeric_limits<i8>::min();
+
+inline constexpr i16 kMaxI16 = std::numeric_limits<i16>::max();
+inline constexpr i16 kMinI16 = std::numeric_limits<i16>::min();
 
 inline constexpr i32 kMaxI32 = std::numeric_limits<i32>::max();
 inline constexpr i32 kMinI32 = std::numeric_limits<i32>::min();
 
 inline constexpr i64 kMaxI64 = std::numeric_limits<i64>::max();
 inline constexpr i64 kMinI64 = std::numeric_limits<i64>::min();
+
+inline constexpr f16 kMaxF16 = std::numeric_limits<f16>::max();
+inline constexpr f16 kMinF16 = std::numeric_limits<f16>::min();
 
 inline constexpr f32 kMaxF32 = std::numeric_limits<f32>::max();
 inline constexpr f32 kMinF32 = std::numeric_limits<f32>::min();
