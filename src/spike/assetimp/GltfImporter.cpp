@@ -902,41 +902,35 @@ assimp::GltfImporter::GltfImporter() : BaseImporter(), sourcePath() {
 assimp::GltfImporter::~GltfImporter() {}
 
 errlib::Error assimp::GltfImporter::InternReadFile(const string& file, Collection* scene) {
-	std::ifstream fileStream;
-	fileStream.exceptions(std::ifstream::badbit);
+	std::ifstream fileStream(file, std::ios::in | std::ios::binary);
+	if (!fileStream.is_open()) return errlib::Error::FromCode(errlib::ErrorCode_missingFile, "Could not open glTF file: " + file);
+
+	GLTFData gltf;
+	const std::filesystem::path path(file);
+	string extension = path.extension().string();
+	std::transform(extension.begin(), extension.end(), extension.begin(), [](uchar ch) { return static_cast<char>(std::tolower(ch)); });
+	if (extension == ".gltf") {
+		Json::Reader reader;
+		Json::Value json;
+		if (!reader.parse(fileStream, json))
+			return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, reader.getFormattedErrorMessages());
+		if (!load_gltf(json, gltf, file))
+			return errlib::Error::FromCode(errlib::ErrorCode_IOerror, "Could not load one or more glTF buffers: " + file);
+	}
+	else if (!load_glb(fileStream, gltf, file)) {
+		return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, "Invalid or incomplete GLB container: " + file);
+	}
 
 	try {
-		fileStream.open(file, std::ios::in | std::ios::binary);
-		if (!fileStream.is_open()) throw std::ifstream::failure("Could not find file at path", { 1, std::iostream_category() });
-		GLTFData gltf;
-
-		if (const std::filesystem::path path = std::filesystem::path(file); path.extension() == ".gltf") {
-			Json::Value json;
-
-			try { fileStream >> json; }
-			catch (const std::exception& e) {
-				fileStream.close();
-				throw std::ifstream::failure("Json parsing error", { 1, std::iostream_category() });
-				return errlib::Error(errlib::ErrorCode_unknown, "Json parsing error: " + string(e.what()));
-			}
-			fileStream.close();
-			load_gltf(json, gltf, file);
-		}
-		else {
-			load_glb(fileStream, gltf, file);
-			fileStream.close();
-		}
-
 		construct_meshes(gltf, file, scene, ppFlags);
 	}
-	catch (std::ifstream::failure e) {
-		scene->models.clear();
-		scene->textures.clear();
-		return errlib::Error(errlib::ErrorCode_IOerror, "Error reading file at path: " + file + "Error: " + e.what());
+	catch (const std::bad_alloc&) {
+		throw;
 	}
-
-	scene->name = std::filesystem::path(file).filename().stem().string();
-	sourcePath = std::filesystem::absolute(file).string();
-
+	catch (const std::exception& exception) {
+		return errlib::Error::FromCode(errlib::ErrorCode_invalidAsset, exception.what());
+	}
+	scene->name = path.filename().stem().string();
+	sourcePath = std::filesystem::absolute(path).string();
 	return errlib::Error{};
 }
