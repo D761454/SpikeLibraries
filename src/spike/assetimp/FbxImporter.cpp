@@ -298,7 +298,7 @@ errlib::Error assimp::FbxImporter::InternReadFile(const string& file, Collection
 	}
 	scene->models.shrink_to_fit();
 
-	for (fbxsdk::FbxMesh* mesh : primaryMeshes) { converter.SplitMeshPerMaterial(mesh, true); } // splits a mesh into sub meshes based on material idx
+	for (fbxsdk::FbxMesh* mesh : primaryMeshes) { converter.SplitMeshPerMaterial(mesh, true); }
 	for (u32 i = 0; i < nodeMap.size(); ++i) {
 		u32 meshCount = 0;
 		for (i32 j = 0; j < nodeMap[i]->GetNodeAttributeCount(); ++j) {
@@ -311,8 +311,6 @@ errlib::Error assimp::FbxImporter::InternReadFile(const string& file, Collection
 	}
 
 #pragma endregion
-
-	// must edit to enable submeshing per fbx model
 
 	const bool useTangents = (ppFlags & PostProcessingFlags_importTangents) || (ppFlags & PostProcessingFlags_pbrImport);
 	const bool generateUV = (ppFlags & PostProcessingFlags_generateMissingUVs) || useTangents;
