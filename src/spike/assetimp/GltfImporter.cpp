@@ -39,8 +39,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <algorithm>
 #include <array>
-#include <cmath>
+#include <cstdlib>
 #include <concepts>
+#include <cctype>
+#include <cstdint>
 #include <deque>
 #include <exception>
 #include <filesystem>
@@ -54,8 +56,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <set>
 #include <sstream>
 #include <stack>
+#include <stdexcept>
 #include <string>
-#include <system_error>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -309,28 +311,24 @@ static bool LoadBuffers(GLTFData& gltf, Json::Value& json) {
 	return true;
 }
 
-static niVector<u8> LoadBuffer(const string& path) {
-	usize binLength = 0;
-	niVector<u8> binData;
+static bool LoadBuffer(const string& path, niVector<u8>& data) {
+	std::ifstream file(path, std::ios::binary | std::ios::ate);
+	if (!file.is_open()) return false;
 
-	try {
-		std::ifstream binFile = std::ifstream(path, std::ios::binary | std::ios::ate);
+	const std::streamoff length = file.tellg();
+	if (length < 0 || static_cast<ull>(length) > data.max_size()) return false;
+	data.resize(static_cast<usize>(length));
+	file.seekg(0, std::ios::beg);
+	if (!data.empty()) {
+		file.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size()));
+		if (!file) return false;
+	}
+	return true;
+}
 
-		if (!binFile.is_open()) {
-			throw std::ifstream::failure("Could not find bin file at path", { 1, std::iostream_category() });
 		}
-
-		binLength = binFile.tellg();
-		binFile.seekg(0);
-
-		binData.resize(binLength);
-		binFile.read(reinterpret_cast<char*>(binData.data()), binLength);
-		binFile.close();
 	}
-	catch (std::ifstream::failure e) {
-		return {};
 	}
-	return binData;
 }
 
 #pragma endregion
