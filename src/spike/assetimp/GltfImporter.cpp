@@ -776,123 +776,115 @@ static void construct_mesh(const GLTFData& gltf, const u32 idx, const string&, a
 	assimp::Mesh model;
 	const GLTFData::Mesh& meshData = gltf.meshes[idx];
 	model.name = meshData.name;
+	const bool useTangents = (ppSteps & assimp::PostProcessingFlags_importTangents) || (ppSteps & assimp::PostProcessingFlags_pbrImport);
+	const bool makeNormals = (ppSteps & assimp::PostProcessingFlags_generateMissingNormals) || useTangents;
+	const bool makeUVs = (ppSteps & assimp::PostProcessingFlags_generateMissingUVs) || useTangents;
+	std::set<u32> materials;
+	std::vector<u32> missingTangentIndices;
+	model.subMeshes.reserve(meshData.primitives.size());
 
-	const u32 subMeshCount = static_cast<const u32>(meshData.primitives.size());
-	std::set<u32> matz;
+	for (const GLTFData::Mesh::Primitive& primitive : meshData.primitives) {
+		const GLTFData::Accessor* positionAccessor = get_accessor(gltf, primitive, "POSITION");
+		const GLTFData::Accessor* normalAccessor = get_accessor(gltf, primitive, "NORMAL");
+		const GLTFData::Accessor* uvAccessor = get_accessor(gltf, primitive, "TEXCOORD_0");
+		const GLTFData::Accessor* tangentAccessor = useTangents ? get_accessor(gltf, primitive, "TANGENT") : nullptr;
+		if (!positionAccessor || positionAccessor->componentType != kGltfComponentTypeFloat)
+			throw std::runtime_error("glTF primitive has no valid POSITION accessor.");
 
-	model.subMeshes.reserve(subMeshCount);
+		std::vector<f32> positions, normals, uvs, tangents;
+		if (!read_accessor_values(gltf, positionAccessor, 3, positions))
+			throw std::runtime_error("glTF POSITION accessor is invalid or out of bounds.");
+		if (normalAccessor && (!read_accessor_values(gltf, normalAccessor, 3, normals) || normalAccessor->componentType != kGltfComponentTypeFloat))
+			throw std::runtime_error("glTF NORMAL accessor is invalid or out of bounds.");
+		if (uvAccessor && !read_accessor_values(gltf, uvAccessor, 2, uvs))
+			throw std::runtime_error("glTF TEXCOORD_0 accessor is invalid or out of bounds.");
+		if (tangentAccessor && (!read_accessor_values(gltf, tangentAccessor, 4, tangents) || tangentAccessor->componentType != kGltfComponentTypeFloat))
+			throw std::runtime_error("glTF TANGENT accessor is invalid or out of bounds.");
 
-	for (u32 i = 0; i < subMeshCount; i++) {
-		const GLTFData::Mesh::Primitive& primitiveData = meshData.primitives[i];
+		const u32 vertexCount = positionAccessor->count;
+		if ((normalAccessor && normalAccessor->count != vertexCount)
+			|| (uvAccessor && uvAccessor->count != vertexCount)
+			|| (tangentAccessor && tangentAccessor->count != vertexCount))
+			throw std::runtime_error("glTF vertex attribute counts do not match POSITION.");
 
-		const GLTFData::Accessor& idxAcc = gltf.accessors[primitiveData.indices];
-		const GLTFData::BufferView& idxBv = gltf.bufferViews[idxAcc.bufferView];
-		const u32 idxCompSize = get_component_size(idxAcc.componentType);
-		const niVector<u8>& idxBufferD = gltf.bufferData[idxBv.buffer];
-
-		const GLTFData::Accessor* posAcc = get_accessor(gltf, primitiveData, "POSITION");
-		const GLTFData::Accessor* norAcc = get_accessor(gltf, primitiveData, "NORMAL");
-		const GLTFData::Accessor* tcoAcc = get_accessor(gltf, primitiveData, "TEXCOORD_0");
-		const GLTFData::Accessor* tanAcc = ((ppSteps & assimp::PostProcessingFlags_importTangents || ppSteps & assimp::PostProcessingFlags_pbrImport) ? get_accessor(gltf, primitiveData, "TANGENT") : nullptr);
-
-		const GLTFData::BufferView* posBv = get_buffer_views(gltf, posAcc);
-		const GLTFData::BufferView* norBv = get_buffer_views(gltf, norAcc);
-		const GLTFData::BufferView* tcoBv = get_buffer_views(gltf, tcoAcc);
-		const GLTFData::BufferView* tanBv = get_buffer_views(gltf, tanAcc);
-
-		const niVector<u8>* posBufferD = get_buffer_data(gltf, posBv);
-		const niVector<u8>* norBufferD = get_buffer_data(gltf, norBv);
-		const niVector<u8>* tcoBufferD = get_buffer_data(gltf, tcoBv);
-		const niVector<u8>* tanBufferD = get_buffer_data(gltf, tanBv);
-
-		const u32 vertexCount = posAcc ? posAcc->count : 0;
-		const u32 indexCount = idxAcc.count;
-
-		f32* posBuffer = (posBufferD && posBv) ? (f32*)(posBufferD->data() + posBv->byteOffset) : nullptr;
-		f32* norBuffer = (norBufferD && norBv) ? (f32*)(norBufferD->data() + norBv->byteOffset) : nullptr;
-		f32* tcoBuffer = (tcoBufferD && tcoBv) ? (f32*)(tcoBufferD->data() + tcoBv->byteOffset) : nullptr;
-		f32* tanBuffer = (tanBufferD && tanBv) ? (f32*)(tanBufferD->data() + tanBv->byteOffset) : nullptr;
-
-		const u32 startIdx = static_cast<const u32>(std::max(model.indexBuffer16.size(), model.indexBuffer32.size()));
-
-		if (ppSteps & assimp::PostProcessingFlags_importTangents || ppSteps & assimp::PostProcessingFlags_pbrImport) {
-			const usize arrSize = model.vertices48.size();
-			model.vertices48.reserve(arrSize + vertexCount);
-
-			for (u32 j = 0; j < vertexCount; j++) {
-				model.vertices48.emplace_back(
-					assimp::vector3(posBuffer[j * 3], posBuffer[j * 3 + 1], posBuffer[j * 3 + 2]),
-					norBuffer ? assimp::vector3(norBuffer[j * 3], norBuffer[j * 3 + 1], norBuffer[j * 3 + 2]) : assimp::vector3(),
-					tcoBuffer ? assimp::vector2(tcoBuffer[j * 2], ppSteps & assimp::PostProcessingFlags_flipUVs ? tcoBuffer[j * 2 + 1] * -1 : tcoBuffer[j * 2 + 1]) : assimp::vector2()
-				);
-
-				if (tanBuffer && !(ppSteps & assimp::PostProcessingFlags_flipUVs)) model.vertices48[arrSize + j].tangent = assimp::vector4{ tanBuffer[j * 3], tanBuffer[j * 3 + 1], tanBuffer[j * 3 + 2], tanBuffer[j * 3 + 3] };
-			}
-
-			if (!tanBuffer || ppSteps & assimp::PostProcessingFlags_flipUVs) {
-				if (model.indexBuffer16.empty()) generate_tangents(model, model.indexBuffer32);
-				else generate_tangents(model, model.indexBuffer16);
-			}
-
-			const usize iarrSize = model.indexBuffer32.size();
-
-			niVector<u32> iVec;
-			read_to_nivector(idxBufferD, idxBv.byteOffset, indexCount, idxCompSize, iVec);
-
-			for (auto& i : iVec) {
-				i += static_cast<u32>(arrSize); // ensure primitive indices in global array start from correct idx
-			}
-
-			model.indexBuffer32.reserve(iarrSize + indexCount);
-			model.indexBuffer32.insert(model.indexBuffer32.end(), iVec.begin(), iVec.end());
+		std::vector<u32> indices;
+		if (primitive.indices != kMaxU32) {
+			if (primitive.indices >= gltf.accessors.size() || !read_accessor_indices(gltf, &gltf.accessors[primitive.indices], indices))
+				throw std::runtime_error("glTF index accessor is invalid or out of bounds.");
 		}
 		else {
-			const usize arrSize = model.vertices32.size();
-			model.vertices32.reserve(arrSize + vertexCount);
+			indices.resize(vertexCount);
+			for (u32 i = 0; i < vertexCount; ++i) indices[i] = i;
+		}
+		for (u32 index : indices) {
+			if (index >= vertexCount) throw std::runtime_error("glTF index exceeds the primitive vertex count.");
+		}
+		if (primitive.mode != 4 && !(ppSteps & assimp::PostProcessingFlags_triangulateFaces))
+			throw std::runtime_error("glTF non-triangle primitive requires triangulateFaces.");
+		triangulate_primitive(indices, primitive.mode);
+		if (indices.size() % 3 != 0) throw std::runtime_error("glTF triangle primitive has an invalid index count.");
 
-			for (u32 j = 0; j < vertexCount; j++) {
-				model.vertices32.emplace_back(
-					assimp::vector3(posBuffer[j * 3], posBuffer[j * 3 + 1], posBuffer[j * 3 + 2]),
-					norBuffer ? assimp::vector3(norBuffer[j * 3], norBuffer[j * 3 + 1], norBuffer[j * 3 + 2]) : assimp::vector3(),
-					tcoBuffer ? assimp::vector2(tcoBuffer[j * 2], ppSteps & assimp::PostProcessingFlags_flipUVs ? tcoBuffer[j * 2 + 1] * -1 : tcoBuffer[j * 2 + 1]) : assimp::vector2()
-				);
+		const usize vertexStart = useTangents ? model.vertices48.size() : model.vertices32.size();
+		const usize indexStart = model.indexBuffer32.size();
+		for (u32 vertex = 0; vertex < vertexCount; ++vertex) {
+			const usize p = static_cast<usize>(vertex) * 3;
+			const usize t = static_cast<usize>(vertex) * 2;
+			assimp::vector3 position(positions[p], positions[p + 1], positions[p + 2]);
+			assimp::vector3 normal = normalAccessor ? assimp::vector3(normals[p], normals[p + 1], normals[p + 2]) : assimp::vector3();
+			assimp::vector2 uv = uvAccessor ? assimp::vector2(uvs[t], uvs[t + 1])
+				: makeUVs ? assimp::vector2(position.x, position.y) : assimp::vector2();
+			if (ppSteps & assimp::PostProcessingFlags_flipUVs) uv.y *= -1.0f;
+			if (useTangents) {
+				assimp::VertexP3N3T2T4 output(position, normal, uv);
+				if (tangentAccessor && !(ppSteps & assimp::PostProcessingFlags_flipUVs)) {
+					const usize tangentIndex = static_cast<usize>(vertex) * 4;
+					output.tangent = assimp::vector4(tangents[tangentIndex], tangents[tangentIndex + 1], tangents[tangentIndex + 2], tangents[tangentIndex + 3]);
+				}
+				model.vertices48.push_back(output);
 			}
+			else model.vertices32.emplace_back(position, normal, uv);
+		}
 
-			const usize iarrSize = model.indexBuffer32.size();
+		for (u32 index : indices) model.indexBuffer32.push_back(static_cast<u32>(vertexStart + index));
 
-			niVector<u32> iVec;
-			read_to_nivector(idxBufferD, idxBv.byteOffset, indexCount, idxCompSize, iVec);
-
-			for (auto& i : iVec) {
-				i += static_cast<u32>(arrSize); // ensure primitive indices in global array start from correct idx
+		if (makeNormals && !normalAccessor) {
+			std::vector<assimp::vector3> generated(vertexCount);
+			for (usize i = 0; i < indices.size(); i += 3) {
+				const u32 ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
+				const assimp::vector3 a = useTangents ? model.vertices48[vertexStart + ia].position : model.vertices32[vertexStart + ia].position;
+				const assimp::vector3 b = useTangents ? model.vertices48[vertexStart + ib].position : model.vertices32[vertexStart + ib].position;
+				const assimp::vector3 c = useTangents ? model.vertices48[vertexStart + ic].position : model.vertices32[vertexStart + ic].position;
+				const assimp::vector3 faceNormal = cross(b - a, c - a);
+				generated[ia] += faceNormal; generated[ib] += faceNormal; generated[ic] += faceNormal;
 			}
-
-			model.indexBuffer32.reserve(iarrSize + indexCount);
-			model.indexBuffer32.insert(model.indexBuffer32.end(), iVec.begin(), iVec.end());
+			for (u32 vertex = 0; vertex < vertexCount; ++vertex) {
+				const assimp::vector3 normal = normalize(generated[vertex]);
+				if (useTangents) model.vertices48[vertexStart + vertex].normal = normal;
+				else model.vertices32[vertexStart + vertex].normal = normal;
+			}
 		}
 
-		assimp::SubMesh sm;
-		sm.indexOffset = startIdx;
-		sm.indexCount = static_cast<const u32>(std::max(model.indexBuffer16.size(), model.indexBuffer32.size())) - startIdx;
-		sm.materialIdx = primitiveData.material;
-		matz.insert(primitiveData.material);
-		if (ppSteps & assimp::PostProcessingFlags_importTangents || ppSteps & assimp::PostProcessingFlags_pbrImport) {
-			calculate_submesh_bounds(sm, model.vertices48, model.indexBuffer32);
-		}
-		else {
-			calculate_submesh_bounds(sm, model.vertices32, model.indexBuffer32);
+		if (useTangents && (!tangentAccessor || (ppSteps & assimp::PostProcessingFlags_flipUVs))) {
+			for (u32 index : indices) missingTangentIndices.push_back(static_cast<u32>(vertexStart + index));
 		}
 
-		model.subMeshes.push_back(std::move(sm));
+		assimp::SubMesh subMesh;
+		subMesh.indexOffset = static_cast<u32>(indexStart);
+		subMesh.indexCount = static_cast<u32>(indices.size());
+		if (primitive.material > kMaxU8) throw std::runtime_error("glTF material index exceeds the collection format limit.");
+		subMesh.materialIdx = static_cast<u8>(primitive.material);
+		materials.insert(primitive.material);
+		model.subMeshes.push_back(std::move(subMesh));
 	}
 
-	if (ppSteps & assimp::PostProcessingFlags_flipWindingOrder) {
-		if (model.indexBuffer16.empty()) flip_winding_order(model.indexBuffer32);
-		else flip_winding_order(model.indexBuffer16);
+	if (useTangents && !missingTangentIndices.empty()) generate_tangents(model, missingTangentIndices);
+	if (ppSteps & assimp::PostProcessingFlags_flipWindingOrder) flip_winding_order(model.indexBuffer32);
+	if (materials.size() > kMaxU8) throw std::runtime_error("glTF material count exceeds the collection format limit.");
+	model.materialCount = static_cast<u8>(std::max<usize>(1, materials.size()));
+	for (auto& subMesh : model.subMeshes) {
+		if (useTangents) calculate_submesh_bounds(subMesh, model.vertices48, model.indexBuffer32);
+		else calculate_submesh_bounds(subMesh, model.vertices32, model.indexBuffer32);
 	}
-
-	model.materialCount = std::max(1, static_cast<i32>(matz.size()));
-
 	scene->models.push_back(std::move(model));
 }
 
