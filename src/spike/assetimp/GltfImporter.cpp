@@ -657,8 +657,30 @@ static bool read_accessor_values(const GLTFData& gltf, const GLTFData::Accessor*
 	return true;
 }
 
+static bool read_accessor_indices(const GLTFData& gltf, const GLTFData::Accessor* accessor, std::vector<u32>& indices) {
+	if (!accessor || accessor->type != "SCALAR" || accessor->count == 0) return false;
+	if (accessor->componentType != kGltfComponentTypeUByte
+		&& accessor->componentType != kGltfComponentTypeUShort
+		&& accessor->componentType != kGltfComponentTypeUInt) return false;
+	const GLTFData::BufferView* bufferView = get_buffer_views(gltf, accessor);
+	const niVector<u8>* buffer = get_buffer_data(gltf, bufferView);
+	const u32 componentSize = get_component_size(static_cast<ushort>(accessor->componentType));
+	if (!bufferView || !buffer || bufferView->byteStride != 0) return false;
+	if (accessor->byteOffset > bufferView->byteLength) return false;
+	const usize size = static_cast<usize>(accessor->count) * componentSize;
+	if (size > static_cast<usize>(bufferView->byteLength) - accessor->byteOffset) return false;
+	const usize start = static_cast<usize>(bufferView->byteOffset) + accessor->byteOffset;
+	if (start > buffer->size() || size > buffer->size() - start) return false;
+	indices.resize(accessor->count);
+	for (u32 i = 0; i < accessor->count; ++i) {
+		const u8* source = buffer->data() + start + static_cast<usize>(i) * componentSize;
+		if (componentSize == 1) indices[i] = *source;
+		else if (componentSize == 2) {
+			u16 value = 0; std::memcpy(&value, source, sizeof(value)); indices[i] = value;
 		}
+		else std::memcpy(&indices[i], source, sizeof(u32));
 	}
+	return true;
 }
 
 template<typename T>
